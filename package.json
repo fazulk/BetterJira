@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "nuxt dev",
     "lint": "eslint .",
+    "test": "vitest run",
     "typecheck": "vue-tsc -p .nuxt/tsconfig.app.json --noEmit && tsc -p .nuxt/tsconfig.server.json --noEmit && tsc -p .nuxt/tsconfig.shared.json --noEmit",
     "build": "nuxt build",
     "build:desktop": "bun run build && bun run app:build:main",
@@ -58,6 +59,7 @@
     "tailwindcss": "^4.1.0",
     "tsdown": "^0.21.9",
     "typescript": "^5.7.0",
+    "vitest": "^4.1.10",
     "vue-tsc": "^3.3.6"
   }
 }
