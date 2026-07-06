@@ -57,7 +57,7 @@ import { ticketQueryKey } from '@/composables/useJiraTicket'
 import { useJiraTickets } from '@/composables/useJiraTickets'
 import { localTicketQueryKey } from '@/composables/useLocalTicket'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
-import { compareStatusesByPreference, createStatusBadgeStyle, useStatusPreferences } from '@/composables/useStatusPreferences'
+import { compareStatusesByPreference, useStatusPreferences } from '@/composables/useStatusPreferences'
 import { useViewOverrides } from '@/composables/useViewOverrides'
 import { getStatusGroup } from '@/types/jira'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
@@ -69,17 +69,14 @@ import {
   customViewFiltersToClauses,
   getFilterFieldLabel,
   isFilterFieldId,
-  normalizeFilterFieldId,
 } from './filterDisplay'
 import {
-  buildInsightSlices,
   compareOptionalDates,
   dateMatchesOperator,
   formatCompactDate,
   getBaseViewIdForCustomContext,
   getCustomViewKind,
   getDateFilterOperator,
-  getInitials,
   getIssueGroupMarkerClass,
   getIssueTypeIcon,
   getMostCommonLead,
@@ -91,7 +88,6 @@ import {
   getProjectHealth,
   getProjectHealthClass,
   getRelativeTimeLabel,
-  getStatusRank,
   getTeamSectionLabel,
   getTicketDateValue,
   getTimeValue,
@@ -101,7 +97,6 @@ import {
   isEpicIssueType,
   isInitiativeIssue,
   isInitiativeIssueType,
-  isRecentlyUpdated,
   isSubIssueTicket,
   normalizeFilterValue,
 } from './helpers'
@@ -126,7 +121,6 @@ import {
   filterClausesMatch,
   filterGroupsMatch,
   getDefaultViewDisplay,
-  issueGroupConfigMapsMatch,
   normalizeDirection,
   normalizeInitiativeRowFields,
   normalizeIssueGroupConfigMap,
@@ -139,9 +133,6 @@ import {
   normalizeProjectOrderingFieldId,
   normalizeProjectRowFields,
   normalizeSavedViewRowFields,
-  parseIssueGroupingFieldId,
-  stringArraysMatch,
-  stringSetsMatch,
   viewDisplayMatches,
 } from './viewDisplay'
 
@@ -157,7 +148,6 @@ export function useTicketListController() {
     setSidebarSettings,
   } = useSpaceSettings()
   const {
-    getStatusColor,
     statusPreferences,
   } = useStatusPreferences()
   const {
@@ -317,28 +307,6 @@ export function useTicketListController() {
   const viewEditorPreviousDisplay = ref<CustomViewDisplay | null>(null)
   const suppressViewDisplaySync = ref(false)
   const customViewContextMenu = ref({ open: false, viewId: '', x: 0, y: 0 })
-  const filterFieldIds = new Set<string>([
-    'status',
-    'assignee',
-    'reporter',
-    'priority',
-    'labels',
-    'suggestedLabel',
-    'dueDate',
-    'createdDate',
-    'updatedDate',
-    'completedDate',
-    'project',
-    'team',
-    'projectStatus',
-    'projectPriority',
-    'projectLead',
-    'initiative',
-    'subscribers',
-    'shared',
-    'sharedWith',
-    'externalSource',
-  ])
   function captureDisplay(): CustomViewDisplay {
     return {
       grouping: listGrouping.value,
@@ -384,9 +352,6 @@ export function useTicketListController() {
     collapsedProjectSectionIds.value = [...display.collapsedProjectSectionIds]
     visibleInitiativeRowFields.value = normalizeInitiativeRowFields(display.visibleInitiativeRowFields)
     visibleSavedViewRowFields.value = normalizeSavedViewRowFields(display.visibleSavedViewRowFields)
-  }
-  function hasViewOverride(viewId: string): boolean {
-    return getViewOverride(viewId) !== null
   }
   function getDefaultFiltersForView(viewId: string): ViewFilterClause[] {
     if (viewEditorDraft.value?.id === viewId) {
@@ -513,7 +478,6 @@ export function useTicketListController() {
       ticket => !projectTicketKeySet.value.has(ticket.key) && !initiativeTicketKeySet.value.has(ticket.key),
     ),
   )
-  const backlogTickets = computed(() => issueTickets.value.filter(isBacklogIssueTicket))
   const currentUserName = computed(() => jiraMeQuery.data.value?.displayName.trim() ?? '')
   const selectedTicket = computed(() =>
     selectedKey.value
@@ -775,29 +739,6 @@ export function useTicketListController() {
     }
     return getDefaultFiltersForView(currentView.value)
   })
-  const hasIssueInclusionFilters = computed(() => {
-    if (!isIssueDisplayView.value) {
-      return false
-    }
-    const defaults = getDefaultDisplayForView(currentView.value)
-    return (
-      completedRange.value !== defaults.completedRange
-      || showSubIssuesRange.value !== defaults.showSubIssuesRange
-      || showTriageIssuesRange.value !== defaults.showTriageIssuesRange
-    )
-  })
-  const hasProjectInclusionFilters = computed(() => {
-    if (!isProjectDisplayView.value) {
-      return false
-    }
-    return projectClosedRange.value !== getDefaultDisplayForView(currentView.value).projectClosedRange
-  })
-  const hasCurrentViewFilters = computed(
-    () =>
-      currentViewFilters.value.length > 0
-      || hasIssueInclusionFilters.value
-      || hasProjectInclusionFilters.value,
-  )
   const activeFilterChips = computed<ActiveFilterChip[]>(() => {
     const chips: ActiveFilterChip[] = currentViewFilters.value.map(
       (filter): ActiveFilterChip => ({
@@ -868,9 +809,6 @@ export function useTicketListController() {
     const defaults = getDefaultDisplayForView(currentView.value)
     return !viewDisplayMatches(captureDisplay(), defaults)
   })
-  const isCurrentViewModified = computed(
-    () => hasModifiedFilterOptions.value || hasModifiedDisplayOptions.value,
-  )
   const activeViewIsCustomView = computed(() => getCustomView(currentView.value) !== null)
   const visibleFilterMenuEntries = computed<FilterMenuEntry[]>(() => {
     const query = normalizedFilterFieldSearch.value
@@ -2033,13 +1971,6 @@ export function useTicketListController() {
       return 0
     return 0
   }
-  function getIssueGroupMarkerStyle(label: string): Record<string, string> {
-    if (listGrouping.value !== 'status') {
-      return {}
-    }
-
-    return createStatusBadgeStyle(getStatusColor(label, getStatusCategoryForGroupLabel(label)))
-  }
   function sortTickets(nextTickets: JiraTicket[]): JiraTicket[] {
     const direction = listOrderingDirection.value === 'desc' ? -1 : 1
     return [...nextTickets].sort((left, right) => {
@@ -2995,23 +2926,6 @@ export function useTicketListController() {
       suppressViewDisplaySync.value = false
     })
   }
-  function resetProjectInclusionFilters(): void {
-    if (isProjectDisplayView.value) {
-      projectClosedRange.value = normalizeProjectClosedRange(
-        getDefaultDisplayForView(currentView.value).projectClosedRange,
-      )
-    }
-  }
-  function resetIssueInclusionFilters(): void {
-    if (!isIssueDisplayView.value) {
-      return
-    }
-    const defaults = getDefaultDisplayForView(currentView.value)
-    completedRange.value = normalizeIssueVisibilityRange(defaults.completedRange)
-    showSubIssuesRange.value = normalizeIssueVisibilityRange(defaults.showSubIssuesRange)
-    showTriageIssuesRange.value = normalizeIssueVisibilityRange(defaults.showTriageIssuesRange)
-    persistViewStateForView(currentView.value, currentViewFilters.value, captureDisplay())
-  }
   function openFilterMenu() {
     closeCustomViewContextMenu()
     filterMenuOpen.value = true
@@ -3163,15 +3077,6 @@ export function useTicketListController() {
       return 1
     return 2
   }
-  function getInsightBarClass(index: number): string {
-    if (index === 0)
-      return 'bg-[#6f73ff]'
-    if (index === 1)
-      return 'bg-[#4dbb83]'
-    if (index === 2)
-      return 'bg-[#e59356]'
-    return 'bg-[#8f9198]'
-  }
   function isIssueRowFieldVisible(fieldId: IssueRowFieldId): boolean {
     return visibleIssueRowFields.value.includes(fieldId)
   }
@@ -3212,9 +3117,6 @@ export function useTicketListController() {
   }
   function closeGroupOrdering() {
     groupOrderingOpen.value = false
-  }
-  function getCurrentIssueGroupOrder(): string[] {
-    return issueGroupOrders.value[listGrouping.value] ?? []
   }
   function setCurrentIssueGroupOrder(groupIds: string[]) {
     issueGroupOrders.value = {
@@ -3413,9 +3315,6 @@ export function useTicketListController() {
       return
     selectedKey.value = null
   }
-  function focusIssue(ticketKey: string) {
-    focusedIssueKey.value = ticketKey
-  }
   function toggleCheckedIssue(ticketKey: string) {
     checkedIssueKeys.value = checkedIssueKeySet.value.has(ticketKey)
       ? checkedIssueKeys.value.filter(key => key !== ticketKey)
@@ -3459,11 +3358,6 @@ export function useTicketListController() {
     if (!text || !navigator.clipboard)
       return
     await navigator.clipboard.writeText(text)
-  }
-  async function copyIssueKey(ticketKey: string) {
-    if (!ticketKey || !navigator.clipboard)
-      return
-    await navigator.clipboard.writeText(ticketKey)
   }
   function openSettings() {
     void navigateTo('/settings')
@@ -4072,29 +3966,9 @@ export function useTicketListController() {
   })
   return {
     tickets,
-    fetching,
     refreshing,
-    refresh,
-    queryClient,
-    route,
-    enabledSpaces,
-    hasJiraCredentialsConfigured,
-    isLoadingSpaceSettings,
-    deleteSpace,
-    favoriteViews,
     isFavoriteView,
-    getFavoriteView,
-    toggleFavoriteView,
-    customViews,
-    getCustomView,
-    customViewsForContext,
-    jiraMeQuery,
     sidebarCollapsed,
-    defaultSidebarWidth,
-    minSidebarWidth,
-    maxSidebarWidth,
-    collapsedSidebarWidth,
-    sidebarWidth,
     currentView,
     canGoBack,
     canGoForward,
@@ -4109,42 +3983,26 @@ export function useTicketListController() {
     projectGrouping,
     projectOrdering,
     projectClosedRange,
-    listGroupingDirection,
     listOrderingDirection,
-    issueGroupOrders,
-    hiddenIssueGroupIds,
     completedRange,
-    showSubIssuesRange,
-    showTriageIssuesRange,
     showSubIssues,
     showBacklogIssues,
     showEmptyGroups,
-    collapsedIssueSectionIds,
-    collapsedProjectSectionIds,
     visibleIssueRowFields,
     visibleProjectRowFields,
     visibleInitiativeRowFields,
     visibleSavedViewRowFields,
-    isResizingSidebar,
-    activePointerId,
     isCreateModalOpen,
     isAddSpaceModalOpen,
     createIssueType,
     createParentKey,
     issueTypeLocked,
     parentLocked,
-    hasFinishedInitialWorkspaceLoad,
     commandMenuOpen,
     commandQuery,
     commandActiveIndex,
-    commandInputRef,
-    searchInputRef,
     setSearchInputRef,
-    draggedIssueGroupId,
-    pendingGotoKey,
     focusedIssueKey,
-    checkedIssueKeys,
-    selectionAnchorKey,
     searchResultTab,
     filterMenuOpen,
     activeFilterEntryId,
@@ -4154,38 +4012,7 @@ export function useTicketListController() {
     filterSearchQuery,
     viewEditorMode,
     viewEditorDraft,
-    viewEditorPreviousViewId,
-    viewEditorPreviousDisplay,
-    suppressViewDisplaySync,
     customViewContextMenu,
-    filterFieldIds,
-    getDefaultViewDisplay,
-    normalizeIssueGroupingFieldId,
-    parseIssueGroupingFieldId,
-    normalizeIssueOrderingFieldId,
-    normalizeIssueVisibilityRange,
-    normalizeDirection,
-    normalizeIssueRowFields,
-    normalizeProjectRowFields,
-    copyIssueGroupConfigMap,
-    normalizeIssueGroupConfigMap,
-    stringArraysMatch,
-    stringSetsMatch,
-    filterClausesMatch,
-    filterGroupsMatch,
-    issueGroupConfigMapsMatch,
-    viewDisplayMatches,
-    copyViewDisplay,
-    captureDisplay,
-    applyDisplay,
-    normalizeFilterFieldId,
-    customViewFiltersToClauses,
-    clausesToCustomViewFilters,
-    createViewFilterClause,
-    hasViewOverride,
-    getDefaultFiltersForView,
-    getDefaultDisplayForView,
-    copyCustomView,
     issueRowFieldOptions,
     issueGroupingOptions,
     issueOrderingOptions,
@@ -4196,16 +4023,9 @@ export function useTicketListController() {
     projectRowFieldOptions,
     initiativeRowFieldOptions,
     savedViewRowFieldOptions,
-    filterMenuEntries,
     dateFilterFields,
     projectPropertyFilterFields,
     selectedKey,
-    enabledSpaceKeys,
-    enabledTickets,
-    projectTicketKeySet,
-    issueTickets,
-    backlogTickets,
-    currentUserName,
     selectedTicket,
     issueRowDisplayProps,
     projectGridTemplate,
@@ -4213,58 +4033,32 @@ export function useTicketListController() {
     savedViewGridTemplate,
     effectiveSidebarWidth,
     showInitialWorkspaceOverlay,
-    activeCustomView,
-    getBaseViewIdForCustomContext,
-    activeBaseViewId,
-    getContextKeyForViewId,
-    activeCustomViewContextKey,
-    contextKeyForCurrentView,
     supportsCustomViews,
     currentTeamKey,
     currentTeamName,
-    currentTeamSection,
     currentTeamAppearance,
     currentTeamSectionLabel,
-    getViewsDirectoryTabFromViewId,
     isViewsDirectory,
-    activeViewsDirectoryTab,
     isProjectDisplayView,
     isInitiativeDisplayView,
     isSavedViewDisplayView,
     isTeamSettingsView,
     isIssueDisplayView,
-    currentTeamTickets,
-    isMyIssuesView,
     viewTitle,
-    customViewTabs,
     viewTabs,
-    scopedTickets,
-    normalizedIssueSearch,
-    normalizedFilterSearch,
-    normalizedFilterFieldSearch,
-    currentViewFilters,
-    hasIssueInclusionFilters,
-    hasProjectInclusionFilters,
-    hasCurrentViewFilters,
     activeFilterChips,
     hasModifiedFilterOptions,
     hasModifiedDisplayOptions,
-    isCurrentViewModified,
     activeViewIsCustomView,
     visibleFilterMenuEntries,
     activeFilterEntry,
     activeValueFilterFieldId,
-    filterableTickets,
     activeFilterOptions,
     activeDateFilterOptions,
-    resolveDisplayForView,
-    persistViewStateForView,
-    baseSearchedTickets,
     searchedTickets,
     searchedProjectRows,
     searchedInitiativeRows,
     searchTabs,
-    baseIssueSections,
     issueSections,
     issueGroupOrderingRows,
     visibleIssueCount,
@@ -4272,124 +4066,27 @@ export function useTicketListController() {
     checkedIssueKeySet,
     checkedIssues,
     checkedIssueCount,
-    projectRows,
-    baseDisplayedProjectRows,
-    displayedProjectRows,
     projectSections,
     visibleProjectCount,
-    baseInitiativeRows,
     initiativeRows,
-    savedViewRows,
-    baseDisplayedSavedViewRows,
     displayedSavedViewRows,
     currentViewIsFavoritable,
     favoriteViewNavItems,
-    customViewBelongsInCurrentViewsDirectory,
-    getCustomViewKind,
-    getCustomViewTeamKey,
-    customViewToSavedViewRow,
-    getCustomViewStats,
-    getIssueTicketsForCustomView,
-    getProjectRowsForCustomView,
-    isFilterFieldId,
-    hasKnownFilterFieldId,
-    getTeamSectionLabel,
-    deriveViewLabel,
-    getCurrentFavoriteViewFilters,
-    toViewFilterClauses,
-    restoreFavoriteViewFilters,
     toggleCurrentViewFavorite,
     setFavoriteViewIssueCountVisible,
-    commandSearchQuery,
-    navigationCommands,
-    projectCommandItems,
-    issueCommandItems,
     commandItems,
-    groupTickets,
-    compareIssueGroupEntries,
-    getIssueGroupingLabels,
-    getTicketLabels,
-    getIssueGroupingRank,
-    sortTickets,
-    filterTicketsForCurrentView,
-    isTicketInCurrentTeamSection,
-    isBacklogIssueTicket,
-    isActiveIssueTicket,
-    isCompletedIssueVisible,
-    isSubIssueTicket,
     getDisplayedIssueRowKey,
-    hideSubIssuesWithVisibleParents,
-    isSubIssueVisible,
-    isBacklogIssueVisible,
-    isDateVisibleInRange,
-    ticketMatchesQuery,
-    getFilterFieldLabel,
-    getActiveFilterContext,
-    getFilterOptions,
-    getIssueFilterOptions,
-    getProjectFilterOptions,
-    getInitiativeFilterOptions,
-    getSavedViewFilterOptions,
-    getIssueVisibilityRangeLabel,
-    getProjectClosedRangeLabel,
-    countFilterOptions,
-    getDateFilterOptions,
-    getDateFilterOptionCount,
-    normalizeFilterValue,
-    ticketMatchesCurrentUserReporter,
-    getTicketDateValue,
-    getProjectDateValue,
-    getInitiativeDateValue,
-    getSavedViewDateValue,
-    dateMatchesOperator,
-    applyViewFiltersToTickets,
-    ticketMatchesFilter,
-    getDateFilterOperator,
-    getTicketProject,
-    getTicketInitiativeIds,
-    applyViewFiltersToProjects,
-    projectMatchesFilter,
-    applyProjectClosedRange,
-    sortProjectsByOrdering,
-    compareProjects,
-    compareOptionalDates,
-    groupProjects,
-    getProjectGroupingLabel,
-    getProjectGroupingRank,
-    applyViewFiltersToInitiatives,
-    initiativeMatchesFilter,
-    applyViewFiltersToSavedViews,
-    savedViewMatchesFilter,
-    setActiveCustomViewFilters,
-    getFilterClause,
     isFilterClauseSelected,
     toggleFilterClause,
-    removeFilterClause,
     removeActiveFilterChip,
     clearCurrentViewFilters,
-    resetProjectInclusionFilters,
-    resetIssueInclusionFilters,
     openFilterMenu,
-    closeFilterMenu,
     toggleFilterMenu,
     saveCurrentViewFilters,
     saveCurrentViewChangesToThisView,
-    getIssueTypeIcon,
-    buildInsightSlices,
-    sortTicketsByActivity,
-    getStatusRank,
-    getPriorityRank,
-    getProjectKey,
-    getProjectSourceTicket,
-    isEpicIssue,
-    isEpicIssueType,
-    getProjectHealth,
-    getProjectHealthRank,
     getProjectHealthClass,
     getProgressBarClass,
-    getInsightBarClass,
     getIssueGroupMarkerClass,
-    getIssueGroupMarkerStyle,
     getStatusCategoryForGroupLabel,
     isIssueRowFieldVisible,
     toggleIssueRowField,
@@ -4397,11 +4094,6 @@ export function useTicketListController() {
     resetProjectDisplayOptions,
     openGroupOrdering,
     closeGroupOrdering,
-    getCurrentIssueGroupOrder,
-    setCurrentIssueGroupOrder,
-    getCurrentHiddenIssueGroupIds,
-    setCurrentHiddenIssueGroupIds,
-    isIssueGroupHidden,
     toggleIssueGroupVisibility,
     resetCurrentIssueGroupOrdering,
     startIssueGroupDrag,
@@ -4414,41 +4106,19 @@ export function useTicketListController() {
     toggleInitiativeRowField,
     isSavedViewRowFieldVisible,
     toggleSavedViewRowField,
-    getProjectGridTemplate,
-    getInitiativeGridTemplate,
-    getSavedViewGridTemplate,
-    getMostCommonLead,
-    getTimeValue,
-    getInitials,
-    formatCompactDate,
     getRelativeTimeLabel,
-    isRecentlyUpdated,
-    clampSidebarWidth,
-    updateDragState,
-    stopSidebarResize,
-    handleSidebarResize,
-    handleSidebarResizeEnd,
     startSidebarResize,
     prefetchTicket,
     openTicket,
     closeTicket,
-    focusIssue,
     toggleCheckedIssue,
     clearCheckedIssues,
-    getVisibleTicketRangeKeys,
-    addCheckedIssueRange,
     openFirstCheckedIssue,
     copyCheckedIssueKeys,
-    copyIssueKey,
     openSettings,
-    generateCustomViewId,
     startCreateView,
-    startEditView,
-    finishViewEditor,
     saveViewEditor,
     cancelViewEditor,
-    discardViewEditorAndSwitch,
-    activateCustomView,
     updateViewEditorName,
     updateViewEditorDescription,
     updateViewEditorIcon,
@@ -4456,7 +4126,6 @@ export function useTicketListController() {
     openViewEditorFilters,
     openViewEditorSettings,
     handleViewTabClick,
-    closeCustomViewContextMenu,
     handleViewTabContextMenu,
     editContextCustomView,
     deleteContextCustomView,
@@ -4465,31 +4134,19 @@ export function useTicketListController() {
     openAddSpaceModal,
     closeAddSpaceModal,
     handleLeaveSpace,
-    openGlobalCreate,
     openChildCreate,
     closeCreateModal,
     handleTicketCreated,
     openCommandMenu,
     closeCommandMenu,
-    closeDisplayOptions,
     toggleDisplayOptions,
-    handleDocumentPointerDown,
     runCommandItem,
-    runActiveCommand,
-    moveCommandSelection,
-    isEditableTarget,
-    getIssueSectionCollapseId,
     isIssueSectionCollapsed,
     shouldShowIssueSectionHeader,
     toggleIssueSection,
-    getExpandedSectionTickets,
-    getProjectSectionCollapseId,
     isProjectSectionCollapsed,
     toggleProjectSection,
-    getFlatVisibleTickets,
-    openRelativeVisibleTicket,
     handleCommandMenuKeydown,
-    handleGlobalKeydown,
     handleRefresh,
   }
 }
