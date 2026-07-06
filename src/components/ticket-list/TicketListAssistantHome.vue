@@ -1,5 +1,6 @@
 <script lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import AssistantMarkdown from '@/components/AssistantMarkdown.vue'
 import { createAssistantChatState, useAssistantChat } from '@/composables/useAssistantChat'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 import { getAssistantProviderLabel } from '~/shared/assistant'
@@ -105,12 +106,15 @@ function handleKeydown(event: KeyboardEvent): void {
           :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
         >
           <div
-            class="max-w-[85%] whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-[13px] leading-relaxed"
+            class="max-w-[85%] break-words rounded-lg px-3 py-2 text-[13px] leading-relaxed"
             :class="message.role === 'user'
-              ? 'bg-accent-indigo/90 text-white'
+              ? 'whitespace-pre-wrap bg-accent-indigo/90 text-white'
               : 'bg-white/[0.05] text-slate-200'"
           >
-            {{ message.content || (message.pending ? '…' : '') }}
+            <AssistantMarkdown v-if="message.role === 'assistant' && message.content" :content="message.content" />
+            <template v-else>
+              {{ message.content || (message.pending ? '…' : '') }}
+            </template>
           </div>
         </div>
 
