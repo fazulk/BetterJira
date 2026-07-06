@@ -8,7 +8,6 @@ import TicketDetail from '../TicketDetail.vue'
 import TeamSettingsView from './TeamSettingsView.vue'
 import TicketListAssistantHome from './TicketListAssistantHome.vue'
 import TicketListCommandMenu from './TicketListCommandMenu.vue'
-import TicketListInboxView from './TicketListInboxView.vue'
 import TicketListInitiativesView from './TicketListInitiativesView.vue'
 import TicketListIssueSections from './TicketListIssueSections.vue'
 import TicketListProjectView from './TicketListProjectView.vue'
@@ -25,7 +24,6 @@ export default defineComponent({
     TicketDetail,
     TicketListAssistantHome,
     TicketListCommandMenu,
-    TicketListInboxView,
     TicketListSearchView,
     TicketListToolbarArea,
     TicketListInitiativesView,
@@ -100,7 +98,6 @@ export default defineComponent({
         <TeamSettingsView v-else-if="isTeamSettingsView && currentTeamKey" :space-key="currentTeamKey" />
         <TicketListAssistantHome v-else-if="currentView === 'assistant'" />
         <TicketListSearchView v-else-if="currentView === 'search'" :controller="controller" />
-        <TicketListInboxView v-else-if="currentView === 'inbox'" :controller="controller" />
         <TicketListInitiativesView
           v-else-if="currentView === 'initiatives'"
           :rows="initiativeRows"

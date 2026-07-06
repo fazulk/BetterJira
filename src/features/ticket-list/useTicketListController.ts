@@ -11,7 +11,6 @@ import type {
   FilterFieldId,
   FilterMenuEntry,
   FilterOption,
-  InboxItem,
   InitiativeRow,
   InitiativeRowFieldId,
   IssueGroupConfigMap,
@@ -304,9 +303,6 @@ export function useTicketListController() {
   const focusedIssueKey = ref<string | null>(null)
   const checkedIssueKeys = ref<string[]>([])
   const selectionAnchorKey = ref<string | null>(null)
-  const activeInboxKey = ref<string | null>(null)
-  const inboxArchivedKeys = useLocalStorage<string[]>('jira2.linear.inboxArchivedKeys', [])
-  const inboxReadKeys = useLocalStorage<string[]>('jira2.linear.inboxReadKeys', [])
   const searchResultTab = useLocalStorage<SearchResultTab>('jira2.linear.searchTab', 'all')
   const filterMenuOpen = ref(false)
   const activeFilterEntryId = ref<FilterEntryId>('status')
@@ -652,8 +648,7 @@ export function useTicketListController() {
       !isProjectDisplayView.value
       && !isInitiativeDisplayView.value
       && !isSavedViewDisplayView.value
-      && !isTeamSettingsView.value
-      && currentView.value !== 'inbox',
+      && !isTeamSettingsView.value,
   )
   const currentTeamTickets = computed(() => {
     const key = currentTeamKey.value
@@ -678,8 +673,6 @@ export function useTicketListController() {
       return selectedTicket.value.key
     if (activeCustomView.value)
       return activeCustomView.value.name
-    if (currentView.value === 'inbox')
-      return 'Inbox'
     if (isMyIssuesView(activeBaseViewId.value))
       return 'My issues'
     if (currentView.value === 'initiatives')
@@ -755,9 +748,6 @@ export function useTicketListController() {
     return []
   })
   const scopedTickets = computed(() => {
-    if (activeBaseViewId.value === 'inbox') {
-      return backlogTickets.value
-    }
     if (activeBaseViewId.value === 'my-created') {
       return issueTickets.value
     }
@@ -1174,46 +1164,6 @@ export function useTicketListController() {
       .filter((ticket): ticket is JiraTicket => Boolean(ticket)),
   )
   const checkedIssueCount = computed(() => checkedIssueKeys.value.length)
-  const inboxArchivedKeySet = computed(() => new Set(inboxArchivedKeys.value))
-  const inboxReadKeySet = computed(() => new Set(inboxReadKeys.value))
-  const inboxItems = computed<InboxItem[]>(() =>
-    sortTicketsByActivity(applyViewFiltersToTickets(backlogTickets.value))
-      .filter(ticket => !inboxArchivedKeySet.value.has(ticket.key))
-      .slice(0, 100)
-      .map(ticket => ({
-        ticket,
-        actorInitials: getInitials(ticket.assignee || ticket.spaceName || ticket.spaceKey),
-        actorName:
-          ticket.assignee && ticket.assignee !== 'Unassigned' ? ticket.assignee : ticket.spaceName,
-        summary: `${ticket.key} moved to ${ticket.status}`,
-        excerpt: ticket.summary,
-        relativeTime: getRelativeTimeLabel(ticket.updatedAt ?? ticket.createdAt),
-        unread:
-          isRecentlyUpdated(ticket.updatedAt ?? ticket.createdAt)
-          && !inboxReadKeySet.value.has(ticket.key),
-      })),
-  )
-  const inboxUnreadCount = computed(() => inboxItems.value.filter(item => item.unread).length)
-  const inboxArchivedCount = computed(() => inboxArchivedKeys.value.length)
-  const activeInboxItem = computed(() => {
-    const key = activeInboxKey.value
-    return key
-      ? (inboxItems.value.find(item => item.ticket.key === key) ?? null)
-      : (inboxItems.value[0] ?? null)
-  })
-  const activeInboxParent = computed(() => activeInboxItem.value?.ticket.parent ?? null)
-  const activeInboxProjectParent = computed(() => {
-    const parent = activeInboxParent.value
-    if (!parent || !parent.issueType.toLowerCase().includes('epic'))
-      return null
-    return parent
-  })
-  const activeInboxIssueParent = computed(() => {
-    const parent = activeInboxParent.value
-    if (!parent || parent.issueType.toLowerCase().includes('epic'))
-      return null
-    return parent
-  })
   const projectRows = computed<ProjectRow[]>(() => {
     const projects = new Map<string, ProjectAccumulator>()
     for (const ticket of enabledTickets.value) {
@@ -1419,10 +1369,9 @@ export function useTicketListController() {
   const displayedSavedViewRows = computed(() =>
     applyViewFiltersToSavedViews(baseDisplayedSavedViewRows.value),
   )
-  const currentViewIsFavoritable = computed(() => currentView.value !== 'search' && currentView.value !== 'inbox')
+  const currentViewIsFavoritable = computed(() => currentView.value !== 'search')
   const favoriteViewNavItems = computed<FavoriteViewNavItem[]>(() =>
     favoriteViews.value
-      .filter(view => view.id !== 'inbox')
       .map((view) => {
         const customView = getCustomView(view.id)
         return {
@@ -1485,7 +1434,7 @@ export function useTicketListController() {
     if (getViewsDirectoryTabFromViewId(baseViewId) !== null) {
       return 'views'
     }
-    if (isFavoriteTeamSettingsView(baseViewId) || baseViewId === 'inbox') {
+    if (isFavoriteTeamSettingsView(baseViewId)) {
       return null
     }
     return 'issues'
@@ -1698,8 +1647,6 @@ export function useTicketListController() {
     const customView = getCustomView(viewId)
     if (customView)
       return customView.name
-    if (viewId === 'inbox')
-      return 'Inbox'
     if (viewId === 'my-issues')
       return 'My issues · Assigned'
     if (viewId === 'my-created')
@@ -1992,22 +1939,6 @@ export function useTicketListController() {
         && !flatTickets.some(ticket => getDisplayedIssueRowKey(ticket) === selectionAnchorKey.value)
       ) {
         selectionAnchorKey.value = null
-      }
-    },
-    { immediate: true },
-  )
-  watch(
-    inboxItems,
-    (items) => {
-      if (!items.length) {
-        activeInboxKey.value = null
-        return
-      }
-      if (
-        !activeInboxKey.value
-        || !items.some(item => item.ticket.key === activeInboxKey.value)
-      ) {
-        activeInboxKey.value = items[0]?.ticket.key ?? null
       }
     },
     { immediate: true },
@@ -3523,90 +3454,6 @@ export function useTicketListController() {
       return
     openTicket(firstIssue.key)
   }
-  function selectInboxItem(ticketKey: string) {
-    activeInboxKey.value = ticketKey
-    focusedIssueKey.value = ticketKey
-    prefetchTicket(ticketKey)
-  }
-  function setInboxReadState(ticketKey: string, isRead: boolean) {
-    const keySet = new Set(inboxReadKeys.value)
-    if (isRead) {
-      keySet.add(ticketKey)
-    }
-    else {
-      keySet.delete(ticketKey)
-    }
-    inboxReadKeys.value = [...keySet]
-  }
-  function markActiveInboxRead() {
-    const item = activeInboxItem.value
-    if (!item)
-      return
-    setInboxReadState(item.ticket.key, true)
-  }
-  function toggleActiveInboxRead() {
-    const item = activeInboxItem.value
-    if (!item)
-      return
-    setInboxReadState(item.ticket.key, item.unread)
-  }
-  function markAllInboxRead() {
-    const keySet = new Set(inboxReadKeys.value)
-    for (const item of inboxItems.value) {
-      keySet.add(item.ticket.key)
-    }
-    inboxReadKeys.value = [...keySet]
-  }
-  function archiveInboxItem(ticketKey: string) {
-    const currentIndex = inboxItems.value.findIndex(
-      inboxItem => inboxItem.ticket.key === ticketKey,
-    )
-    if (currentIndex === -1)
-      return
-    const nextItem
-      = inboxItems.value[currentIndex + 1] ?? inboxItems.value[currentIndex - 1] ?? null
-    const archivedKeySet = new Set(inboxArchivedKeys.value)
-    archivedKeySet.add(ticketKey)
-    inboxArchivedKeys.value = [...archivedKeySet]
-    if (!activeInboxKey.value || activeInboxKey.value === ticketKey) {
-      activeInboxKey.value = nextItem?.ticket.key ?? null
-    }
-    if (activeInboxKey.value === nextItem?.ticket.key) {
-      prefetchTicket(nextItem.ticket.key)
-    }
-  }
-  function archiveActiveInboxItem() {
-    const item = activeInboxItem.value
-    if (!item)
-      return
-    archiveInboxItem(item.ticket.key)
-  }
-  function restoreArchivedInboxItems() {
-    inboxArchivedKeys.value = []
-  }
-  function openActiveInboxIssue() {
-    const item = activeInboxItem.value
-    if (!item)
-      return
-    markActiveInboxRead()
-    openTicket(item.ticket.key)
-  }
-  function selectRelativeInboxItem(direction: 1 | -1) {
-    const items = inboxItems.value
-    if (!items.length)
-      return
-    const activeKey = activeInboxItem.value?.ticket.key ?? activeInboxKey.value
-    const currentIndex = activeKey ? items.findIndex(item => item.ticket.key === activeKey) : -1
-    const fallbackIndex = direction > 0 ? 0 : items.length - 1
-    const nextIndex
-      = currentIndex === -1
-        ? fallbackIndex
-        : Math.min(items.length - 1, Math.max(0, currentIndex + direction))
-    const nextItem = items[nextIndex]
-    if (!nextItem)
-      return
-    selectInboxItem(nextItem.ticket.key)
-  }
   async function copyCheckedIssueKeys() {
     const text = checkedIssueKeys.value.join(', ')
     if (!text || !navigator.clipboard)
@@ -3827,9 +3674,6 @@ export function useTicketListController() {
     handleViewChange(lastNonSearchView.value)
   }
   function handleViewChange(viewId: string) {
-    if (viewId === 'inbox') {
-      viewId = 'my-issues'
-    }
     if (viewId === 'command') {
       openCommandMenu()
       return
@@ -4122,33 +3966,6 @@ export function useTicketListController() {
       openGlobalCreate()
       return
     }
-    if (currentView.value === 'inbox') {
-      if (key === 'j') {
-        event.preventDefault()
-        selectRelativeInboxItem(1)
-        return
-      }
-      if (key === 'k') {
-        event.preventDefault()
-        selectRelativeInboxItem(-1)
-        return
-      }
-      if (key === 'enter') {
-        event.preventDefault()
-        openActiveInboxIssue()
-        return
-      }
-      if (key === 'e') {
-        event.preventDefault()
-        archiveActiveInboxItem()
-        return
-      }
-      if (key === 'u') {
-        event.preventDefault()
-        toggleActiveInboxRead()
-        return
-      }
-    }
     if (key === 'x') {
       const firstVisibleTicket = getFlatVisibleTickets()[0]
       const keyToToggle
@@ -4328,9 +4145,6 @@ export function useTicketListController() {
     focusedIssueKey,
     checkedIssueKeys,
     selectionAnchorKey,
-    activeInboxKey,
-    inboxArchivedKeys,
-    inboxReadKeys,
     searchResultTab,
     filterMenuOpen,
     activeFilterEntryId,
@@ -4458,15 +4272,6 @@ export function useTicketListController() {
     checkedIssueKeySet,
     checkedIssues,
     checkedIssueCount,
-    inboxArchivedKeySet,
-    inboxReadKeySet,
-    inboxItems,
-    inboxUnreadCount,
-    inboxArchivedCount,
-    activeInboxItem,
-    activeInboxParent,
-    activeInboxProjectParent,
-    activeInboxIssueParent,
     projectRows,
     baseDisplayedProjectRows,
     displayedProjectRows,
@@ -4633,16 +4438,6 @@ export function useTicketListController() {
     getVisibleTicketRangeKeys,
     addCheckedIssueRange,
     openFirstCheckedIssue,
-    selectInboxItem,
-    setInboxReadState,
-    markActiveInboxRead,
-    toggleActiveInboxRead,
-    markAllInboxRead,
-    archiveInboxItem,
-    archiveActiveInboxItem,
-    restoreArchivedInboxItems,
-    openActiveInboxIssue,
-    selectRelativeInboxItem,
     copyCheckedIssueKeys,
     copyIssueKey,
     openSettings,

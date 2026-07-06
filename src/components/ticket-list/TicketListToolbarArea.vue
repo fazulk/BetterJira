@@ -74,9 +74,6 @@ export default defineComponent({
           {{ displayedSavedViewRows.length }}
           {{ displayedSavedViewRows.length === 1 ? 'view' : 'views' }}
         </span>
-        <span v-else-if="currentView === 'inbox'" class="shrink-0 text-[12px] text-[#777a83]">
-          {{ inboxItems.length }} {{ inboxItems.length === 1 ? 'notification' : 'notifications' }}
-        </span>
         <span
           v-else-if="currentView !== 'search' && !currentTeamKey"
           class="shrink-0 text-[12px] text-[#777a83]"

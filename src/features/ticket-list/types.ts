@@ -145,16 +145,6 @@ export interface CommandMenuItem {
   execute: () => void
 }
 
-export interface InboxItem {
-  ticket: JiraTicket
-  actorInitials: string
-  actorName: string
-  summary: string
-  excerpt: string
-  relativeTime: string
-  unread: boolean
-}
-
 export interface ProjectRow {
   key: string
   name: string
