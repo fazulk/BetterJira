@@ -6,11 +6,13 @@ export {
 } from './settingsApp'
 export { hasConfiguredJiraCredentials } from './settingsConnections'
 export { buildEnabledSpaceSearchQuery, buildUpdatedSinceSearchQuery } from './settingsJql'
+export { buildTeamSpaceKey, getSpaceProjectKey } from './settingsSpaces'
 export type {
   AiConnectionSettings,
   AiInstructionPresetSetting,
   AppSettings,
   AppSpaceSetting,
+  AppSpaceTeamFilter,
   CustomView,
   CustomViewDisplay,
   CustomViewFilter,

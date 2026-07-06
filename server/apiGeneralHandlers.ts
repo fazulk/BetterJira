@@ -15,6 +15,7 @@ import {
 import {
   createIssue,
   getAccessibleSpaces,
+  getAccessibleTeams,
   getAllPriorities,
   getCreateAssignableUsers,
   getCreateIssueTypes,
@@ -58,6 +59,12 @@ export async function handleGeneralApiRoute(
   if (segments.length === 1 && segments[0] === 'spaces' && method === 'GET') {
     const spaces = await getAccessibleSpaces()
     return Response.json(spaces, { headers: API_HEADERS })
+  }
+
+  if (segments.length === 1 && segments[0] === 'teams' && method === 'GET') {
+    const query = getQuery(event)
+    const teams = await getAccessibleTeams(getStringQueryValue(query.query) ?? undefined)
+    return Response.json(teams, { headers: API_HEADERS })
   }
 
   if (segments.length === 1 && segments[0] === 'tickets' && method === 'POST') {

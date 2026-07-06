@@ -1,27 +1,65 @@
+import type { AppSpaceSetting } from './settingsTypes'
 import { LOCAL_SPACE_KEY } from './localTickets'
 import { normalizeSpaceKey } from './settingsNormalizers'
+
+export type SpaceSearchQueryInput = Pick<AppSpaceSetting, 'key' | 'teamFilter'>
 
 function escapeJqlStringValue(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
-export function buildEnabledSpaceSearchQuery(spaceKeys: readonly string[]): string | null {
-  const normalizedSpaceKeys = [...new Set(
-    spaceKeys
-      .map(spaceKey => normalizeSpaceKey(spaceKey))
-      .filter((spaceKey): spaceKey is string => spaceKey !== null && spaceKey !== LOCAL_SPACE_KEY),
-  )]
+function quoteJqlValue(value: string): string {
+  return `"${escapeJqlStringValue(value)}"`
+}
 
-  if (normalizedSpaceKeys.length === 0) {
+export function buildEnabledSpaceSearchQuery(spaces: readonly SpaceSearchQueryInput[]): string | null {
+  const fullProjectKeys = new Set<string>()
+  const teamIdsByProjectKey = new Map<string, Set<string>>()
+
+  for (const space of spaces) {
+    if (space.teamFilter) {
+      const projectKey = normalizeSpaceKey(space.teamFilter.projectKey)
+      if (!projectKey || projectKey === LOCAL_SPACE_KEY) {
+        continue
+      }
+
+      const teamIds = teamIdsByProjectKey.get(projectKey) ?? new Set<string>()
+      teamIds.add(space.teamFilter.teamId)
+      teamIdsByProjectKey.set(projectKey, teamIds)
+      continue
+    }
+
+    const projectKey = normalizeSpaceKey(space.key)
+    if (!projectKey || projectKey === LOCAL_SPACE_KEY) {
+      continue
+    }
+
+    fullProjectKeys.add(projectKey)
+  }
+
+  // A fully-included project already covers its team slices.
+  for (const projectKey of fullProjectKeys) {
+    teamIdsByProjectKey.delete(projectKey)
+  }
+
+  const clauses: string[] = []
+
+  if (fullProjectKeys.size > 0) {
+    const projectKeys = [...fullProjectKeys].map(quoteJqlValue).join(', ')
+    clauses.push(`project in (${projectKeys})`)
+  }
+
+  for (const [projectKey, teamIds] of teamIdsByProjectKey) {
+    const teamValues = [...teamIds].map(quoteJqlValue).join(', ')
+    clauses.push(`(project = ${quoteJqlValue(projectKey)} AND "Team[Team]" in (${teamValues}))`)
+  }
+
+  if (clauses.length === 0) {
     return null
   }
 
-  const projectKeys = normalizedSpaceKeys
-    .map(escapeJqlStringValue)
-    .map(spaceKey => `"${spaceKey}"`)
-    .join(', ')
-
-  return `project in (${projectKeys}) ORDER BY updated DESC`
+  const whereClause = clauses.length === 1 ? clauses[0] : `(${clauses.join(' OR ')})`
+  return `${whereClause} ORDER BY updated DESC`
 }
 
 export function buildUpdatedSinceSearchQuery(baseQuery: string, updatedSince: Date): string {

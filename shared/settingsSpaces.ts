@@ -1,4 +1,4 @@
-import type { AppSpaceSetting } from './settingsTypes'
+import type { AppSpaceSetting, AppSpaceTeamFilter } from './settingsTypes'
 import { LOCAL_SPACE_KEY, LOCAL_SPACE_NAME } from './localTickets'
 import {
   normalizeSpaceColor,
@@ -6,17 +6,30 @@ import {
   normalizeSpaceKey,
   normalizeSpaceKeyList,
   normalizeSpaceName,
+  normalizeSpaceTeamFilter,
 } from './settingsNormalizers'
+
+/** Builds the unique settings key for a team-filtered space. Avoids `:` because view ids are `team:<spaceKey>:<section>`. */
+export function buildTeamSpaceKey(projectKey: string, teamId: string): string {
+  return `${projectKey}~${teamId}`.toUpperCase()
+}
+
+/** The Jira project a space maps to: the team filter's project for team spaces, otherwise the space key itself. */
+export function getSpaceProjectKey(space: Pick<AppSpaceSetting, 'key' | 'teamFilter'>): string {
+  return space.teamFilter?.projectKey ?? space.key
+}
 
 function withAppearance(
   base: AppSpaceSetting,
   icon: string | undefined,
   color: string | undefined,
+  teamFilter?: AppSpaceTeamFilter,
 ): AppSpaceSetting {
   return {
     ...base,
     ...(icon ? { icon } : {}),
     ...(color ? { color } : {}),
+    ...(teamFilter ? { teamFilter } : {}),
   }
 }
 
@@ -40,6 +53,7 @@ function normalizeSpaceSetting(value: unknown): AppSpaceSetting | null {
     },
     normalizeSpaceIcon(recordValue.icon),
     normalizeSpaceColor(recordValue.color),
+    normalizeSpaceTeamFilter(recordValue.teamFilter),
   )
 }
 
@@ -95,6 +109,7 @@ export function reconcileSpaceSettings(spaces: AppSpaceSetting[]): AppSpaceSetti
         },
         space.icon,
         space.color,
+        space.teamFilter,
       ))
       continue
     }
@@ -107,6 +122,7 @@ export function reconcileSpaceSettings(spaces: AppSpaceSetting[]): AppSpaceSetti
       },
       existingSpace.icon ?? space.icon,
       existingSpace.color ?? space.color,
+      existingSpace.teamFilter ?? space.teamFilter,
     ))
   }
 

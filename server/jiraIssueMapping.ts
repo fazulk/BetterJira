@@ -80,6 +80,12 @@ export async function resolveSprintFieldId(): Promise<string | null> {
   }
 }
 
+/** Schema types for Jira's native Team field: the current Atlassian Teams type and the legacy Advanced Roadmaps type. */
+const TEAM_FIELD_SCHEMA_TYPES = new Set([
+  'com.atlassian.jira.plugin.system.customfieldtypes:atlassian-team',
+  'com.atlassian.teams:rm-teams-custom-field-team',
+])
+
 async function getTeamFieldId(): Promise<string | null> {
   if (!teamFieldIdPromise) {
     teamFieldIdPromise = (async () => {
@@ -100,7 +106,7 @@ async function getTeamFieldId(): Promise<string | null> {
         }
 
         const schema = isRecord(field.schema) ? field.schema : null
-        if (schema?.custom === 'com.atlassian.teams:rm-teams-custom-field-team') {
+        if (typeof schema?.custom === 'string' && TEAM_FIELD_SCHEMA_TYPES.has(schema.custom)) {
           return field.id
         }
       }

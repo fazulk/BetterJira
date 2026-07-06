@@ -122,7 +122,7 @@ export function useJiraTickets() {
         return mergeJiraAndLocalTickets([], localTickets)
       }
 
-      const jql = buildEnabledSpaceSearchQuery(enabledSpaceKeys.value)
+      const jql = buildEnabledSpaceSearchQuery(enabledSpaces.value)
       const jiraTickets = jql ? await fetchTickets({ jql }) : []
       return mergeJiraAndLocalTickets(jiraTickets, localTickets)
     },
@@ -187,7 +187,7 @@ export function useJiraTickets() {
               return mergeJiraAndLocalTickets([], localTickets)
             }
 
-            const jql = buildEnabledSpaceSearchQuery(enabledSpaceKeys.value)
+            const jql = buildEnabledSpaceSearchQuery(enabledSpaces.value)
             const jiraTickets = jql ? await fetchTickets({ jql }) : []
             return mergeJiraAndLocalTickets(jiraTickets, localTickets)
           },

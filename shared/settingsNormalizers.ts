@@ -1,4 +1,4 @@
-import type { LabelColors, StatusColors } from './settingsTypes'
+import type { AppSpaceTeamFilter, LabelColors, StatusColors } from './settingsTypes'
 
 export function normalizeSpaceKey(value: unknown): string | null {
   if (typeof value !== 'string') {
@@ -11,6 +11,22 @@ export function normalizeSpaceKey(value: unknown): string | null {
 
 export function normalizeSpaceName(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+export function normalizeSpaceTeamFilter(value: unknown): AppSpaceTeamFilter | undefined {
+  if (typeof value !== 'object' || value === null) {
+    return undefined
+  }
+
+  const recordValue: Record<string, unknown> = value
+  const projectKey = normalizeSpaceKey(recordValue.projectKey)
+  const teamId = typeof recordValue.teamId === 'string' ? recordValue.teamId.trim() : ''
+
+  if (!projectKey || !teamId) {
+    return undefined
+  }
+
+  return { projectKey, teamId }
 }
 
 export function normalizeSpaceIcon(value: unknown): string | undefined {

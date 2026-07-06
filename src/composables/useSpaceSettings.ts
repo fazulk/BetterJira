@@ -1,4 +1,4 @@
-import type { AiInstructionPresetSetting, AppSettings, AppSpaceSetting, LabelColors, StatusPreferences, UpdateAiConnectionInput, UpdateJiraConnectionInput, UpdateSidebarSettingsInput, UpdateStatusPreferencesInput } from '~/shared/settings'
+import type { AiInstructionPresetSetting, AppSettings, AppSpaceSetting, AppSpaceTeamFilter, LabelColors, StatusPreferences, UpdateAiConnectionInput, UpdateJiraConnectionInput, UpdateSidebarSettingsInput, UpdateStatusPreferencesInput } from '~/shared/settings'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import {
@@ -35,6 +35,7 @@ function isLatestAppSettingsMutation(revision: number): boolean {
 interface SpaceMutationInput {
   key: string
   name?: string
+  teamFilter?: AppSpaceTeamFilter
 }
 
 interface SpaceAppearanceInput {
@@ -175,6 +176,7 @@ export function useSpaceSettings() {
             key,
             name: nextName || key,
             enabled: true,
+            ...(space.teamFilter ? { teamFilter: space.teamFilter } : {}),
           },
         ]
 

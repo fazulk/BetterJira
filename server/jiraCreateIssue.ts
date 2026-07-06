@@ -13,6 +13,7 @@ import {
 } from '../shared/jiraAdf'
 import { broadcast } from './events'
 import { getJiraConfig, jiraFetch } from './jiraClient'
+import { resolveTeamFieldId } from './jiraIssueMapping'
 import { getTicket } from './jiraIssueQueries'
 import {
   isAllowedChildIssueTypeForParent,
@@ -28,6 +29,7 @@ import {
   getProjectKeyFromIssueKey,
   resolveProjectKey,
 } from './jiraProjects'
+import { getAppSettings } from './settings'
 
 type SupportedCreateFieldKey = 'summary' | 'description' | 'priority' | 'assignee' | 'duedate'
 
@@ -316,6 +318,28 @@ async function validateParent(
   throw new Error(`${issueType} is not allowed by Jira for parent ${parentKey}`)
 }
 
+/** Pre-fills the Jira Team field when the issue is created from a team-filtered space. */
+async function applyTeamSpacePrefill(
+  createPayload: Record<string, unknown>,
+  spaceKey: string | null | undefined,
+  projectKey: string,
+): Promise<void> {
+  const normalizedSpaceKey = spaceKey?.trim().toUpperCase()
+  if (!normalizedSpaceKey) {
+    return
+  }
+
+  const space = getAppSettings().spaces.find(candidate => candidate.key === normalizedSpaceKey)
+  if (!space?.teamFilter || space.teamFilter.projectKey !== projectKey) {
+    return
+  }
+
+  const teamFieldId = await resolveTeamFieldId()
+  if (teamFieldId) {
+    createPayload[teamFieldId] = space.teamFilter.teamId
+  }
+}
+
 export async function createIssue(input: CreateIssueInput): Promise<JiraTicket> {
   if (!isCreateIssueType(input.issueType)) {
     throw new Error(`Unsupported issue type: ${input.issueType}`)
@@ -338,6 +362,8 @@ export async function createIssue(input: CreateIssueInput): Promise<JiraTicket> 
   if (input.parentKey) {
     createPayload.parent = { key: input.parentKey }
   }
+
+  await applyTeamSpacePrefill(createPayload, input.spaceKey, projectKey)
 
   const data = await jiraFetch('/issue', {
     method: 'POST',

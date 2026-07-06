@@ -3,12 +3,14 @@ import type { JiraTicket } from '@/types/jira'
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useAssignableUsers } from '@/composables/useAssignableUsers'
+import { useJiraTeams } from '@/composables/useJiraTeams'
 import { getCachedTickets } from '@/composables/useJiraTickets'
 import { usePriorities } from '@/composables/usePriorities'
 import { useUpdateLocalTicketAssignee } from '@/composables/useUpdateLocalTicketAssignee'
 import { useUpdateLocalTicketPriority } from '@/composables/useUpdateLocalTicketPriority'
 import { useUpdateTicketAssignee } from '@/composables/useUpdateTicketAssignee'
 import { useUpdateTicketPriority } from '@/composables/useUpdateTicketPriority'
+import { useUpdateTicketTeam } from '@/composables/useUpdateTicketTeam'
 import { readLocalStorageStringArray } from '@/utils/browserStorage'
 import { isLocalTicketKey } from '~/shared/localTickets'
 
@@ -61,6 +63,8 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
   const updateLocalAssigneeMutation = useUpdateLocalTicketAssignee()
   const updatePriorityMutation = useUpdateTicketPriority()
   const updateLocalPriorityMutation = useUpdateLocalTicketPriority()
+  const teamsQuery = useJiraTeams(input.jiraDataEnabled)
+  const updateTeamMutation = useUpdateTicketTeam()
 
   const priorityDraftLocal = ref('')
   const localAssigneeDraft = ref('')
@@ -74,6 +78,9 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
   const isEditingPriority = ref(false)
   const priorityDraft = ref('')
   const priorityError = ref<string | null>(null)
+  const isEditingTeam = ref(false)
+  const teamDraft = ref('')
+  const teamError = ref<string | null>(null)
 
   const recentAssigneeIds = ref<string[]>(readLocalStorageStringArray('recent-assignees'))
 
@@ -359,6 +366,70 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
     }
   }
 
+  const anyTeamPending = computed(() => updateTeamMutation.isPending.value)
+
+  const teamOptions = computed(() => {
+    const teams = teamsQuery.data.value ?? []
+    const currentTeam = input.ticket.value?.team
+    if (currentTeam && !teams.some(team => team.id === currentTeam.id)) {
+      return [currentTeam, ...teams]
+    }
+    return teams
+  })
+
+  async function startEditingTeam() {
+    if (!input.ticket.value || anyTeamPending.value || input.isLocalTicket.value)
+      return
+
+    teamDraft.value = input.ticket.value.team?.id ?? ''
+    teamError.value = null
+    isEditingTeam.value = true
+
+    if (!teamsQuery.data.value && !teamsQuery.isFetching.value) {
+      try {
+        await teamsQuery.refetch()
+      }
+      catch {
+        teamError.value = 'Failed to load teams.'
+      }
+    }
+  }
+
+  function cancelEditingTeam() {
+    teamDraft.value = input.ticket.value?.team?.id ?? ''
+    teamError.value = null
+    isEditingTeam.value = false
+  }
+
+  async function saveTeam() {
+    if (!input.ticket.value || anyTeamPending.value)
+      return
+
+    const currentTeamId = input.ticket.value.team?.id ?? ''
+    if (teamDraft.value === currentTeamId) {
+      isEditingTeam.value = false
+      teamError.value = null
+      return
+    }
+
+    const selectedTeam = teamDraft.value
+      ? teamOptions.value.find(team => team.id === teamDraft.value) ?? null
+      : null
+    if (teamDraft.value && !selectedTeam) {
+      teamError.value = 'Invalid team.'
+      return
+    }
+
+    try {
+      await updateTeamMutation.mutateAsync({ key: input.ticket.value.key, team: selectedTeam })
+      isEditingTeam.value = false
+      teamError.value = null
+    }
+    catch (err) {
+      teamError.value = err instanceof Error ? err.message : 'Failed to update team.'
+    }
+  }
+
   watch(assigneeSearch, () => {
     assigneeHighlightIndex.value = 0
   })
@@ -372,6 +443,9 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
     priorityDraftLocal.value = nextTicket?.priority ?? ''
     priorityError.value = null
     isEditingPriority.value = false
+    teamDraft.value = nextTicket?.team?.id ?? ''
+    teamError.value = null
+    isEditingTeam.value = false
   }, { immediate: true })
 
   onUnmounted(() => {
@@ -381,6 +455,7 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
   return {
     anyAssigneePending,
     anyPriorityPending,
+    anyTeamPending,
     assignableUsersQuery,
     assigneeComboRef,
     assigneeError,
@@ -390,11 +465,13 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
     avatarColor,
     cancelEditingAssignee,
     cancelEditingPriority,
+    cancelEditingTeam,
     flatComboOptions,
     handleAssigneeKeydown,
     initials,
     isEditingAssignee,
     isEditingPriority,
+    isEditingTeam,
     localAssigneeDatalistId,
     localAssigneeDraft,
     localAssigneeSuggestions,
@@ -406,8 +483,14 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
     recentComboOptions,
     saveAssignee,
     savePriority,
+    saveTeam,
     selectAssigneeOption,
     startEditingAssignee,
     startEditingPriority,
+    startEditingTeam,
+    teamDraft,
+    teamError,
+    teamOptions,
+    teamsQuery,
   }
 }

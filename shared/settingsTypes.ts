@@ -1,6 +1,13 @@
 import type { AiProvider } from './ai'
 import type { AssistantProvider, AssistantReasoning, AssistantSettings } from './assistant'
 
+export interface AppSpaceTeamFilter {
+  /** Jira project key the team-filtered space is scoped to. */
+  projectKey: string
+  /** Native Jira Team field value id (kept in its original casing). */
+  teamId: string
+}
+
 export interface AppSpaceSetting {
   key: string
   name: string
@@ -9,6 +16,8 @@ export interface AppSpaceSetting {
   icon?: string
   /** Hex color (e.g. `#d65d5d`) used for the team avatar. */
   color?: string
+  /** When present, this space is a slice of a Jira project scoped to one team. */
+  teamFilter?: AppSpaceTeamFilter
 }
 
 export interface JiraConnectionSettings {

@@ -42,6 +42,7 @@ const statusEditor = useTicketDetailStatusEditor({
 const {
   anyAssigneePending,
   anyPriorityPending,
+  anyTeamPending,
   assigneeComboRef,
   assigneeError,
   assigneeHighlightIndex,
@@ -51,11 +52,13 @@ const {
   avatarColor,
   cancelEditingAssignee,
   cancelEditingPriority,
+  cancelEditingTeam,
   flatComboOptions,
   handleAssigneeKeydown,
   initials,
   isEditingAssignee,
   isEditingPriority,
+  isEditingTeam,
   localAssigneeDatalistId,
   localAssigneeDraft,
   localAssigneeSuggestions,
@@ -67,9 +70,15 @@ const {
   recentComboOptions,
   saveAssignee,
   savePriority,
+  saveTeam,
   selectAssigneeOption,
   startEditingAssignee,
   startEditingPriority,
+  startEditingTeam,
+  teamDraft,
+  teamError,
+  teamOptions,
+  teamsQuery,
 } = propertyEditor
 
 const {
@@ -235,6 +244,45 @@ defineExpose({
         </div>
         <button v-else class="flex min-w-0 items-center gap-2 text-left" @click="startEditingAssignee">
           <span class="min-w-0 truncate text-sm text-slate-300">{{ ticket.assignee || 'Unassigned' }}</span>
+        </button>
+      </div>
+
+      <div v-if="!isLocalTicket" class="flex items-start rounded-md px-1 py-2">
+        <div v-if="isEditingTeam" class="min-w-0 space-y-2">
+          <select
+            id="detail-team"
+            v-model="teamDraft"
+            class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]"
+          >
+            <option value="">
+              No team
+            </option>
+            <option v-for="team in teamOptions" :key="team.id" :value="team.id">
+              {{ team.name }}
+            </option>
+          </select>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button
+              class="rounded-md bg-accent-indigo px-2 py-1 text-[11px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="anyTeamPending || teamsQuery.isFetching.value"
+              @click="saveTeam"
+            >
+              {{ anyTeamPending ? '...' : 'Save' }}
+            </button>
+            <button class="rounded-md border border-white/[0.08] px-2 py-1 text-[11px] text-slate-400 hover:bg-white/[0.04]" :disabled="anyTeamPending" @click="cancelEditingTeam">
+              Cancel
+            </button>
+            <span v-if="teamsQuery.isFetching.value" class="text-[11px] text-slate-500">Loading...</span>
+            <span v-if="teamError" class="text-[11px] text-rose-300">{{ teamError }}</span>
+          </div>
+        </div>
+        <button v-else class="flex min-w-0 items-center gap-2 text-left" @click="startEditingTeam">
+          <svg class="h-4 w-4 shrink-0 text-slate-500" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">
+            <circle cx="5.5" cy="5.5" r="2.25" />
+            <path stroke-linecap="round" d="M1.75 13.25c0-2.07 1.68-3.75 3.75-3.75s3.75 1.68 3.75 3.75" />
+            <path stroke-linecap="round" d="M10.5 3.4a2.25 2.25 0 110 4.2M11.4 9.7c1.66.4 2.85 1.88 2.85 3.55" />
+          </svg>
+          <span class="truncate text-sm" :class="ticket.team ? 'text-slate-300' : 'text-slate-500'">{{ ticket.team?.name ?? 'No team' }}</span>
         </button>
       </div>
 

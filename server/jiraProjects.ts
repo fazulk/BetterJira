@@ -3,6 +3,7 @@ import type {
   JiraApiIssueType,
   JiraApiProject,
   JiraCreateIssueType,
+  JiraTeamRef,
 } from './jiraTypes'
 import { isRecord } from '../shared/jiraAdf'
 import {
@@ -15,8 +16,19 @@ import { matchesIssueType } from './jiraIssueTypePolicy'
 import { getAppSettings } from './settings'
 
 export function buildDefaultSearchQuery(): string | null {
-  const enabledSpaceKeys = getAppSettings().spaces.filter(space => space.enabled).map(space => space.key)
-  return buildEnabledSpaceSearchQuery(enabledSpaceKeys)
+  const enabledSpaces = getAppSettings().spaces.filter(space => space.enabled)
+  return buildEnabledSpaceSearchQuery(enabledSpaces)
+}
+
+/** Resolves a settings space key (including team-filtered space keys) to its Jira project key. */
+export function getProjectKeyForSpaceKey(spaceKey: string | null | undefined): string | null {
+  const normalizedSpaceKey = normalizeProjectKey(spaceKey)
+  if (!normalizedSpaceKey) {
+    return null
+  }
+
+  const space = getAppSettings().spaces.find(candidate => candidate.key === normalizedSpaceKey)
+  return space?.teamFilter ? space.teamFilter.projectKey : normalizedSpaceKey
 }
 
 export async function getCandidateProjects(): Promise<JiraApiProject[]> {
@@ -64,6 +76,51 @@ export async function getAccessibleSpaces(): Promise<JiraSpaceDirectoryEntry[]> 
   ))
 }
 
+function stripJqlSuggestionMarkup(value: string): string {
+  return value
+    .replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, '\'')
+    .trim()
+}
+
+/** Lists Jira Team field options via JQL autocomplete suggestions. Teams are org-wide, not project-scoped. */
+export async function getAccessibleTeams(query?: string): Promise<JiraTeamRef[]> {
+  const params: Record<string, string> = { fieldName: 'Team[Team]' }
+  if (query) {
+    params.fieldValue = query
+  }
+
+  const data = await jiraFetch('/jql/autocompletedata/suggestions', { params })
+  if (!isRecord(data) || !Array.isArray(data.results)) {
+    return []
+  }
+
+  const teamsById = new Map<string, JiraTeamRef>()
+
+  for (const result of data.results) {
+    if (!isRecord(result) || typeof result.value !== 'string' || !result.value) {
+      continue
+    }
+
+    const displayName = typeof result.displayName === 'string'
+      ? stripJqlSuggestionMarkup(result.displayName)
+      : ''
+
+    teamsById.set(result.value, {
+      id: result.value,
+      name: displayName || result.value,
+    })
+  }
+
+  return [...teamsById.values()].sort((left, right) => (
+    left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
+  ))
+}
+
 export async function getProject(projectKey: string): Promise<JiraApiProject | null> {
   const project = await jiraFetch(`/project/${encodeURIComponent(projectKey)}`)
   return isJiraApiProject(project) ? project : null
@@ -88,7 +145,7 @@ export async function resolveProjectKey(
   parentKey?: string | null,
   spaceKey?: string | null,
 ): Promise<string> {
-  const normalizedSpaceKey = normalizeProjectKey(spaceKey)
+  const normalizedSpaceKey = getProjectKeyForSpaceKey(spaceKey)
 
   if (parentKey) {
     const parentProjectKey = getProjectKeyFromIssueKey(parentKey)

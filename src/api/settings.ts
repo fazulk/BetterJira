@@ -1,3 +1,4 @@
+import type { JiraTeamRef } from '@/types/jira'
 import type { AiProviderAvailabilityResponse } from '~/shared/ai'
 import type {
   AppSettings,
@@ -10,6 +11,7 @@ import type {
 
 const SETTINGS_BASE = '/api/settings'
 const SPACES_BASE = '/api/spaces'
+const TEAMS_BASE = '/api/teams'
 const AI_PROVIDERS_BASE = '/api/ai/providers'
 
 export async function fetchAppSettings(): Promise<AppSettings> {
@@ -64,6 +66,18 @@ export async function fetchAvailableSpaces(): Promise<JiraSpaceDirectoryEntry[]>
   if (!response.ok) {
     const body = await response.text().catch(() => '')
     throw new Error(`Failed to fetch spaces: ${response.status} ${response.statusText}${body ? ` - ${body}` : ''}`)
+  }
+
+  return response.json()
+}
+
+export async function fetchAvailableTeams(query?: string): Promise<JiraTeamRef[]> {
+  const url = query ? `${TEAMS_BASE}?query=${encodeURIComponent(query)}` : TEAMS_BASE
+  const response = await fetch(url)
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '')
+    throw new Error(`Failed to fetch teams: ${response.status} ${response.statusText}${body ? ` - ${body}` : ''}`)
   }
 
   return response.json()

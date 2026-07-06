@@ -5,6 +5,7 @@ import { broadcast } from './events'
 import { jiraFetch } from './jiraClient'
 import { isJiraApiIssue, mapIssue, resolveSprintFieldId, resolveTeamFieldId } from './jiraIssueMapping'
 import { buildDefaultSearchQuery } from './jiraProjects'
+import { getAppSettings } from './settings'
 
 const summaryIssueFields = [
   'project',
@@ -41,6 +42,33 @@ const detailIssueFields = [
   'duedate',
   'resolutiondate',
 ]
+
+/**
+ * Re-buckets a ticket into an enabled team-filtered space when its Jira team
+ * matches one; otherwise it stays under its project space.
+ */
+function applyTeamSpaceBucketing(ticket: JiraTicket): JiraTicket {
+  const teamId = ticket.team?.id
+  if (!teamId) {
+    return ticket
+  }
+
+  const teamSpace = getAppSettings().spaces.find(space => (
+    space.enabled
+    && space.teamFilter?.projectKey === ticket.spaceKey
+    && space.teamFilter.teamId.toLowerCase() === teamId.toLowerCase()
+  ))
+
+  if (!teamSpace) {
+    return ticket
+  }
+
+  return {
+    ...ticket,
+    spaceKey: teamSpace.key,
+    spaceName: teamSpace.name || ticket.spaceName,
+  }
+}
 
 export async function searchTickets(jql?: string): Promise<JiraTicket[]> {
   const query = jql ?? buildDefaultSearchQuery()
@@ -104,7 +132,7 @@ export async function searchTickets(jql?: string): Promise<JiraTicket[]> {
     startAt += batch.length
   }
 
-  return issues.filter(isJiraApiIssue).map(issue => mapIssue(issue, false, sprintFieldId, teamFieldId))
+  return issues.filter(isJiraApiIssue).map(issue => applyTeamSpaceBucketing(mapIssue(issue, false, sprintFieldId, teamFieldId)))
 }
 
 function getIncrementalRefreshQuery(updatedSince?: Date): string | null {
@@ -139,7 +167,7 @@ export async function getTicket(key: string): Promise<JiraTicket> {
       fields: fields.join(','),
     },
   })
-  return mapIssue(isJiraApiIssue(data) ? data : {}, true, sprintFieldId, teamFieldId)
+  return applyTeamSpaceBucketing(mapIssue(isJiraApiIssue(data) ? data : {}, true, sprintFieldId, teamFieldId))
 }
 
 export async function forceRefreshTickets(updatedSince?: Date): Promise<RefreshTicketsResult> {

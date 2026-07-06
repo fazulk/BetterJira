@@ -20,7 +20,7 @@ import {
   setCachedValue,
   THIRTY_DAYS_MS,
 } from './jiraClient'
-import { isJiraApiUser } from './jiraIssueMapping'
+import { isJiraApiUser, resolveTeamFieldId } from './jiraIssueMapping'
 import { getTicket } from './jiraIssueQueries'
 import {
   getCandidateProjects,
@@ -32,7 +32,7 @@ export { addTicketMessage, getTicketActivity, getTicketMessages } from './jiraAc
 export { getJiraAttachmentContent, getJiraAttachmentContentByFilename, uploadTicketAttachment } from './jiraAttachments'
 export { createIssue, getCreateIssueTypes } from './jiraCreateIssue'
 export { forceRefreshTickets, getTicket, searchTickets } from './jiraIssueQueries'
-export { getAccessibleSpaces } from './jiraProjects'
+export { getAccessibleSpaces, getAccessibleTeams } from './jiraProjects'
 export { getJiraCurrentUser, getTransitions, updateTicketStatus, updateTicketWatching } from './jiraTransitions'
 export type {
   CreateIssueInput,
@@ -380,6 +380,26 @@ export async function updateTicketPriority(key: string, priorityId: string): Pro
         priority: {
           id: nextPriorityId,
         },
+      },
+    },
+  })
+
+  const updatedTicket = await getTicket(key)
+  broadcast('ticket-updated', updatedTicket)
+  return updatedTicket
+}
+
+export async function updateTicketTeam(key: string, teamId: string | null): Promise<JiraTicket> {
+  const teamFieldId = await resolveTeamFieldId()
+  if (!teamFieldId) {
+    throw new Error('The Jira Team field is not available in this workspace')
+  }
+
+  await jiraFetch(`/issue/${key}`, {
+    method: 'PUT',
+    body: {
+      fields: {
+        [teamFieldId]: teamId,
       },
     },
   })

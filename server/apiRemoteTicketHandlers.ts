@@ -25,6 +25,7 @@ import {
   updateTicketLabels,
   updateTicketPriority,
   updateTicketStatus,
+  updateTicketTeam,
   updateTicketTitle,
   updateTicketWatching,
   uploadTicketAttachment,
@@ -129,6 +130,15 @@ export async function handleRemoteTicketApiRoute(
     const body = await readBody<unknown>(event)
     const priorityId = isRecord(body) && typeof body.priorityId === 'string' ? body.priorityId : ''
     const ticket = await updateTicketPriority(ticketKey, priorityId)
+    return Response.json(ticket, { headers: API_HEADERS })
+  }
+
+  if (segments.length === 3 && segments[2] === 'team' && method === 'PUT') {
+    const body = await readBody<unknown>(event)
+    const teamId = isRecord(body) && typeof body.teamId === 'string' && body.teamId.trim()
+      ? body.teamId.trim()
+      : null
+    const ticket = await updateTicketTeam(ticketKey, teamId)
     return Response.json(ticket, { headers: API_HEADERS })
   }
 
