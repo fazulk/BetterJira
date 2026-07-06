@@ -1,9 +1,17 @@
-<script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
-import { useAssistantChat } from '@/composables/useAssistantChat'
+<script lang="ts">
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { createAssistantChatState, useAssistantChat } from '@/composables/useAssistantChat'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 import { getAssistantProviderLabel } from '~/shared/assistant'
 
+// Module scope (runs once, not per instance) so the conversation, draft, and any
+// in-flight stream survive leaving this view. The CLI providers hold no session
+// between turns, so this transcript is the whole chat session.
+const homeChatState = createAssistantChatState()
+const draft = ref('')
+</script>
+
+<script setup lang="ts">
 // This landing page intentionally has no ticket context: it's the workspace-level
 // "Ask Claude/Codex" entry reached from the BetterJira home button.
 const noTicketKey = ref<string | null>(null)
@@ -17,9 +25,9 @@ const {
   errorText,
   send,
   stop,
-} = useAssistantChat({ ticketKey: noTicketKey, ticketSummary: noTicketSummary })
+  reset,
+} = useAssistantChat({ ticketKey: noTicketKey, ticketSummary: noTicketSummary, state: homeChatState })
 
-const draft = ref('')
 const scrollRef = ref<HTMLElement | null>(null)
 
 const providerLabel = computed(() => getAssistantProviderLabel(settings.value.provider))
@@ -36,6 +44,12 @@ async function scrollToBottom(): Promise<void> {
 
 watch(() => messages.value.map(message => message.content).join('|'), scrollToBottom)
 watch(statusText, scrollToBottom)
+onMounted(scrollToBottom)
+
+function startNewChat(): void {
+  reset()
+  draft.value = ''
+}
 
 async function submit(): Promise<void> {
   const text = draft.value
@@ -56,6 +70,17 @@ function handleKeydown(event: KeyboardEvent): void {
 
 <template>
   <div class="relative flex h-full min-h-0 flex-col">
+    <div v-if="hasConversation" class="flex shrink-0 justify-end px-4 pt-3">
+      <button
+        type="button"
+        class="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-[12px] text-slate-300 transition hover:bg-white/[0.08]"
+        @click="startNewChat"
+      >
+        <Icon name="lucide:plus" class="h-3.5 w-3.5" aria-hidden="true" />
+        New chat
+      </button>
+    </div>
+
     <!-- Transcript (after the first message) -->
     <div v-if="hasConversation" ref="scrollRef" class="min-h-0 flex-1 overflow-y-auto">
       <div class="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">

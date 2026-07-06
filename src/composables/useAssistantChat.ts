@@ -10,28 +10,51 @@ export interface AssistantTranscriptMessage extends AssistantChatMessage {
   pending?: boolean
 }
 
+export interface AssistantChatState {
+  messages: Ref<AssistantTranscriptMessage[]>
+  isStreaming: Ref<boolean>
+  statusText: Ref<string>
+  errorText: Ref<string>
+  nextId: number
+  abortController: AbortController | null
+}
+
+/**
+ * Creates the reactive state backing an assistant chat. Create it at module
+ * scope and pass it to `useAssistantChat` to keep a transcript (and any
+ * in-flight stream) alive across component mounts.
+ */
+export function createAssistantChatState(): AssistantChatState {
+  return {
+    messages: ref<AssistantTranscriptMessage[]>([]),
+    isStreaming: ref(false),
+    statusText: ref(''),
+    errorText: ref(''),
+    nextId: 0,
+    abortController: null,
+  }
+}
+
 interface UseAssistantChatOptions {
   ticketKey: Ref<string | null | undefined>
   ticketSummary: Ref<string | null | undefined>
   /** Called after a response is fully and successfully received (not on stop/error). */
   onComplete?: () => void
+  /** External state so the transcript can outlive the component. Defaults to per-instance state. */
+  state?: AssistantChatState
 }
 
 export function useAssistantChat(options: UseAssistantChatOptions) {
   const { settings } = useAssistantSettings()
 
-  const messages = ref<AssistantTranscriptMessage[]>([])
-  const isStreaming = ref(false)
-  const statusText = ref('')
-  const errorText = ref('')
-  let nextId = 0
-  let abortController: AbortController | null = null
+  const state = options.state ?? createAssistantChatState()
+  const { messages, isStreaming, statusText, errorText } = state
 
   const canSend = computed(() => !isStreaming.value)
 
   function reset(): void {
-    abortController?.abort()
-    abortController = null
+    state.abortController?.abort()
+    state.abortController = null
     messages.value = []
     isStreaming.value = false
     statusText.value = ''
@@ -39,8 +62,8 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
   }
 
   function stop(): void {
-    abortController?.abort()
-    abortController = null
+    state.abortController?.abort()
+    state.abortController = null
     isStreaming.value = false
     statusText.value = ''
     const last = messages.value[messages.value.length - 1]
@@ -61,8 +84,8 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
     errorText.value = ''
     statusText.value = ''
 
-    messages.value.push({ id: nextId++, role: 'user', content: trimmed })
-    const assistantMessage: AssistantTranscriptMessage = { id: nextId++, role: 'assistant', content: '', pending: true }
+    messages.value.push({ id: state.nextId++, role: 'user', content: trimmed })
+    const assistantMessage: AssistantTranscriptMessage = { id: state.nextId++, role: 'assistant', content: '', pending: true }
     messages.value.push(assistantMessage)
 
     const requestMessages: AssistantChatMessage[] = messages.value
@@ -70,7 +93,8 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
       .map(message => ({ role: message.role, content: message.content }))
 
     isStreaming.value = true
-    abortController = new AbortController()
+    const abortController = new AbortController()
+    state.abortController = abortController
     let succeeded = false
 
     try {
@@ -112,7 +136,9 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
       }
       isStreaming.value = false
       statusText.value = ''
-      abortController = null
+      if (state.abortController === abortController) {
+        state.abortController = null
+      }
       if (succeeded && !errorText.value) {
         options.onComplete?.()
       }
