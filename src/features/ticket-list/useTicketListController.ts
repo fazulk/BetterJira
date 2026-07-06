@@ -217,7 +217,6 @@ export function useTicketListController() {
   const displayOptionsOpen = ref(false)
   const groupOrderingOpen = ref(false)
   const listGrouping = ref<IssueGroupingFieldId>('none')
-  const listSubGrouping = ref<IssueGroupingFieldId>('none')
   const listOrdering = ref<IssueOrderingFieldId>('manual')
   const projectGrouping = ref<ProjectGroupingFieldId>('none')
   const projectOrdering = ref<ProjectOrderingFieldId>('manual')
@@ -241,7 +240,6 @@ export function useTicketListController() {
       showTriageIssuesRange.value = value ? 'all' : 'hidden'
     },
   })
-  const showEmptyGroups = ref(false)
   const collapsedIssueSectionIds = ref<string[]>([])
   const collapsedProjectSectionIds = ref<string[]>([])
   const visibleIssueRowFields = ref<IssueRowFieldId[]>([
@@ -310,14 +308,12 @@ export function useTicketListController() {
   function captureDisplay(): CustomViewDisplay {
     return {
       grouping: listGrouping.value,
-      subGrouping: listSubGrouping.value,
       ordering: listOrdering.value,
       groupingDirection: listGroupingDirection.value,
       orderingDirection: listOrderingDirection.value,
       completedRange: completedRange.value,
       showSubIssuesRange: showSubIssuesRange.value,
       showTriageIssuesRange: showTriageIssuesRange.value,
-      showEmptyGroups: showEmptyGroups.value,
       issueGroupOrders: copyIssueGroupConfigMap(issueGroupOrders.value),
       hiddenIssueGroupIds: copyIssueGroupConfigMap(hiddenIssueGroupIds.value),
       collapsedIssueSectionIds: [...collapsedIssueSectionIds.value],
@@ -333,14 +329,12 @@ export function useTicketListController() {
   }
   function applyDisplay(display: CustomViewDisplay): void {
     listGrouping.value = normalizeIssueGroupingFieldId(display.grouping)
-    listSubGrouping.value = normalizeIssueGroupingFieldId(display.subGrouping)
     listOrdering.value = normalizeIssueOrderingFieldId(display.ordering)
     listGroupingDirection.value = normalizeDirection(display.groupingDirection)
     listOrderingDirection.value = normalizeDirection(display.orderingDirection)
     completedRange.value = normalizeIssueVisibilityRange(display.completedRange)
     showSubIssuesRange.value = normalizeIssueVisibilityRange(display.showSubIssuesRange)
     showTriageIssuesRange.value = normalizeIssueVisibilityRange(display.showTriageIssuesRange)
-    showEmptyGroups.value = display.showEmptyGroups
     issueGroupOrders.value = normalizeIssueGroupConfigMap(display.issueGroupOrders)
     hiddenIssueGroupIds.value = normalizeIssueGroupConfigMap(display.hiddenIssueGroupIds)
     collapsedIssueSectionIds.value = [...display.collapsedIssueSectionIds]
@@ -366,10 +360,6 @@ export function useTicketListController() {
     }
     if (viewId === 'my-created') {
       return [createViewFilterClause('reporter', 'current-user', 'Current user')]
-    }
-    const [scope] = viewId.split(':')
-    if (scope !== 'team') {
-      return []
     }
     return []
   }
@@ -605,13 +595,12 @@ export function useTicketListController() {
     () => activeBaseViewId.value === 'projects' || currentTeamSection.value === 'projects',
   )
   const isInitiativeDisplayView = computed(() => currentView.value === 'initiatives')
-  const isSavedViewDisplayView = computed(() => isViewsDirectory.value)
   const isTeamSettingsView = computed(() => currentTeamSection.value === 'settings')
   const isIssueDisplayView = computed(
     () =>
       !isProjectDisplayView.value
       && !isInitiativeDisplayView.value
-      && !isSavedViewDisplayView.value
+      && !isViewsDirectory.value
       && !isTeamSettingsView.value,
   )
   const currentTeamTickets = computed(() => {
@@ -921,7 +910,6 @@ export function useTicketListController() {
   watch(
     [
       listGrouping,
-      listSubGrouping,
       listOrdering,
       projectGrouping,
       projectOrdering,
@@ -933,7 +921,6 @@ export function useTicketListController() {
       completedRange,
       showSubIssuesRange,
       showTriageIssuesRange,
-      showEmptyGroups,
       collapsedIssueSectionIds,
       collapsedProjectSectionIds,
       visibleIssueRowFields,
@@ -2875,12 +2862,6 @@ export function useTicketListController() {
     setActiveCustomViewFilters([...currentViewFilters.value, nextFilter])
   }
   function removeFilterClause(filterId: string) {
-    if (viewEditorDraft.value && currentView.value === viewEditorDraft.value.id) {
-      setActiveCustomViewFilters(
-        currentViewFilters.value.filter(filter => filter.id !== filterId),
-      )
-      return
-    }
     setActiveCustomViewFilters(currentViewFilters.value.filter(filter => filter.id !== filterId))
   }
   function removeActiveFilterChip(chip: ActiveFilterChip): void {
@@ -3092,11 +3073,9 @@ export function useTicketListController() {
   function resetIssueDisplayOptions() {
     const defaults = getDefaultDisplayForView(currentView.value)
     listGrouping.value = normalizeIssueGroupingFieldId(defaults.grouping)
-    listSubGrouping.value = normalizeIssueGroupingFieldId(defaults.subGrouping)
     listOrdering.value = normalizeIssueOrderingFieldId(defaults.ordering)
     listGroupingDirection.value = defaults.groupingDirection
     listOrderingDirection.value = defaults.orderingDirection
-    showEmptyGroups.value = defaults.showEmptyGroups
     issueGroupOrders.value = copyIssueGroupConfigMap(defaults.issueGroupOrders)
     hiddenIssueGroupIds.value = copyIssueGroupConfigMap(defaults.hiddenIssueGroupIds)
     collapsedIssueSectionIds.value = [...defaults.collapsedIssueSectionIds]
@@ -3978,7 +3957,6 @@ export function useTicketListController() {
     displayOptionsOpen,
     groupOrderingOpen,
     listGrouping,
-    listSubGrouping,
     listOrdering,
     projectGrouping,
     projectOrdering,
@@ -3987,7 +3965,6 @@ export function useTicketListController() {
     completedRange,
     showSubIssues,
     showBacklogIssues,
-    showEmptyGroups,
     visibleIssueRowFields,
     visibleProjectRowFields,
     visibleInitiativeRowFields,
@@ -4041,7 +4018,6 @@ export function useTicketListController() {
     isViewsDirectory,
     isProjectDisplayView,
     isInitiativeDisplayView,
-    isSavedViewDisplayView,
     isTeamSettingsView,
     isIssueDisplayView,
     viewTitle,

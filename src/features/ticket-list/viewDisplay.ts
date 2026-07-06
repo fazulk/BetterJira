@@ -18,14 +18,12 @@ import type { CustomViewDisplay } from '~/shared/settings'
 export function getDefaultViewDisplay(): CustomViewDisplay {
   return {
     grouping: 'none',
-    subGrouping: 'none',
     ordering: 'manual',
     groupingDirection: 'asc',
     orderingDirection: 'asc',
     completedRange: 'hidden',
     showSubIssuesRange: 'hidden',
     showTriageIssuesRange: 'hidden',
-    showEmptyGroups: false,
     issueGroupOrders: {},
     hiddenIssueGroupIds: {},
     collapsedIssueSectionIds: [],
@@ -46,14 +44,6 @@ export function getDefaultViewDisplay(): CustomViewDisplay {
     collapsedProjectSectionIds: [],
     visibleInitiativeRowFields: ['health', 'lead', 'projects', 'issues', 'updated'],
     visibleSavedViewRowFields: ['owner'],
-  }
-}
-
-export function getLegacyImplicitViewDisplay(): CustomViewDisplay {
-  return {
-    ...getDefaultViewDisplay(),
-    ordering: 'status',
-    completedRange: 'hidden',
   }
 }
 
@@ -363,14 +353,12 @@ export function issueGroupConfigMapsMatch(
 export function viewDisplayMatches(left: CustomViewDisplay, right: CustomViewDisplay): boolean {
   return (
     left.grouping === right.grouping
-    && left.subGrouping === right.subGrouping
     && left.ordering === right.ordering
     && left.groupingDirection === right.groupingDirection
     && left.orderingDirection === right.orderingDirection
     && left.completedRange === right.completedRange
     && left.showSubIssuesRange === right.showSubIssuesRange
     && left.showTriageIssuesRange === right.showTriageIssuesRange
-    && left.showEmptyGroups === right.showEmptyGroups
     && issueGroupConfigMapsMatch(
       normalizeIssueGroupConfigMap(left.issueGroupOrders),
       normalizeIssueGroupConfigMap(right.issueGroupOrders),
@@ -396,14 +384,12 @@ export function copyViewDisplay(display: CustomViewDisplay): CustomViewDisplay {
 
   return {
     grouping: display.grouping ?? defaults.grouping,
-    subGrouping: display.subGrouping ?? defaults.subGrouping,
     ordering: display.ordering ?? defaults.ordering,
     groupingDirection: display.groupingDirection ?? defaults.groupingDirection,
     orderingDirection: display.orderingDirection ?? defaults.orderingDirection,
     completedRange: display.completedRange ?? defaults.completedRange,
     showSubIssuesRange: display.showSubIssuesRange ?? defaults.showSubIssuesRange,
     showTriageIssuesRange: display.showTriageIssuesRange ?? defaults.showTriageIssuesRange,
-    showEmptyGroups: display.showEmptyGroups ?? defaults.showEmptyGroups,
     issueGroupOrders: copyIssueGroupConfigMap(
       display.issueGroupOrders ?? defaults.issueGroupOrders,
     ),

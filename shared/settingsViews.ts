@@ -79,14 +79,12 @@ export function normalizeFavoriteViews(value: unknown): FavoriteView[] {
 function getDefaultCustomViewDisplay(): CustomViewDisplay {
   return {
     grouping: 'none',
-    subGrouping: 'none',
     ordering: 'manual',
     groupingDirection: 'asc',
     orderingDirection: 'asc',
     completedRange: 'hidden',
     showSubIssuesRange: 'hidden',
     showTriageIssuesRange: 'hidden',
-    showEmptyGroups: false,
     issueGroupOrders: {},
     hiddenIssueGroupIds: {},
     collapsedIssueSectionIds: [],
@@ -135,7 +133,6 @@ function normalizeCustomViewDisplay(value: unknown): CustomViewDisplay {
 
   return {
     grouping: typeof recordValue.grouping === 'string' && recordValue.grouping.trim() ? recordValue.grouping.trim() : defaults.grouping,
-    subGrouping: typeof recordValue.subGrouping === 'string' && recordValue.subGrouping.trim() ? recordValue.subGrouping.trim() : defaults.subGrouping,
     ordering: typeof recordValue.ordering === 'string' && recordValue.ordering.trim() ? recordValue.ordering.trim() : defaults.ordering,
     groupingDirection: normalizeDirectionValue(recordValue.groupingDirection),
     orderingDirection: normalizeDirectionValue(recordValue.orderingDirection),
@@ -146,7 +143,6 @@ function normalizeCustomViewDisplay(value: unknown): CustomViewDisplay {
       defaults.showSubIssuesRange,
     ),
     showTriageIssuesRange: typeof recordValue.showTriageIssuesRange === 'string' && recordValue.showTriageIssuesRange.trim() ? recordValue.showTriageIssuesRange.trim() : defaults.showTriageIssuesRange,
-    showEmptyGroups: normalizeBoolean(recordValue.showEmptyGroups, defaults.showEmptyGroups),
     issueGroupOrders: normalizeStringListRecord(recordValue.issueGroupOrders),
     hiddenIssueGroupIds: normalizeStringListRecord(recordValue.hiddenIssueGroupIds),
     collapsedIssueSectionIds: normalizeStringList(recordValue.collapsedIssueSectionIds),

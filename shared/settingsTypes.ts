@@ -72,14 +72,12 @@ export interface CustomViewFilter {
 
 export interface CustomViewDisplay {
   grouping: string
-  subGrouping: string
   ordering: string
   groupingDirection: 'asc' | 'desc'
   orderingDirection: 'asc' | 'desc'
   completedRange: string
   showSubIssuesRange: string
   showTriageIssuesRange: string
-  showEmptyGroups: boolean
   issueGroupOrders: Record<string, string[]>
   hiddenIssueGroupIds: Record<string, string[]>
   collapsedIssueSectionIds: string[]

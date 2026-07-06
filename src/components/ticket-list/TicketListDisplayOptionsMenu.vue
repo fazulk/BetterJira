@@ -10,12 +10,10 @@ const {
   openGroupOrdering,
   listGrouping,
   issueGroupingOptions,
-  listSubGrouping,
   listOrderingDirection,
   toggleOrderingDirection,
   listOrdering,
   issueOrderingOptions,
-  showEmptyGroups,
   issueRowFieldOptions,
   isIssueRowFieldVisible,
   visibleIssueRowFields,
@@ -36,7 +34,7 @@ const {
   initiativeRowFieldOptions,
   isInitiativeRowFieldVisible,
   toggleInitiativeRowField,
-  isSavedViewDisplayView,
+  isViewsDirectory,
   visibleSavedViewRowFields,
   savedViewRowFieldOptions,
   isSavedViewRowFieldVisible,
@@ -106,21 +104,6 @@ const {
         </label>
 
         <label
-          class="grid grid-cols-[7.5rem_minmax(0,1fr)] items-center gap-3 rounded-md px-2 py-1.5 hover:bg-white/[0.025]"
-        >
-          <span class="text-[12px] text-[#8f9198]">Sub-grouping</span>
-          <select
-            v-model="listSubGrouping"
-            name="issue-sub-grouping"
-            class="w-full rounded-md border border-white/[0.08] bg-white/[0.045] px-2 py-1.5 text-[12px] text-[#d7d8dc] outline-none focus:border-white/[0.16]"
-          >
-            <option v-for="option in issueGroupingOptions" :key="option.id" :value="option.id">
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
-
-        <label
           class="grid grid-cols-[7.5rem_1.75rem_minmax(0,1fr)] items-center gap-2 rounded-md px-2 py-1.5 hover:bg-white/[0.025]"
         >
           <span class="text-[12px] text-[#8f9198]">Ordering</span>
@@ -170,28 +153,6 @@ const {
       <p class="mb-2 text-[12px] font-medium text-[#d7d8dc]">
         List options
       </p>
-      <button
-        type="button"
-        class="mb-3 flex w-full items-center justify-between gap-4 rounded-md px-0 py-1 text-left transition"
-        role="switch"
-        :aria-checked="showEmptyGroups"
-        @click="showEmptyGroups = !showEmptyGroups"
-      >
-        <span class="text-[12px] text-[#8f9198]">Show empty groups</span>
-        <span
-          class="flex h-4 w-7 items-center rounded-full border p-0.5 transition"
-          :class="
-            showEmptyGroups
-              ? 'border-white/[0.14] bg-white/[0.08]'
-              : 'border-white/[0.08] bg-white/[0.03]'
-          "
-        >
-          <span
-            class="h-2.5 w-2.5 rounded-full bg-[#f0f1f4] transition"
-            :class="showEmptyGroups ? 'translate-x-3' : 'translate-x-0'"
-          />
-        </span>
-      </button>
       <div class="mb-2 flex items-center justify-between gap-3">
         <span class="text-[12px] text-[#8f9198]">Display properties</span>
       </div>
@@ -342,7 +303,7 @@ const {
     </div>
 
     <div
-      v-else-if="!groupOrderingOpen && isSavedViewDisplayView"
+      v-else-if="!groupOrderingOpen && isViewsDirectory"
       class="border-t border-white/[0.06] p-3"
     >
       <div class="mb-2 flex items-center justify-between gap-3">

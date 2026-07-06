@@ -14,6 +14,7 @@ export function normalizeFilterFieldId(value: string): FilterFieldId | null {
     case 'updatedDate':
     case 'completedDate':
     case 'project':
+    case 'team':
     case 'projectStatus':
     case 'projectPriority':
     case 'projectLead':
