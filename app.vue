@@ -3,6 +3,8 @@ import type { JiraTicket } from '@/types/jira'
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { refreshCache } from '@/api/jira'
+import AskAssistantPanel from '@/components/AskAssistantPanel.vue'
+import { useAssistantPanel } from '@/composables/useAssistantPanel'
 import { useAvailableSpaces } from '@/composables/useAvailableSpaces'
 import {
   applyTicketsPayloadToQueryCache,
@@ -15,6 +17,7 @@ import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
 const FOCUS_REFRESH_DEBOUNCE_MS = 3_000
 
 const queryClient = useQueryClient()
+const assistantPanel = useAssistantPanel()
 const { enabledSpaces, hasJiraCredentialsConfigured, isLoading } = useSpaceSettings()
 const { ensureAvailableSpacesLoaded } = useAvailableSpaces(hasJiraCredentialsConfigured)
 const enabledSpaceKeys = computed(() => [...enabledSpaces.value.map(space => space.key)].sort())
@@ -106,6 +109,7 @@ onUnmounted(() => {
 
 <template>
   <NuxtPage />
+  <AskAssistantPanel v-if="assistantPanel.isOpen.value" />
   <JiraSetupModal :open="showJiraSetupModal" />
   <LabelColorMenu />
   <AppToastContainer />

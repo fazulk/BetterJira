@@ -1,31 +1,31 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAssistantChat } from '@/composables/useAssistantChat'
+import { useAssistantPanel } from '@/composables/useAssistantPanel'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 import { ticketQueryKey } from '@/composables/useJiraTicket'
 import { localTicketQueryKey } from '@/composables/useLocalTicket'
 import { getAssistantActionLabel, getAssistantProviderLabel } from '~/shared/assistant'
 import { isLocalTicketKey } from '~/shared/localTickets'
 
-const props = defineProps<{
-  ticketKey: string | null
-  ticketSummary: string | null
-}>()
-const emit = defineEmits<{
-  close: []
-}>()
-
 const { settings, isProviderAvailable } = useAssistantSettings()
 const queryClient = useQueryClient()
-const ticketKeyRef = computed(() => props.ticketKey)
-const ticketSummaryRef = computed(() => props.ticketSummary)
+const {
+  minimized,
+  expanded,
+  ticketKey,
+  ticketSummary,
+  chatState,
+  draft,
+  close,
+} = useAssistantPanel()
 
 // After a response fully lands, the assistant may have edited/transitioned/commented
-// on the ticket via the CLI. Resync the active ticket in the background so the detail
+// on the ticket via the CLI. Resync the pinned ticket in the background so the detail
 // view reflects those changes (stale-while-refetch keeps the current data on screen).
-function resyncCurrentTicket(): void {
-  const key = props.ticketKey
+function resyncPinnedTicket(): void {
+  const key = ticketKey.value
   if (!key) {
     return
   }
@@ -39,11 +39,9 @@ const {
   errorText,
   send,
   stop,
-} = useAssistantChat({ ticketKey: ticketKeyRef, ticketSummary: ticketSummaryRef, onComplete: resyncCurrentTicket })
+  reset,
+} = useAssistantChat({ ticketKey, ticketSummary, state: chatState, onComplete: resyncPinnedTicket })
 
-const draft = ref('')
-const expanded = ref(false)
-const minimized = ref(false)
 const scrollRef = ref<HTMLElement | null>(null)
 
 const actionLabel = computed(() => getAssistantActionLabel(settings.value.provider))
@@ -61,6 +59,12 @@ async function scrollToBottom(): Promise<void> {
 
 watch(() => messages.value.map(message => message.content).join('|'), scrollToBottom)
 watch(statusText, scrollToBottom)
+onMounted(scrollToBottom)
+
+function startNewChat(): void {
+  reset()
+  draft.value = ''
+}
 
 async function submit(): Promise<void> {
   const text = draft.value
@@ -95,6 +99,16 @@ function handleKeydown(event: KeyboardEvent): void {
       </div>
       <div class="flex shrink-0 items-center gap-0.5">
         <button
+          v-if="!minimized && hasConversation"
+          type="button"
+          class="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-200"
+          aria-label="New chat"
+          title="New chat"
+          @click="startNewChat"
+        >
+          <Icon name="lucide:plus" class="h-4 w-4" aria-hidden="true" />
+        </button>
+        <button
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-200"
           :aria-label="minimized ? 'Restore' : 'Minimize'"
@@ -115,7 +129,7 @@ function handleKeydown(event: KeyboardEvent): void {
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-200"
           aria-label="Close"
-          @click="emit('close')"
+          @click="close"
         >
           <Icon name="lucide:x" class="h-4 w-4" aria-hidden="true" />
         </button>
