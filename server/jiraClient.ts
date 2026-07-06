@@ -7,6 +7,8 @@ export interface JiraFetchOptions {
   method?: string
   params?: Record<string, string>
   body?: unknown
+  /** Jira REST base path. Defaults to the v3 platform API. */
+  basePath?: string
 }
 
 export interface CacheEntry<T> {
@@ -48,7 +50,7 @@ export function serializeJiraLogPayload(value: unknown): string | undefined {
 }
 
 export function formatJiraRequestTarget(url: URL): string {
-  return url.pathname.replace(/^\/rest\/api\/3/, '') || '/'
+  return url.pathname.replace(/^\/rest\/(?:api\/3|dev-status\/latest)/, '') || '/'
 }
 
 export function formatJiraLogLines(
@@ -82,7 +84,8 @@ export function collectJiraRequestDetails(
 
 export async function jiraFetch(path: string, options?: JiraFetchOptions): Promise<unknown> {
   const jiraConfig = getJiraConfig()
-  const url = new URL(`${jiraConfig.baseUrl}/rest/api/3${path}`)
+  const basePath = options?.basePath ?? '/rest/api/3'
+  const url = new URL(`${jiraConfig.baseUrl}${basePath}${path}`)
   if (options?.params) {
     for (const [k, v] of Object.entries(options.params)) {
       url.searchParams.set(k, v)

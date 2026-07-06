@@ -15,7 +15,7 @@ import type {
   GenerateAiDescriptionRequest,
   GenerateAiDescriptionResponse,
 } from '~/shared/ai'
-import type { TicketGithubPrLink } from '~/shared/ticketLinks'
+import type { TicketDevStatus } from '~/shared/devStatus'
 import { isLocalTicketKey } from '~/shared/localTickets'
 
 const BASE = '/api'
@@ -385,28 +385,11 @@ export async function updateTicketWatching(key: string, watching: boolean): Prom
   return res.json()
 }
 
-export async function fetchTicketGithubPrLink(key: string): Promise<TicketGithubPrLink> {
-  const res = await fetch(`${BASE}/tickets/${key}/github-pr`)
+export async function fetchTicketDevStatus(key: string): Promise<TicketDevStatus> {
+  const res = await fetch(`${BASE}/tickets/${key}/dev-status`)
   if (!res.ok) {
     const body = await res.text().catch(() => '')
-    throw new Error(`Failed to fetch GitHub PR link: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return res.json()
-}
-
-export async function updateTicketGithubPrLink(key: string, githubPrUrl: string | null): Promise<TicketGithubPrLink> {
-  const res = await fetch(`${BASE}/tickets/${key}/github-pr`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ githubPrUrl }),
-  })
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to update GitHub PR link: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
+    throw new Error(`Failed to fetch development status: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
   }
 
   return res.json()

@@ -30,7 +30,7 @@ import {
   updateTicketWatching,
   uploadTicketAttachment,
 } from './jira'
-import { getTicketGithubPrLink, updateTicketGithubPrLink } from './ticketLinks'
+import { getTicketDevStatus } from './jiraDevStatus'
 
 const MAX_IMAGE_ATTACHMENT_BYTES = 25 * 1024 * 1024
 
@@ -165,25 +165,9 @@ export async function handleRemoteTicketApiRoute(
     return Response.json(transitions, { headers: API_HEADERS })
   }
 
-  if (segments.length === 3 && segments[2] === 'github-pr' && method === 'GET') {
-    const githubPrLink = getTicketGithubPrLink(ticketKey)
-    return Response.json(githubPrLink, { headers: API_HEADERS })
-  }
-
-  if (segments.length === 3 && segments[2] === 'github-pr' && method === 'PUT') {
-    const body = await readBody<unknown>(event)
-    const githubPrUrl = isRecord(body) && 'githubPrUrl' in body
-      ? body.githubPrUrl
-      : undefined
-
-    try {
-      const githubPrLink = updateTicketGithubPrLink(ticketKey, githubPrUrl)
-      return Response.json(githubPrLink, { headers: API_HEADERS })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : 'Invalid GitHub PR URL.'
-      return badRequestResponse(message)
-    }
+  if (segments.length === 3 && segments[2] === 'dev-status' && method === 'GET') {
+    const devStatus = await getTicketDevStatus(ticketKey)
+    return Response.json(devStatus, { headers: API_HEADERS })
   }
 
   if (segments.length === 3 && segments[2] === 'status' && method === 'PUT') {

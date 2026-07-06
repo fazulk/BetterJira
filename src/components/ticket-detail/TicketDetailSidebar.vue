@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { JiraTicket } from '@/types/jira'
+import type { TicketDevStatusPullRequestStatus } from '~/shared/devStatus'
 import { computed, nextTick, ref, watch } from 'vue'
 import TicketDetailPropertiesSection from '@/components/ticket-detail/TicketDetailPropertiesSection.vue'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
+import { useTicketDevStatus } from '@/composables/useTicketDevStatus'
 import { useUpdateLocalTicketLabels } from '@/composables/useUpdateLocalTicketLabels'
 import { useUpdateTicketLabels } from '@/composables/useUpdateTicketLabels'
 import { buildJiraIssueUrl } from '@/utils/jiraIssueUrl'
@@ -28,8 +30,23 @@ const collapsedSections = ref({
   properties: false,
   labels: false,
   project: false,
+  development: false,
   jira: false,
 })
+
+const devStatusTicketKey = computed(() => (
+  !props.isLocalTicket && props.jiraDataEnabled ? props.ticket.key : null
+))
+const { data: devStatus } = useTicketDevStatus(devStatusTicketKey)
+const devStatusPullRequests = computed(() => devStatus.value?.pullRequests ?? [])
+
+const PULL_REQUEST_STATUS_CLASSES: Record<TicketDevStatusPullRequestStatus, string> = {
+  OPEN: 'border-sky-400/30 bg-sky-400/10 text-sky-300',
+  MERGED: 'border-purple-400/30 bg-purple-400/10 text-purple-300',
+  DECLINED: 'border-rose-400/30 bg-rose-400/10 text-rose-300',
+  DRAFT: 'border-white/[0.08] bg-white/[0.04] text-slate-400',
+  UNKNOWN: 'border-white/[0.08] bg-white/[0.04] text-slate-400',
+}
 
 const jiraUrl = computed(() => buildJiraIssueUrl(jiraConnection.value.baseUrl, props.ticket.key))
 const detailJiraTypeLabel = computed(() => (
@@ -382,6 +399,48 @@ defineExpose({
               <span class="block truncate text-sm font-medium">Add to project</span>
             </span>
           </button>
+        </div>
+      </section>
+
+      <section
+        v-if="devStatusPullRequests.length > 0"
+        class="rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 transition-[padding]"
+        :class="collapsedSections.development ? 'py-3' : 'py-4'"
+      >
+        <button
+          type="button"
+          class="flex w-full items-center gap-1.5 text-sm text-slate-400 transition hover:text-slate-200"
+          :class="{ 'mb-3': !collapsedSections.development }"
+          :aria-expanded="!collapsedSections.development"
+          @click="toggleSection('development')"
+        >
+          <span>Development</span>
+          <span class="text-[10px] text-slate-600 transition-transform" :class="{ '-rotate-90': collapsedSections.development }">▼</span>
+        </button>
+
+        <div v-show="!collapsedSections.development" class="space-y-2">
+          <a
+            v-for="pullRequest in devStatusPullRequests"
+            :key="pullRequest.url"
+            :href="pullRequest.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex min-w-0 items-start gap-2 rounded-md px-1 py-1.5 transition hover:bg-white/[0.04]"
+          >
+            <span class="flex h-5 w-5 shrink-0 items-center justify-center text-slate-500">
+              <Icon name="lucide:git-pull-request" class="h-4 w-4" aria-hidden="true" />
+            </span>
+            <span class="min-w-0 flex-1 space-y-1">
+              <span class="block truncate text-sm font-medium text-slate-200">{{ pullRequest.name }}</span>
+              <span v-if="pullRequest.sourceBranch" class="block truncate text-[11px] text-slate-500">{{ pullRequest.sourceBranch }}</span>
+            </span>
+            <span
+              class="mt-0.5 inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+              :class="PULL_REQUEST_STATUS_CLASSES[pullRequest.status]"
+            >
+              {{ pullRequest.status }}
+            </span>
+          </a>
         </div>
       </section>
 

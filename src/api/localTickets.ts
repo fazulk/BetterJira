@@ -1,6 +1,5 @@
 import type { JiraAdfDocument, JiraTicket } from '@/types/jira'
 import type { LocalStatusId } from '~/shared/localTickets'
-import type { TicketGithubPrLink } from '~/shared/ticketLinks'
 
 const BASE = '/api'
 
@@ -148,36 +147,6 @@ export async function updateLocalTicketLabels(key: string, labels: string[]): Pr
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     throw new Error(`Failed to update labels: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return res.json()
-}
-
-export async function fetchLocalTicketGithubPrLink(key: string): Promise<TicketGithubPrLink> {
-  const res = await fetch(`${BASE}/tickets/${encodeURIComponent(key)}/github-pr`)
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to fetch GitHub PR link: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return res.json()
-}
-
-export async function updateLocalTicketGithubPrLink(
-  key: string,
-  githubPrUrl: string | null,
-): Promise<TicketGithubPrLink> {
-  const res = await fetch(`${BASE}/tickets/${encodeURIComponent(key)}/github-pr`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ githubPrUrl }),
-  })
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to update GitHub PR link: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
   }
 
   return res.json()

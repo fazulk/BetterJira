@@ -20,7 +20,6 @@ import {
   updateLocalTicketStatus,
   updateLocalTicketTitle,
 } from './localTickets'
-import { getTicketGithubPrLink, updateTicketGithubPrLink } from './ticketLinks'
 
 export async function handleLocalTicketApiRoute(
   event: H3Event,
@@ -33,11 +32,6 @@ export async function handleLocalTicketApiRoute(
 
   if (segments.length === 2 && segments[0] === 'local' && segments[1] === 'tickets' && method === 'POST') {
     return createLocalTicketResponse(event)
-  }
-
-  const githubPrResponse = await handleLocalGithubPrRoute(event, segments, method)
-  if (githubPrResponse) {
-    return githubPrResponse
   }
 
   if (segments.length < 3 || segments[0] !== 'local' || segments[1] !== 'tickets') {
@@ -194,42 +188,4 @@ async function createLocalTicketResponse(event: H3Event): Promise<Response> {
     const message = error instanceof Error ? error.message : 'Failed to create ticket.'
     return badRequestResponse(message)
   }
-}
-
-async function handleLocalGithubPrRoute(
-  event: H3Event,
-  segments: string[],
-  method: string,
-): Promise<Response | null> {
-  if (segments.length !== 3 || segments[0] !== 'tickets' || segments[2] !== 'github-pr') {
-    return null
-  }
-
-  const ticketKey = normalizeLocalTicketKey(segments[1])
-  if (!ticketKey) {
-    return null
-  }
-
-  if (method === 'GET') {
-    const githubPrLink = getTicketGithubPrLink(ticketKey)
-    return Response.json(githubPrLink, { headers: API_HEADERS })
-  }
-
-  if (method === 'PUT') {
-    const body = await readBody<unknown>(event)
-    const githubPrUrl = isRecord(body) && 'githubPrUrl' in body
-      ? body.githubPrUrl
-      : undefined
-
-    try {
-      const githubPrLink = updateTicketGithubPrLink(ticketKey, githubPrUrl)
-      return Response.json(githubPrLink, { headers: API_HEADERS })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : 'Invalid GitHub PR URL.'
-      return badRequestResponse(message)
-    }
-  }
-
-  return null
 }
