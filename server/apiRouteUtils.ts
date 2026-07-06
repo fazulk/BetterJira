@@ -1,6 +1,7 @@
 import type { JiraAdfDocument } from '../shared/jiraAdf'
 import { AI_PROVIDERS, isAiProvider } from '../shared/ai'
 import { isJiraAdfDocument } from '../shared/jiraAdf'
+import { isRecord } from '../shared/typeGuards'
 import { generateTicketDescription } from './ai/generateDescription'
 
 export const API_HEADERS = {
@@ -15,10 +16,6 @@ const TICKET_KEY_PATTERN = /^[A-Z][A-Z0-9]+-\d+$/
 
 export function isJiraRemoteTicketKey(key: string): boolean {
   return TICKET_KEY_PATTERN.test(key) && !key.toUpperCase().startsWith('LOCAL-')
-}
-
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 export function isCreateIssueType(value: unknown): value is string {

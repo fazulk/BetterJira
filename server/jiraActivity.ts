@@ -8,7 +8,8 @@ import type {
   JiraApiIssue,
   JiraMessage,
 } from './jiraTypes'
-import { isRecord, plainTextToAdf } from '../shared/jiraAdf'
+import { plainTextToAdf } from '../shared/jiraAdf'
+import { isRecord } from '../shared/typeGuards'
 import { jiraFetch } from './jiraClient'
 import { extractDescription } from './jiraDescription'
 

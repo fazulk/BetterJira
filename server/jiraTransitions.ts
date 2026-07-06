@@ -4,7 +4,7 @@ import type {
   JiraTicket,
   JiraTransition,
 } from './jiraTypes'
-import { isRecord } from '../shared/jiraAdf'
+import { isRecord } from '../shared/typeGuards'
 import { broadcast } from './events'
 import { jiraFetch } from './jiraClient'
 import { getTicket } from './jiraIssueQueries'

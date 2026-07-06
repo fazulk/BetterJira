@@ -1,13 +1,13 @@
 import type { H3Event } from 'h3'
 import { getQuery, readBody } from 'h3'
 import { buildUpdatedSinceSearchQuery, normalizeAppSettingsUpdate } from '../shared/settings'
+import { isRecord } from '../shared/typeGuards'
 import { getAiProviderAvailability, getCliToolAvailability } from './ai/catalog'
 import {
   API_HEADERS,
   badRequestResponse,
   getStringQueryValue,
   isCreateIssueType,
-  isRecord,
   jiraContentResponse,
   parseCreateFields,
   parseRefreshUpdatedSince,

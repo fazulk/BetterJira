@@ -9,7 +9,7 @@ import type {
   JiraTeamRef,
   JiraTicket,
 } from './jiraTypes'
-import { isRecord } from '../shared/jiraAdf'
+import { isRecord } from '../shared/typeGuards'
 import { jiraFetch } from './jiraClient'
 import { extractDescription, extractDescriptionAdf } from './jiraDescription'
 

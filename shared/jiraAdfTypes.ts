@@ -1,3 +1,5 @@
+import { isRecord } from './typeGuards'
+
 export interface JiraAdfMark {
   type?: string
   attrs?: Record<string, unknown>
@@ -15,10 +17,6 @@ export interface JiraAdfDocument extends JiraAdfNode {
   type: 'doc'
   version: number
   content: JiraAdfNode[]
-}
-
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 function isJiraAdfMark(value: unknown): value is JiraAdfMark {

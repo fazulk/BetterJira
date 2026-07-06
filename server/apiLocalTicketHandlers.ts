@@ -2,11 +2,11 @@ import type { H3Event } from 'h3'
 import { readBody } from 'h3'
 import { isJiraAdfDocument } from '../shared/jiraAdf'
 import { normalizeLocalTicketKey } from '../shared/localTickets'
+import { isRecord } from '../shared/typeGuards'
 import {
   API_HEADERS,
   badRequestResponse,
   generateAiDescriptionResponse,
-  isRecord,
   notFoundResponse,
 } from './apiRouteUtils'
 import {

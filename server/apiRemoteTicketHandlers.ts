@@ -1,13 +1,13 @@
 import type { H3Event } from 'h3'
 import { readBody, readMultipartFormData } from 'h3'
 import { isJiraAdfDocument } from '../shared/jiraAdf'
+import { isRecord } from '../shared/typeGuards'
 import {
   API_HEADERS,
   badRequestResponse,
   decodePathSegment,
   generateAiDescriptionResponse,
   isJiraRemoteTicketKey,
-  isRecord,
   jiraContentResponse,
   notFoundResponse,
 } from './apiRouteUtils'

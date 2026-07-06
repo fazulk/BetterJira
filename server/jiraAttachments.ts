@@ -1,5 +1,5 @@
 import type { JiraAttachment } from './jiraTypes'
-import { isRecord } from '../shared/jiraAdf'
+import { isRecord } from '../shared/typeGuards'
 import {
   createJiraAuthenticationError,
   formatJiraLogLines,

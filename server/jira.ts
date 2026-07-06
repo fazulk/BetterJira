@@ -7,10 +7,10 @@ import type {
   JiraTicket,
 } from './jiraTypes'
 import {
-  isRecord,
 
   normalizeAdf,
 } from '../shared/jiraAdf'
+import { isRecord } from '../shared/typeGuards'
 import { broadcast } from './events'
 import {
 

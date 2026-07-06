@@ -3,7 +3,7 @@ import type {
   TicketDevStatusPullRequest,
   TicketDevStatusPullRequestStatus,
 } from '../shared/devStatus'
-import { isRecord } from '../shared/jiraAdfTypes'
+import { isRecord } from '../shared/typeGuards'
 import { jiraFetch } from './jiraClient'
 
 const DEV_STATUS_BASE_PATH = '/rest/dev-status/latest'

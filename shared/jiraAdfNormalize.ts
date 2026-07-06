@@ -1,6 +1,7 @@
 import type { JiraAdfDocument, JiraAdfMark, JiraAdfNode } from './jiraAdfTypes'
 import { plainTextToAdf } from './jiraAdfBuild'
-import { isJiraAdfDocument, isRecord } from './jiraAdfTypes'
+import { isJiraAdfDocument } from './jiraAdfTypes'
+import { isRecord } from './typeGuards'
 
 const NODE_TYPES_WITH_NORMALIZED_ATTRS = new Set([
   'paragraph',

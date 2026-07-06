@@ -5,11 +5,11 @@ import type {
   JiraCreateIssueType,
   JiraTeamRef,
 } from './jiraTypes'
-import { isRecord } from '../shared/jiraAdf'
 import {
   buildEnabledSpaceSearchQuery,
 
 } from '../shared/settings'
+import { isRecord } from '../shared/typeGuards'
 import { getJiraConfig, jiraFetch } from './jiraClient'
 import { isJiraApiProject } from './jiraIssueMapping'
 import { matchesIssueType } from './jiraIssueTypePolicy'

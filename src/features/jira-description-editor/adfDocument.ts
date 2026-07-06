@@ -1,6 +1,7 @@
 import type { JSONContent } from '@tiptap/core'
 import type { JiraAdfDocument, JiraAdfMark, JiraAdfNode } from '@/types/jira'
-import { isJiraAdfNode, isRecord, isSupportedEditorAdfNodeShallow, normalizeAdf } from '~/shared/jiraAdf'
+import { isJiraAdfNode, isSupportedEditorAdfNodeShallow, normalizeAdf } from '~/shared/jiraAdf'
+import { isRecord } from '~/shared/typeGuards'
 
 const UNSUPPORTED_INLINE_NODE_TYPE = 'jiraUnsupportedInline'
 const UNSUPPORTED_BLOCK_NODE_TYPE = 'jiraUnsupportedBlock'

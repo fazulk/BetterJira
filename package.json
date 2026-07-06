@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "nuxt dev",
     "lint": "eslint .",
+    "typecheck": "vue-tsc -p .nuxt/tsconfig.app.json --noEmit && tsc -p .nuxt/tsconfig.server.json --noEmit && tsc -p .nuxt/tsconfig.shared.json --noEmit",
     "build": "nuxt build",
     "build:desktop": "bun run build && bun run app:build:main",
     "app:icon": "node electron/resources/generate-icon.mjs",
@@ -56,6 +57,7 @@
     "eslint": "^10.5.0",
     "tailwindcss": "^4.1.0",
     "tsdown": "^0.21.9",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vue-tsc": "^3.3.6"
   }
 }

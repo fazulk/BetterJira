@@ -7,10 +7,10 @@ import type {
 } from './jiraTypes'
 import {
   isJiraAdfDocument,
-  isRecord,
   normalizeAdf,
   plainTextToAdf,
 } from '../shared/jiraAdf'
+import { isRecord } from '../shared/typeGuards'
 import { broadcast } from './events'
 import { getJiraConfig, jiraFetch } from './jiraClient'
 import { resolveTeamFieldId } from './jiraIssueMapping'

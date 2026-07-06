@@ -1,6 +1,6 @@
 import type { Editor, JSONContent } from '@tiptap/core'
 import type { JiraAttachment } from '@/types/jira'
-import { isRecord } from '~/shared/jiraAdf'
+import { isRecord } from '~/shared/typeGuards'
 import { attachmentContentUrl } from './mediaExtensions'
 
 interface PastedImageUploadOptions {

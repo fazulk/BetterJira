@@ -1,6 +1,6 @@
 import type { JiraTicket, RefreshTicketsResult } from './jiraTypes'
-import { isRecord } from '../shared/jiraAdf'
 import { buildUpdatedSinceSearchQuery } from '../shared/settings'
+import { isRecord } from '../shared/typeGuards'
 import { broadcast } from './events'
 import { jiraFetch } from './jiraClient'
 import { isJiraApiIssue, mapIssue, resolveSprintFieldId, resolveTeamFieldId } from './jiraIssueMapping'

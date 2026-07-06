@@ -2,11 +2,11 @@ import type { JiraAdfDocument } from '../shared/jiraAdf'
 import {
   adfToPlainText,
   isJiraAdfDocument,
-  isRecord,
 
   normalizeAdf,
   parseStringifiedAdf,
 } from '../shared/jiraAdf'
+import { isRecord } from '../shared/typeGuards'
 
 export function extractDescription(desc: unknown, descriptionAdf?: JiraAdfDocument): string {
   if (descriptionAdf) {
