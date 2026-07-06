@@ -29,6 +29,20 @@ const {
 } = useAssistantChat({ ticketKey: noTicketKey, ticketSummary: noTicketSummary, state: homeChatState })
 
 const scrollRef = ref<HTMLElement | null>(null)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
+
+// Auto-grow the composer with its content (capped by the max-h class on the textarea).
+async function resizeTextarea(): Promise<void> {
+  await nextTick()
+  const element = textareaRef.value
+  if (element) {
+    element.style.height = 'auto'
+    element.style.height = `${element.scrollHeight}px`
+  }
+}
+
+watch(draft, resizeTextarea)
+onMounted(resizeTextarea)
 
 const providerLabel = computed(() => getAssistantProviderLabel(settings.value.provider))
 const providerAvailable = computed(() => isProviderAvailable(settings.value.provider))
@@ -123,6 +137,7 @@ function handleKeydown(event: KeyboardEvent): void {
 
         <div class="flex items-end gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3 focus-within:border-white/[0.16]">
           <textarea
+            ref="textareaRef"
             v-model="draft"
             rows="1"
             :placeholder="`Ask ${providerLabel}…`"
