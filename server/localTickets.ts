@@ -12,6 +12,7 @@ import {
 
   storedLocalToJiraShape,
 } from '../shared/localTickets'
+import { isRecord } from '../shared/typeGuards'
 import { getAppDataDir } from './runtimePaths'
 
 const localTicketsFilePath = resolve(getAppDataDir(), 'local-tickets.json')
@@ -25,9 +26,9 @@ function defaultFileState(): LocalTicketsFile {
 }
 
 function normalizeStoredTicket(value: unknown): StoredLocalTicket | null {
-  if (typeof value !== 'object' || value === null)
+  if (!isRecord(value))
     return null
-  const record = value as Record<string, unknown>
+  const record = value
   const numericId = typeof record.numericId === 'number' && Number.isInteger(record.numericId) && record.numericId > 0
     ? record.numericId
     : null
@@ -73,11 +74,11 @@ function readFileState(): LocalTicketsFile {
   try {
     const raw = readFileSync(localTicketsFilePath, 'utf8')
     const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null) {
+    if (!isRecord(parsed)) {
       return defaultFileState()
     }
 
-    const record = parsed as Record<string, unknown>
+    const record = parsed
     const nextId = typeof record.nextId === 'number' && Number.isInteger(record.nextId) && record.nextId >= 1
       ? record.nextId
       : 1

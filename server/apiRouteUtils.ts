@@ -57,13 +57,13 @@ export function parseCreateFields(value: unknown): Record<string, string | strin
   return fields
 }
 
-export function getStringQueryValue(value: string | string[] | undefined): string | undefined {
+export function getStringQueryValue(value: unknown): string | undefined {
   if (typeof value === 'string') {
     return value
   }
 
   if (Array.isArray(value)) {
-    return value.find(entry => entry.length > 0)
+    return value.find((entry): entry is string => typeof entry === 'string' && entry.length > 0)
   }
 
   return undefined

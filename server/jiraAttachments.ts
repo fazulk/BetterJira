@@ -73,7 +73,7 @@ export async function uploadTicketAttachment(
   const requestTarget = formatJiraRequestTarget(url)
   const startedAt = Date.now()
   const formData = new FormData()
-  formData.append('file', new Blob([file.data], { type: file.mimeType }), file.filename)
+  formData.append('file', new Blob([new Uint8Array(file.data)], { type: file.mimeType }), file.filename)
 
   console.warn(formatJiraLogLines('->', 'POST', requestTarget, [`file: ${file.filename}`]))
 

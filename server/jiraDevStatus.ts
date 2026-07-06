@@ -8,7 +8,11 @@ import { jiraFetch } from './jiraClient'
 
 const DEV_STATUS_BASE_PATH = '/rest/dev-status/latest'
 
-const PULL_REQUEST_STATUSES: TicketDevStatusPullRequestStatus[] = ['OPEN', 'MERGED', 'DECLINED', 'DRAFT']
+const PULL_REQUEST_STATUSES: ReadonlySet<string> = new Set<TicketDevStatusPullRequestStatus>(['OPEN', 'MERGED', 'DECLINED', 'DRAFT'])
+
+function isPullRequestStatus(value: string): value is TicketDevStatusPullRequestStatus {
+  return PULL_REQUEST_STATUSES.has(value)
+}
 
 async function getIssueId(ticketKey: string): Promise<string> {
   const issue = await jiraFetch(`/issue/${ticketKey}`, {
@@ -42,8 +46,8 @@ function extractPullRequestInstanceTypes(summary: unknown): string[] {
 }
 
 function parsePullRequestStatus(value: unknown): TicketDevStatusPullRequestStatus {
-  return typeof value === 'string' && PULL_REQUEST_STATUSES.includes(value as TicketDevStatusPullRequestStatus)
-    ? value as TicketDevStatusPullRequestStatus
+  return typeof value === 'string' && isPullRequestStatus(value)
+    ? value
     : 'UNKNOWN'
 }
 

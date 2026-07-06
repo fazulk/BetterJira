@@ -61,7 +61,8 @@ export async function handleRemoteTicketApiRoute(
   }
 
   if (segments.length === 5 && segments[2] === 'attachments' && segments[4] === 'content' && method === 'GET') {
-    const filename = decodePathSegment(segments[3])
+    const rawFilename = segments[3]
+    const filename = rawFilename ? decodePathSegment(rawFilename) : null
     if (!filename) {
       return badRequestResponse('Attachment filename is invalid.')
     }
