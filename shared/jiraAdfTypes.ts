@@ -46,5 +46,7 @@ export function isJiraAdfNode(value: unknown): value is JiraAdfNode {
 }
 
 export function isJiraAdfDocument(value: unknown): value is JiraAdfDocument {
+  if (!isRecord(value))
+    return false
   return isJiraAdfNode(value) && value.type === 'doc' && typeof value.version === 'number' && Array.isArray(value.content)
 }

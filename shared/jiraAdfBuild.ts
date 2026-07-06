@@ -90,7 +90,8 @@ function buildHeading(text: string, level: number): JiraAdfNode {
 
 function parseBulletText(line: string): string | null {
   const trimmedStart = line.trimStart()
-  if (!trimmedStart || !'-*•'.includes(trimmedStart[0]))
+  const firstChar = trimmedStart[0]
+  if (firstChar === undefined || !'-*•'.includes(firstChar))
     return null
 
   const text = trimmedStart.slice(1)
@@ -104,13 +105,16 @@ function parseOrderedText(line: string): { start: number, text: string } | null 
   if (!markerMatch)
     return null
 
-  const text = markerMatch[2]
+  const [, startDigits, text] = markerMatch
+  if (startDigits === undefined || text === undefined)
+    return null
+
   const trimmedText = text.trimStart()
   if (trimmedText.length === text.length)
     return null
 
   return {
-    start: Number.parseInt(markerMatch[1], 10),
+    start: Number.parseInt(startDigits, 10),
     text: trimmedText,
   }
 }
@@ -125,6 +129,8 @@ export function plainTextToAdf(text: string): JiraAdfDocument | null {
 
   for (let index = 0; index < lines.length;) {
     const line = lines[index]
+    if (line === undefined)
+      break
     const trimmedLine = line.trim()
     const headingLevel = trimmedLine.startsWith('### ')
       ? 3
@@ -154,7 +160,10 @@ export function plainTextToAdf(text: string): JiraAdfDocument | null {
     if (bulletText !== null) {
       const items: JiraAdfNode[] = []
       while (index < lines.length) {
-        const currentText = parseBulletText(lines[index])
+        const currentLine = lines[index]
+        if (currentLine === undefined)
+          break
+        const currentText = parseBulletText(currentLine)
         if (currentText === null)
           break
         items.push(buildListItem(currentText))
@@ -174,7 +183,10 @@ export function plainTextToAdf(text: string): JiraAdfDocument | null {
       const items: JiraAdfNode[] = []
 
       while (index < lines.length) {
-        const currentMatch = parseOrderedText(lines[index])
+        const currentLine = lines[index]
+        if (currentLine === undefined)
+          break
+        const currentMatch = parseOrderedText(currentLine)
         if (!currentMatch)
           break
         items.push(buildListItem(currentMatch.text))
