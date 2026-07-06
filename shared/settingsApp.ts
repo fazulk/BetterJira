@@ -36,14 +36,14 @@ import {
   normalizeSpacesFromRecord,
   reconcileSpaceSettings,
 } from './settingsSpaces'
+import { isRecord } from './typeGuards'
 
 function getRecordValue(value: unknown): Record<string, unknown> {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return {}
   }
 
-  const recordValue: Record<string, unknown> = value
-  return recordValue
+  return value
 }
 
 function normalizeStatusPreferences(value: unknown): AppSettings['statusPreferences'] {
@@ -77,11 +77,11 @@ export function getDefaultAppSettings(): AppSettings {
 }
 
 export function normalizeAppSettings(value: unknown): AppSettings {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return getDefaultAppSettings()
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
 
   return reconcileAppSettings({
     spaces: normalizeSpacesFromRecord(recordValue),
@@ -97,11 +97,11 @@ export function normalizeAppSettings(value: unknown): AppSettings {
 }
 
 export function normalizeAppSettingsUpdate(value: unknown): UpdateAppSettingsInput {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return {}
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const nextSettings: UpdateAppSettingsInput = {}
   const nextSpaces = normalizeSpacesFromRecord(recordValue)
 

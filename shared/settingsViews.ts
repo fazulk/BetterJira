@@ -11,16 +11,17 @@ import {
   normalizeStringList,
   normalizeStringListRecord,
 } from './settingsNormalizers'
+import { isRecord } from './typeGuards'
 
 export const DEFAULT_CUSTOM_VIEW_ICON = 'layers'
 export const DEFAULT_CUSTOM_VIEW_COLOR = '#8f9198'
 
 function normalizeFavoriteViewFilter(value: unknown): FavoriteViewFilter | null {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return null
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const id = typeof recordValue.id === 'string' ? recordValue.id.trim() : ''
   const fieldId = typeof recordValue.fieldId === 'string' ? recordValue.fieldId.trim() : ''
   const fieldLabel = typeof recordValue.fieldLabel === 'string' ? recordValue.fieldLabel.trim() : ''
@@ -48,11 +49,11 @@ export function normalizeFavoriteViews(value: unknown): FavoriteView[] {
   const favoriteViewsById = new Map<string, FavoriteView>()
 
   for (const entry of value) {
-    if (typeof entry !== 'object' || entry === null) {
+    if (!isRecord(entry)) {
       continue
     }
 
-    const recordValue: Record<string, unknown> = entry
+    const recordValue = entry
     const id = typeof recordValue.id === 'string' ? recordValue.id.trim() : ''
 
     if (!id || favoriteViewsById.has(id)) {
@@ -121,11 +122,11 @@ function normalizeIssueVisibilityRangeValue(
 function normalizeCustomViewDisplay(value: unknown): CustomViewDisplay {
   const defaults = getDefaultCustomViewDisplay()
 
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return defaults
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const visibleIssueRowFields = normalizeStringList(recordValue.visibleIssueRowFields)
   const visibleProjectRowFields = normalizeStringList(recordValue.visibleProjectRowFields)
   const collapsedProjectSectionIds = normalizeStringList(recordValue.collapsedProjectSectionIds)
@@ -184,20 +185,20 @@ function normalizeCustomViewColor(value: unknown): string {
 }
 
 export function normalizeViewOverrides(value: unknown): Record<string, ViewOverride> {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return {}
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const overrides: Record<string, ViewOverride> = {}
 
   for (const [rawViewId, entry] of Object.entries(recordValue)) {
     const viewId = rawViewId.trim()
-    if (!viewId || typeof entry !== 'object' || entry === null) {
+    if (!viewId || !isRecord(entry)) {
       continue
     }
 
-    const entryValue: Record<string, unknown> = entry
+    const entryValue = entry
     const filters = Array.isArray(entryValue.filters)
       ? entryValue.filters
           .map(normalizeCustomViewFilter)
@@ -221,11 +222,11 @@ export function normalizeCustomViews(value: unknown): CustomView[] {
   const customViewsById = new Map<string, CustomView>()
 
   for (const entry of value) {
-    if (typeof entry !== 'object' || entry === null) {
+    if (!isRecord(entry)) {
       continue
     }
 
-    const recordValue: Record<string, unknown> = entry
+    const recordValue = entry
     const id = typeof recordValue.id === 'string' ? recordValue.id.trim() : ''
     const name = typeof recordValue.name === 'string' ? recordValue.name.trim() : ''
     const contextKey = typeof recordValue.contextKey === 'string' ? recordValue.contextKey.trim() : ''

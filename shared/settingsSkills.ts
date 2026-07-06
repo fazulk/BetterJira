@@ -1,15 +1,16 @@
 import type { AssistantSkillSetting } from './settingsTypes'
+import { isRecord } from './typeGuards'
 
 function normalizeTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
 }
 
 function normalizeAssistantSkillSetting(value: unknown): AssistantSkillSetting | null {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return null
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const id = normalizeTrimmedString(recordValue.id)
   const name = normalizeTrimmedString(recordValue.name)
   const body = typeof recordValue.body === 'string' ? recordValue.body : ''

@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { resolveAssistantSystemPrompt } from '../../shared/assistant'
+import { isRecord } from '../../shared/typeGuards'
 import { getAppSettings } from '../settings'
 import { getLocalAiCommandPathEnv, resolveLocalAiCommand } from './localProviders'
 import { ACLI_JIRA_SKILL } from './skills/acliJiraSkill'
@@ -147,25 +148,25 @@ function parseClaudeLine(line: string, onChunk: AssistantChunkHandler, state: Pa
     return
   }
 
-  if (typeof parsed !== 'object' || parsed === null) {
+  if (!isRecord(parsed)) {
     return
   }
 
-  const record: Record<string, unknown> = parsed
+  const record = parsed
 
-  if (record.type === 'stream_event' && typeof record.event === 'object' && record.event !== null) {
-    const event: Record<string, unknown> = record.event
+  if (record.type === 'stream_event' && isRecord(record.event)) {
+    const event = record.event
 
-    if (event.type === 'content_block_delta' && typeof event.delta === 'object' && event.delta !== null) {
-      const delta: Record<string, unknown> = event.delta
+    if (event.type === 'content_block_delta' && isRecord(event.delta)) {
+      const delta = event.delta
       if (delta.type === 'text_delta' && typeof delta.text === 'string') {
         onChunk({ type: 'delta', text: delta.text })
       }
       return
     }
 
-    if (event.type === 'content_block_start' && typeof event.content_block === 'object' && event.content_block !== null) {
-      const block: Record<string, unknown> = event.content_block
+    if (event.type === 'content_block_start' && isRecord(event.content_block)) {
+      const block = event.content_block
       if (block.type === 'tool_use' && typeof block.name === 'string') {
         onChunk({ type: 'status', text: `Running ${block.name}…` })
       }
@@ -191,19 +192,18 @@ function parseCodexLine(line: string, onChunk: AssistantChunkHandler, state: Par
     return
   }
 
-  if (typeof parsed !== 'object' || parsed === null) {
+  if (!isRecord(parsed)) {
     return
   }
 
-  const record: Record<string, unknown> = parsed
+  const record = parsed
   const eventType = record.type
 
   if (
     (eventType === 'item.started' || eventType === 'item.updated' || eventType === 'item.completed')
-    && typeof record.item === 'object'
-    && record.item !== null
+    && isRecord(record.item)
   ) {
-    const item: Record<string, unknown> = record.item
+    const item = record.item
     const itemId = typeof item.id === 'string' ? item.id : ''
 
     if (item.type === 'agent_message' && typeof item.text === 'string') {
@@ -226,8 +226,8 @@ function parseCodexLine(line: string, onChunk: AssistantChunkHandler, state: Par
     if (typeof record.message === 'string') {
       message = record.message
     }
-    else if (typeof record.error === 'object' && record.error !== null) {
-      const errorField: Record<string, unknown> = record.error
+    else if (isRecord(record.error)) {
+      const errorField = record.error
       if (typeof errorField.message === 'string') {
         message = errorField.message
       }

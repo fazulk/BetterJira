@@ -15,9 +15,10 @@ import {
   normalizeAiValue,
   normalizeJiraValue,
 } from './settingsNormalizers'
+import { isRecord } from './typeGuards'
 
 export function normalizeJiraConnectionSettings(value: unknown): JiraConnectionSettings {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return {
       baseUrl: '',
       email: '',
@@ -25,7 +26,7 @@ export function normalizeJiraConnectionSettings(value: unknown): JiraConnectionS
     }
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const apiToken = normalizeJiraValue(recordValue.apiToken)
 
   return {
@@ -36,11 +37,11 @@ export function normalizeJiraConnectionSettings(value: unknown): JiraConnectionS
 }
 
 export function normalizeJiraConnectionUpdate(value: unknown): UpdateJiraConnectionInput | undefined {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return undefined
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const nextJira: UpdateJiraConnectionInput = {}
 
   if ('baseUrl' in recordValue) {
@@ -67,11 +68,11 @@ export function getDefaultAiConnectionSettings(): AiConnectionSettings {
 }
 
 export function normalizeAiConnectionSettings(value: unknown): AiConnectionSettings {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return getDefaultAiConnectionSettings()
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const cerebrasApiKey = normalizeAiValue(recordValue.cerebrasApiKey)
   const aiSettings = normalizeAiSettings(recordValue.provider, recordValue.model)
 
@@ -83,11 +84,11 @@ export function normalizeAiConnectionSettings(value: unknown): AiConnectionSetti
 }
 
 export function normalizeAiConnectionUpdate(value: unknown): UpdateAiConnectionInput | undefined {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return undefined
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const nextAi: UpdateAiConnectionInput = {}
 
   if ('cerebrasApiKey' in recordValue) {

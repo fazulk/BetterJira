@@ -1,4 +1,5 @@
 import type { AppSpaceTeamFilter, LabelColors, StatusColors } from './settingsTypes'
+import { isRecord } from './typeGuards'
 
 export function normalizeSpaceKey(value: unknown): string | null {
   if (typeof value !== 'string') {
@@ -14,11 +15,11 @@ export function normalizeSpaceName(value: unknown): string {
 }
 
 export function normalizeSpaceTeamFilter(value: unknown): AppSpaceTeamFilter | undefined {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return undefined
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const projectKey = normalizeSpaceKey(recordValue.projectKey)
   const teamId = typeof recordValue.teamId === 'string' ? recordValue.teamId.trim() : ''
 
@@ -73,11 +74,11 @@ function normalizeStatusPreferenceKey(value: unknown): string {
 }
 
 export function normalizeLabelColors(value: unknown): LabelColors {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return {}
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const normalizedColors: LabelColors = {}
 
   for (const [label, color] of Object.entries(recordValue)) {
@@ -93,11 +94,11 @@ export function normalizeLabelColors(value: unknown): LabelColors {
 }
 
 export function normalizeStatusColors(value: unknown): StatusColors {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return {}
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const normalizedColors: StatusColors = {}
 
   for (const [statusKey, color] of Object.entries(recordValue)) {
@@ -173,11 +174,11 @@ export function normalizeStringList(value: unknown): string[] {
 }
 
 export function normalizeStringListRecord(value: unknown): Record<string, string[]> {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return {}
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const normalizedRecord: Record<string, string[]> = {}
 
   for (const [key, entry] of Object.entries(recordValue)) {

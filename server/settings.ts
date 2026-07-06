@@ -8,6 +8,7 @@ import {
   reconcileAppSettings,
 
 } from '../shared/settings'
+import { isRecord } from '../shared/typeGuards'
 import { getAppDataDir } from './runtimePaths'
 
 const settingsFilePath = resolve(getAppDataDir(), 'settings.json')
@@ -57,11 +58,11 @@ function createDefaultStoredSettings(): StoredAppSettings {
 }
 
 function normalizeStoredJiraSettings(value: unknown): StoredJiraSettings {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return createDefaultStoredSettings().jira
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
 
   return {
     baseUrl: typeof recordValue.baseUrl === 'string' ? recordValue.baseUrl.trim() : '',
@@ -71,11 +72,11 @@ function normalizeStoredJiraSettings(value: unknown): StoredJiraSettings {
 }
 
 function normalizeStoredAiSettings(value: unknown): StoredAiSettings {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return createDefaultStoredSettings().ai
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const normalizedAiSettings = normalizeAppSettings({ ai: recordValue }).ai
 
   return {
@@ -89,11 +90,11 @@ function normalizeStoredSettings(value: unknown): StoredAppSettings {
   const normalizedAppSettings = normalizeAppSettings(value)
   const defaultStoredSettings = createDefaultStoredSettings()
 
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return defaultStoredSettings
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
 
   return {
     spaces: normalizedAppSettings.spaces,

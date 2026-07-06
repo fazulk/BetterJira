@@ -14,6 +14,7 @@ import {
   normalizeFavoriteViews,
   normalizeViewOverrides,
 } from './settingsViews'
+import { isRecord } from './typeGuards'
 
 function normalizeSidebarSortBy(value: unknown): SidebarSortBy {
   switch (value) {
@@ -76,11 +77,11 @@ export function getDefaultSidebarSettings(): SidebarSettings {
 export function normalizeSidebarSettings(value: unknown): SidebarSettings {
   const defaults = getDefaultSidebarSettings()
 
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return defaults
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
 
   return {
     pinnedTicketKeys: normalizeStringList(recordValue.pinnedTicketKeys),
@@ -99,11 +100,11 @@ export function normalizeSidebarSettings(value: unknown): SidebarSettings {
 }
 
 export function normalizeSidebarSettingsUpdate(value: unknown): UpdateSidebarSettingsInput | undefined {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return undefined
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const nextSidebar: UpdateSidebarSettingsInput = {}
 
   if ('pinnedTicketKeys' in recordValue)

@@ -8,6 +8,7 @@ import {
   normalizeSpaceName,
   normalizeSpaceTeamFilter,
 } from './settingsNormalizers'
+import { isRecord } from './typeGuards'
 
 /** Builds the unique settings key for a team-filtered space. Avoids `:` because view ids are `team:<spaceKey>:<section>`. */
 export function buildTeamSpaceKey(projectKey: string, teamId: string): string {
@@ -34,11 +35,11 @@ function withAppearance(
 }
 
 function normalizeSpaceSetting(value: unknown): AppSpaceSetting | null {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return null
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const key = normalizeSpaceKey(recordValue.key)
 
   if (!key) {

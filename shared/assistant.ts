@@ -4,6 +4,7 @@ import {
   DEFAULT_CODEX_MODEL,
   getAiModelsForProvider,
 } from './ai'
+import { isRecord } from './typeGuards'
 
 /** Providers that back the "Ask" chat assistant. These are local CLIs we proxy to. */
 export type AssistantProvider = 'claude' | 'codex'
@@ -158,10 +159,10 @@ function normalizeMessageSkills(value: unknown): AssistantMessageSkill[] {
 
   const skills: AssistantMessageSkill[] = []
   for (const entry of value) {
-    if (typeof entry !== 'object' || entry === null) {
+    if (!isRecord(entry)) {
       continue
     }
-    const record: Record<string, unknown> = entry
+    const record = entry
     const name = typeof record.name === 'string' ? record.name.trim() : ''
     const body = typeof record.body === 'string' ? record.body : ''
     if (name && body.trim()) {
@@ -178,10 +179,10 @@ function normalizeChatMessages(value: unknown): AssistantChatMessage[] {
 
   const messages: AssistantChatMessage[] = []
   for (const entry of value) {
-    if (typeof entry !== 'object' || entry === null) {
+    if (!isRecord(entry)) {
       continue
     }
-    const record: Record<string, unknown> = entry
+    const record = entry
     const role = record.role === 'assistant' ? 'assistant' : 'user'
     const content = typeof record.content === 'string' ? record.content : ''
     const skills = role === 'user' ? normalizeMessageSkills(record.skills) : []
@@ -195,11 +196,11 @@ function normalizeChatMessages(value: unknown): AssistantChatMessage[] {
 
 /** Validates a raw request body into a chat request, or returns null when unusable. */
 export function normalizeAssistantChatRequest(value: unknown): AssistantChatRequest | null {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return null
   }
 
-  const record: Record<string, unknown> = value
+  const record = value
   const settings = normalizeAssistantSettings(record.provider, record.model, record.reasoning)
   const messages = normalizeChatMessages(record.messages)
   const lastMessage = messages[messages.length - 1]
