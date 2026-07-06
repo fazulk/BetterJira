@@ -1,3 +1,4 @@
+import type { ComponentPublicInstance } from 'vue'
 import type {
   ActiveFilterChip,
   CommandMenuItem,
@@ -209,9 +210,9 @@ export function useTicketListController() {
   const canGoBack = ref(false)
   const canGoForward = ref(false)
   function syncNavigationHistoryState(): void {
-    const state = window.history.state as { back?: unknown, forward?: unknown } | null
-    canGoBack.value = Boolean(state && state.back != null)
-    canGoForward.value = Boolean(state && state.forward != null)
+    const state: unknown = window.history.state
+    canGoBack.value = typeof state === 'object' && state !== null && 'back' in state && state.back != null
+    canGoForward.value = typeof state === 'object' && state !== null && 'forward' in state && state.forward != null
   }
   function goBack(): void {
     if (canGoBack.value) {
@@ -294,7 +295,7 @@ export function useTicketListController() {
   const commandActiveIndex = ref(0)
   const commandInputRef = ref<HTMLInputElement | null>(null)
   const searchInputRef = ref<HTMLInputElement | null>(null)
-  function setSearchInputRef(element: Element | null): void {
+  function setSearchInputRef(element: Element | ComponentPublicInstance | null): void {
     searchInputRef.value = element instanceof HTMLInputElement ? element : null
   }
   const lastNonSearchView = ref(currentView.value === 'search' ? 'my-issues' : currentView.value)

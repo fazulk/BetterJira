@@ -1,6 +1,7 @@
 import type { FavoriteView, FavoriteViewFilter } from '~/shared/settings'
 import { computed } from 'vue'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
+import { isRecord } from '~/shared/typeGuards'
 
 function normalizeFavoriteViewList(value: unknown): FavoriteView[] {
   if (!Array.isArray(value)) {
@@ -42,11 +43,11 @@ function normalizeFavoriteViewFilters(value: unknown): FavoriteViewFilter[] {
 }
 
 function normalizeFavoriteViewFilter(value: unknown): FavoriteViewFilter | null {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return null
   }
 
-  const recordValue: Record<string, unknown> = value
+  const recordValue = value
   const id = typeof recordValue.id === 'string' ? recordValue.id.trim() : ''
   const fieldId = typeof recordValue.fieldId === 'string' ? recordValue.fieldId.trim() : ''
   const fieldLabel = typeof recordValue.fieldLabel === 'string' ? recordValue.fieldLabel.trim() : ''

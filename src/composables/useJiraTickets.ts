@@ -9,6 +9,7 @@ import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { useToast } from '@/composables/useToast'
 import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
 import { buildEnabledSpaceSearchQuery } from '~/shared/settings'
+import { isRecord } from '~/shared/typeGuards'
 
 export const TICKETS_QUERY_KEY = ['tickets'] as const
 const TICKETS_QUERY_SCHEMA_VERSION = 'labels-v1'
@@ -26,19 +27,28 @@ export function getCachedTicketsQueryKey(queryClient: QueryClient): QueryKey {
     .findAll({ queryKey: TICKETS_QUERY_KEY })
     .filter(query => isTicketsQueryKey(query.queryKey))
 
-  if (ticketQueries.length === 0) {
+  const [firstTicketQuery, ...remainingTicketQueries] = ticketQueries
+  if (!firstTicketQuery) {
     return TICKETS_QUERY_KEY
   }
 
-  return ticketQueries.reduce((latestQuery, query) => (
+  return remainingTicketQueries.reduce((latestQuery, query) => (
     query.state.dataUpdatedAt > latestQuery.state.dataUpdatedAt
       ? query
       : latestQuery
-  ), ticketQueries[0]).queryKey
+  ), firstTicketQuery).queryKey
 }
 
 export function getCachedTickets(queryClient: QueryClient): JiraTicket[] | undefined {
   return queryClient.getQueryData<JiraTicket[]>(getCachedTicketsQueryKey(queryClient))
+}
+
+function isTicketsPayload(value: unknown): value is TicketsPayload {
+  return isRecord(value) && Array.isArray(value.tickets)
+}
+
+function isJiraTicketPayload(value: unknown): value is JiraTicket {
+  return isRecord(value) && typeof value.key === 'string'
 }
 
 function mergeJiraAndLocalTickets(jiraTickets: JiraTicket[], localTickets: JiraTicket[]): JiraTicket[] {
@@ -322,7 +332,10 @@ export function useJiraTickets() {
 
     eventSource.addEventListener('tickets', (e) => {
       try {
-        const payload = JSON.parse((e as MessageEvent).data)
+        const payload: unknown = JSON.parse(e.data)
+        if (!isTicketsPayload(payload)) {
+          throw new TypeError('Invalid tickets payload')
+        }
         applyTicketsPayload(payload)
       }
       catch {
@@ -337,7 +350,10 @@ export function useJiraTickets() {
 
     eventSource.addEventListener('ticket-updated', (e) => {
       try {
-        const updatedTicket = JSON.parse((e as MessageEvent).data) as JiraTicket
+        const updatedTicket: unknown = JSON.parse(e.data)
+        if (!isJiraTicketPayload(updatedTicket)) {
+          throw new TypeError('Invalid ticket payload')
+        }
         mergeUpdatedTicket(updatedTicket)
       }
       catch {
@@ -347,7 +363,10 @@ export function useJiraTickets() {
 
     eventSource.addEventListener('ticket-created', (e) => {
       try {
-        const createdTicket = JSON.parse((e as MessageEvent).data) as JiraTicket
+        const createdTicket: unknown = JSON.parse(e.data)
+        if (!isJiraTicketPayload(createdTicket)) {
+          throw new TypeError('Invalid ticket payload')
+        }
         mergeCreatedTicket(createdTicket)
       }
       catch {
@@ -356,10 +375,10 @@ export function useJiraTickets() {
     })
 
     eventSource.addEventListener('error', (e) => {
-      if ('data' in e) {
+      if (e instanceof MessageEvent) {
         try {
-          const payload = JSON.parse((e as MessageEvent).data)
-          applySseError(payload.message)
+          const payload: unknown = JSON.parse(e.data)
+          applySseError(isRecord(payload) && typeof payload.message === 'string' ? payload.message : undefined)
         }
         catch {
           applySseError('Refresh failed')

@@ -15,9 +15,12 @@ export function useAssignableUsers(
 
   return useQuery({
     queryKey: computed(() => assignableUsersQueryKey(ticketKey.value)),
-    queryFn: ({ queryKey }) => {
-      const [, key] = queryKey as ReturnType<typeof assignableUsersQueryKey>
-      return fetchAssignableUsers(key as string)
+    queryFn: () => {
+      const key = ticketKey.value
+      if (!key) {
+        throw new Error('Ticket key is required')
+      }
+      return fetchAssignableUsers(key)
     },
     enabled: computed(() => {
       if (!ticketKey.value)

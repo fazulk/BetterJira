@@ -2,6 +2,7 @@ import type {
   AssistantChatRequest,
   AssistantStreamChunk,
 } from '~/shared/assistant'
+import { isRecord } from '~/shared/typeGuards'
 
 const ASSISTANT_CHAT_URL = '/api/assistant/chat'
 
@@ -15,11 +16,11 @@ function parseChunk(data: string): AssistantStreamChunk | null {
     return null
   }
 
-  if (typeof parsed !== 'object' || parsed === null) {
+  if (!isRecord(parsed)) {
     return null
   }
 
-  const record: Record<string, unknown> = parsed
+  const record = parsed
   const text = typeof record.text === 'string' ? record.text : ''
   const message = typeof record.message === 'string' ? record.message : 'The assistant request failed.'
 

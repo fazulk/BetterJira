@@ -14,9 +14,12 @@ export function useJiraTicket(
 
   return useQuery({
     queryKey: computed(() => ticketQueryKey(ticketKey.value)),
-    queryFn: ({ queryKey }) => {
-      const [, key] = queryKey as ReturnType<typeof ticketQueryKey>
-      return fetchTicket(key as string)
+    queryFn: () => {
+      const key = ticketKey.value
+      if (!key) {
+        throw new Error('Ticket key is required')
+      }
+      return fetchTicket(key)
     },
     enabled: computed(() => {
       if (!ticketKey.value)

@@ -11,9 +11,12 @@ export function useTransitions(
 ) {
   return useQuery({
     queryKey: computed(() => transitionsQueryKey(ticketKey.value)),
-    queryFn: ({ queryKey }) => {
-      const [, key] = queryKey as ReturnType<typeof transitionsQueryKey>
-      return fetchTransitions(key as string)
+    queryFn: () => {
+      const key = ticketKey.value
+      if (!key) {
+        throw new Error('Ticket key is required')
+      }
+      return fetchTransitions(key)
     },
     enabled: computed(() => {
       if (!ticketKey.value)

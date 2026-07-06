@@ -281,8 +281,11 @@ function killChildTree(child: ChildProcess, signal: NodeJS.Signals): void {
   const descendants = descendantPids(child.pid)
 
   for (let i = descendants.length - 1; i >= 0; i--) {
+    const pid = descendants[i]
+    if (pid === undefined)
+      continue
     try {
-      process.kill(descendants[i], signal)
+      process.kill(pid, signal)
     }
     catch {
       // ignore

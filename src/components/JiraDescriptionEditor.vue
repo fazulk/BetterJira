@@ -230,7 +230,7 @@ watch(() => props.modelValue, (nextValue) => {
     return
   }
 
-  instance.commands.setContent(toEditorDocument(nextValue, resolveMediaSrc), false)
+  instance.commands.setContent(toEditorDocument(nextValue, resolveMediaSrc))
   bumpEditorTick()
   syncLinkTitlesSoon()
 })

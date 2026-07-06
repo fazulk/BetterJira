@@ -17,6 +17,7 @@ import type {
 } from '~/shared/ai'
 import type { TicketDevStatus } from '~/shared/devStatus'
 import { isLocalTicketKey } from '~/shared/localTickets'
+import { isRecord } from '~/shared/typeGuards'
 
 const BASE = '/api'
 
@@ -42,8 +43,8 @@ async function readErrorMessage(res: Response, fallbackMessage: string): Promise
   }
 
   try {
-    const parsed = JSON.parse(body) as { error?: unknown }
-    if (typeof parsed.error === 'string' && parsed.error.trim().length > 0) {
+    const parsed: unknown = JSON.parse(body)
+    if (isRecord(parsed) && typeof parsed.error === 'string' && parsed.error.trim().length > 0) {
       return `${fallbackMessage} - ${parsed.error}`
     }
   }

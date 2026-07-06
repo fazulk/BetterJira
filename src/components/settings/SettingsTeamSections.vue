@@ -58,6 +58,13 @@ const activeMenuColor = computed(() => {
   return row ? getStatusColor(row.status, row.group) : '#000000'
 })
 
+const colorMenuLeft = computed(() => {
+  if (typeof window === 'undefined') {
+    return colorMenu.value.x
+  }
+  return Math.min(colorMenu.value.x, window.innerWidth - 232)
+})
+
 function getIssueCountLabel(count: number): string {
   return `${count} ${count === 1 ? 'issue' : 'issues'}`
 }
@@ -347,7 +354,7 @@ onBeforeUnmount(() => {
         v-if="colorMenu.open"
         ref="colorMenuElement"
         class="fixed z-[100] w-56 rounded-2xl border border-white/[0.08] bg-[#11131a]/95 p-3 text-sm text-slate-200 shadow-2xl shadow-black/40 backdrop-blur"
-        :style="{ left: `${Math.min(colorMenu.x, (typeof window !== 'undefined' ? window.innerWidth - 232 : colorMenu.x))}px`, top: `${colorMenu.y}px` }"
+        :style="{ left: `${colorMenuLeft}px`, top: `${colorMenu.y}px` }"
         role="menu"
       >
         <div class="mb-3 min-w-0">

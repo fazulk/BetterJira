@@ -3,8 +3,10 @@ import type { LabelColors } from '~/shared/settings'
 import { computed, ref } from 'vue'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 
+const DEFAULT_LABEL_COLOR = '#ef4444'
+
 export const LABEL_COLOR_PALETTE = [
-  '#ef4444',
+  DEFAULT_LABEL_COLOR,
   '#f97316',
   '#eab308',
   '#22c55e',
@@ -63,7 +65,7 @@ function getFallbackLabelColor(label: string): string {
     hash = (hash * 31 + character.charCodeAt(0)) % LABEL_COLOR_PALETTE.length
   }
 
-  return LABEL_COLOR_PALETTE[hash] ?? LABEL_COLOR_PALETTE[0]
+  return LABEL_COLOR_PALETTE[hash] ?? DEFAULT_LABEL_COLOR
 }
 
 export function useLabelColors(): LabelColorsApi {
@@ -77,7 +79,7 @@ export function useLabelColors(): LabelColorsApi {
   function getLabelColor(label: string): string {
     const normalizedLabel = normalizeLabelColorKey(label)
     if (!normalizedLabel) {
-      return LABEL_COLOR_PALETTE[0]
+      return DEFAULT_LABEL_COLOR
     }
 
     return labelColors.value[normalizedLabel] ?? getFallbackLabelColor(normalizedLabel)

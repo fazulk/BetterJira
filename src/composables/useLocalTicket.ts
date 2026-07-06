@@ -12,9 +12,12 @@ export function useLocalTicket(ticketKey: Ref<string | null>) {
 
   return useQuery({
     queryKey: computed(() => localTicketQueryKey(ticketKey.value)),
-    queryFn: ({ queryKey }) => {
-      const [, key] = queryKey as ReturnType<typeof localTicketQueryKey>
-      return fetchLocalTicket(key as string)
+    queryFn: () => {
+      const key = ticketKey.value
+      if (!key) {
+        throw new Error('Ticket key is required')
+      }
+      return fetchLocalTicket(key)
     },
     enabled: computed(() => Boolean(ticketKey.value && isLocalTicketKey(ticketKey.value))),
     initialData: () => {

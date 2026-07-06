@@ -30,6 +30,13 @@ const isPresetColor = computed(() => SPACE_COLOR_SWATCHES.some(swatch => swatch.
 function formatIconLabel(name: string): string {
   return name.replace(/-/g, ' ')
 }
+
+function onCustomColorInput(event: Event): void {
+  const target = event.target
+  if (target instanceof HTMLInputElement) {
+    emit('update:color', target.value)
+  }
+}
 </script>
 
 <template>
@@ -65,7 +72,7 @@ function formatIconLabel(name: string): string {
           class="absolute inset-0 cursor-pointer opacity-0"
           :value="color"
           aria-label="Custom color"
-          @input="emit('update:color', ($event.target as HTMLInputElement).value)"
+          @input="onCustomColorInput"
         >
       </label>
     </div>

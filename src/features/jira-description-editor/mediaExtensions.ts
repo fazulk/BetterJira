@@ -49,7 +49,7 @@ function findMediaAttachment(
   if (filenameMatch)
     return filenameMatch
 
-  return imageAttachments.length === 1 ? imageAttachments[0] : null
+  return imageAttachments.length === 1 ? imageAttachments[0] ?? null : null
 }
 
 export function attachmentContentUrl(attachmentId: string): string {
@@ -220,5 +220,5 @@ export function createJiraMediaExtensions(context: JiraMediaContext) {
     },
   })
 
-  return [JiraMedia, JiraMediaSingle, JiraMediaGroup]
+  return [JiraMedia, JiraMediaSingle, JiraMediaGroup] as const
 }

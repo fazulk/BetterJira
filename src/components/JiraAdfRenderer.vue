@@ -75,7 +75,7 @@ function findMediaAttachment(node: JiraAdfNode): JiraAttachment | null {
   if (filenameMatch)
     return filenameMatch
 
-  return imageAttachments.length === 1 ? imageAttachments[0] : null
+  return imageAttachments.length === 1 ? imageAttachments[0] ?? null : null
 }
 
 function ticketAttachmentContentUrl(filename: string): string | null {
