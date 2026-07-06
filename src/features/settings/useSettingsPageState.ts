@@ -1,8 +1,6 @@
 import type { SettingsSectionId } from './settingsTypes'
-import type { AiInstructionPresetDraft } from '@/composables/useAiInstructionPresets'
 import type { AiProviderAvailability } from '~/shared/ai'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useAiInstructionPresets } from '@/composables/useAiInstructionPresets'
 import { useAiSettings } from '@/composables/useAiSettings'
 import { useJiraTickets } from '@/composables/useJiraTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
@@ -32,19 +30,11 @@ const settingsNavigationGroups: SettingsNavigationGroup[] = [
     label: 'Features',
     items: [
       { id: 'assistant', label: 'Assistant', description: 'Ask Claude / Ask Codex' },
-      { id: 'instructions', label: 'AI instructions', description: 'Prompt presets' },
     ],
   },
 ]
 
 export function useSettingsPageState() {
-  const {
-    allInstructionPresets,
-    addLocalPreset,
-    removeLocalPreset,
-    togglePresetEnabled,
-    updateLocalPreset,
-  } = useAiInstructionPresets()
   const {
     providers,
     providerAvailability,
@@ -67,7 +57,6 @@ export function useSettingsPageState() {
   const { tickets } = useJiraTickets()
 
   const activeSettingsSection = ref<SettingsSectionId>('workspace')
-  const newPreset = ref<AiInstructionPresetDraft>({ label: '', text: '' })
   const jiraBaseUrlDraft = ref('')
   const jiraEmailDraft = ref('')
   const cerebrasApiKey = ref('')
@@ -75,8 +64,6 @@ export function useSettingsPageState() {
   const settingsSearchQuery = ref('')
   const aiFeedback = ref<{ kind: 'success' | 'error', message: string } | null>(null)
   const jiraFeedback = ref<{ kind: 'success' | 'error', message: string } | null>(null)
-  const editingPresetId = ref<string | null>(null)
-  const editingPreset = ref<AiInstructionPresetDraft>({ label: '', text: '' })
   let aiFeedbackTimeout: ReturnType<typeof setTimeout> | null = null
   let jiraFeedbackTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -96,40 +83,6 @@ export function useSettingsPageState() {
       }))
       .filter(group => group.items.length > 0)
   })
-
-  const canAddPreset = computed<boolean>(() =>
-    newPreset.value.label.trim().length > 0 && newPreset.value.text.trim().length > 0,
-  )
-  const canSaveEditedPreset = computed<boolean>(() =>
-    editingPreset.value.label.trim().length > 0 && editingPreset.value.text.trim().length > 0,
-  )
-
-  function startEditing(presetId: string): void {
-    const preset = allInstructionPresets.value.find(item => item.id === presetId)
-    if (!preset)
-      return
-    editingPresetId.value = preset.id
-    editingPreset.value = { label: preset.label, text: preset.text }
-  }
-
-  function cancelEditing(): void {
-    editingPresetId.value = null
-    editingPreset.value = { label: '', text: '' }
-  }
-
-  function saveEditedPreset(): void {
-    if (!editingPresetId.value || !canSaveEditedPreset.value)
-      return
-    updateLocalPreset(editingPresetId.value, editingPreset.value)
-    cancelEditing()
-  }
-
-  function saveNewPreset(): void {
-    if (!canAddPreset.value)
-      return
-    addLocalPreset(newPreset.value)
-    newPreset.value = { label: '', text: '' }
-  }
 
   function isHtmlSelectElement(target: EventTarget | null): target is HTMLSelectElement {
     return target instanceof HTMLSelectElement
@@ -217,7 +170,6 @@ export function useSettingsPageState() {
   } = useSettingsDerivedRows({
     activeSettingsSection,
     aiSettings,
-    allInstructionPresets,
     spaces,
     tickets,
   })
@@ -297,18 +249,12 @@ export function useSettingsPageState() {
     aiConnection,
     aiFeedback,
     aiSettings,
-    allInstructionPresets,
     availableModels,
-    canAddPreset,
-    canSaveEditedPreset,
     canSaveJiraConnectionDetails,
-    cancelEditing,
     cerebrasApiKey,
     constrainedSettingsRows,
     constrainedSettingsSectionDescription,
     constrainedSettingsSectionTitle,
-    editingPreset,
-    editingPresetId,
     filteredSettingsNavigationGroups,
     getProviderLabel,
     getProviderStatusClass,
@@ -321,22 +267,16 @@ export function useSettingsPageState() {
     jiraConnectionSummary,
     jiraEmailDraft,
     jiraFeedback,
-    newPreset,
     providerAvailability,
     providerAvailabilityError,
     providers,
-    removeLocalPreset,
     saveCerebrasApiKey,
-    saveEditedPreset,
     saveJiraApiToken,
     saveJiraConnectionDetails,
-    saveNewPreset,
     settingsSearchQuery,
-    startEditing,
     statusGroupLabels,
     teamMemberRows,
     teamSettingsRows,
     teamStatusRows,
-    togglePresetEnabled,
   }
 }

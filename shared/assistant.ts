@@ -36,9 +36,18 @@ export const DEFAULT_ASSISTANT_SYSTEM_PROMPT: string = [
   'You are running with full permissions and no confirmation prompts, so double-check destructive actions before running them.',
 ].join('\n')
 
+/** A user-defined skill attached to a single chat turn. */
+export interface AssistantMessageSkill {
+  name: string
+  /** Markdown prompt injected alongside the user's message for that turn. */
+  body: string
+}
+
 export interface AssistantChatMessage {
   role: 'user' | 'assistant'
   content: string
+  /** Skills attached to this (user) turn; their bodies are injected server-side. */
+  skills?: AssistantMessageSkill[]
 }
 
 export interface AssistantChatRequest {
@@ -142,6 +151,26 @@ export function getDefaultAssistantSettings(): AssistantSettings {
   }
 }
 
+function normalizeMessageSkills(value: unknown): AssistantMessageSkill[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  const skills: AssistantMessageSkill[] = []
+  for (const entry of value) {
+    if (typeof entry !== 'object' || entry === null) {
+      continue
+    }
+    const record: Record<string, unknown> = entry
+    const name = typeof record.name === 'string' ? record.name.trim() : ''
+    const body = typeof record.body === 'string' ? record.body : ''
+    if (name && body.trim()) {
+      skills.push({ name, body })
+    }
+  }
+  return skills
+}
+
 function normalizeChatMessages(value: unknown): AssistantChatMessage[] {
   if (!Array.isArray(value)) {
     return []
@@ -155,8 +184,10 @@ function normalizeChatMessages(value: unknown): AssistantChatMessage[] {
     const record: Record<string, unknown> = entry
     const role = record.role === 'assistant' ? 'assistant' : 'user'
     const content = typeof record.content === 'string' ? record.content : ''
-    if (content.trim().length > 0) {
-      messages.push({ role, content })
+    const skills = role === 'user' ? normalizeMessageSkills(record.skills) : []
+    // A user turn can be skill-only (attach a skill and send with no typed text).
+    if (content.trim().length > 0 || skills.length > 0) {
+      messages.push(skills.length > 0 ? { role, content, skills } : { role, content })
     }
   }
   return messages

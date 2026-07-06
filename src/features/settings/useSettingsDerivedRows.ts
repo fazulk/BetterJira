@@ -6,7 +6,6 @@ import type {
   TeamMemberSettingsRow,
   TeamStatusSettingsRow,
 } from './settingsTypes'
-import type { AiInstructionPreset } from '@/composables/useAiInstructionPresets'
 import type { JiraTicket, StatusGroup } from '@/types/jira'
 import type { AiSettings } from '~/shared/ai'
 import { computed } from 'vue'
@@ -23,7 +22,6 @@ interface SpaceSettingsItem {
 interface SettingsDerivedRowsInput {
   activeSettingsSection: Ref<SettingsSectionId>
   aiSettings: Ref<AiSettings> | ComputedRef<AiSettings>
-  allInstructionPresets: ComputedRef<readonly AiInstructionPreset[]>
   spaces: Ref<readonly SpaceSettingsItem[]> | ComputedRef<readonly SpaceSettingsItem[]>
   tickets: Ref<readonly JiraTicket[]> | ComputedRef<readonly JiraTicket[]>
 }
@@ -101,7 +99,6 @@ export function useSettingsDerivedRows(input: SettingsDerivedRowsInput) {
   const triageIssueCount = computed(() => enabledTickets.value.filter(ticket => getStatusGroup(ticket.statusCategory) === 'new').length)
   const backlogIssueCount = computed(() => enabledTickets.value.filter(ticket => !ticket.inCurrentSprint && getStatusGroup(ticket.statusCategory) !== 'done').length)
   const currentSprintIssueCount = computed(() => enabledTickets.value.filter(ticket => ticket.inCurrentSprint && getStatusGroup(ticket.statusCategory) !== 'done').length)
-  const enabledInstructionPresetCount = computed(() => input.allInstructionPresets.value.filter(preset => preset.enabled).length)
 
   const teamWorkflowRows = computed<SettingsDetailRow[]>(() => [
     { label: 'Workflow statuses', value: formatCount(teamStatusRows.value.length, 'status', 'statuses'), detail: 'Loaded from Jira and grouped into Linear-style Todo, In progress, and Done categories.' },
@@ -118,7 +115,6 @@ export function useSettingsDerivedRows(input: SettingsDerivedRowsInput) {
     { label: 'Linear cycles', value: 'Deferred', detail: 'Full cycle planning remains out of scope until this app has a dedicated cycle model.' },
   ])
   const teamAiRows = computed<SettingsDetailRow[]>(() => [
-    { label: 'Description assistant', value: formatCount(enabledInstructionPresetCount.value, 'preset', 'presets'), detail: 'Enabled prompt presets are available from the issue description assistant.' },
     { label: 'Provider', value: getProviderLabel(input.aiSettings.value.provider), detail: input.aiSettings.value.model },
     { label: 'Agent chat', value: 'Out of scope', detail: 'Linear-style agent chat is intentionally excluded from the first pass.' },
   ])

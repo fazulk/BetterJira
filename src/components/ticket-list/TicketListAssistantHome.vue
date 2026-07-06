@@ -1,8 +1,10 @@
 <script lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import AssistantMarkdown from '@/components/AssistantMarkdown.vue'
+import AssistantSkillPicker from '@/components/AssistantSkillPicker.vue'
 import { createAssistantChatState, useAssistantChat } from '@/composables/useAssistantChat'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
+import { useAssistantSkills } from '@/composables/useAssistantSkills'
 import { getAssistantProviderLabel } from '~/shared/assistant'
 
 // Module scope (runs once, not per instance) so the conversation, draft, and any
@@ -10,6 +12,7 @@ import { getAssistantProviderLabel } from '~/shared/assistant'
 // between turns, so this transcript is the whole chat session.
 const homeChatState = createAssistantChatState()
 const draft = ref('')
+const selectedSkillIds = ref<string[]>([])
 </script>
 
 <script setup lang="ts">
@@ -19,6 +22,7 @@ const noTicketKey = ref<string | null>(null)
 const noTicketSummary = ref<string | null>(null)
 
 const { settings, isProviderAvailable } = useAssistantSettings()
+const { skills } = useAssistantSkills()
 const {
   messages,
   isStreaming,
@@ -64,15 +68,22 @@ onMounted(scrollToBottom)
 function startNewChat(): void {
   reset()
   draft.value = ''
+  selectedSkillIds.value = []
 }
+
+const canSubmit = computed(() => draft.value.trim().length > 0 || selectedSkillIds.value.length > 0)
 
 async function submit(): Promise<void> {
   const text = draft.value
-  if (!text.trim() || isStreaming.value) {
+  if (!canSubmit.value || isStreaming.value) {
     return
   }
+  const attachedSkills = skills.value
+    .filter(skill => selectedSkillIds.value.includes(skill.id))
+    .map(skill => ({ name: skill.name, body: skill.body }))
   draft.value = ''
-  await send(text)
+  selectedSkillIds.value = []
+  await send(text, attachedSkills)
 }
 
 function handleKeydown(event: KeyboardEvent): void {
@@ -113,6 +124,13 @@ function handleKeydown(event: KeyboardEvent): void {
           >
             <AssistantMarkdown v-if="message.role === 'assistant' && message.content" :content="message.content" />
             <template v-else>
+              <span
+                v-for="skill in message.skills ?? []"
+                :key="skill.name"
+                class="mb-1 mr-1 inline-flex items-center gap-1 rounded bg-white/[0.14] px-1.5 py-0.5 text-[11px] text-white/90"
+              >
+                <Icon name="lucide:box" class="h-3 w-3" aria-hidden="true" />{{ skill.name }}
+              </span>
               {{ message.content || (message.pending ? '…' : '') }}
             </template>
           </div>
@@ -139,34 +157,37 @@ function handleKeydown(event: KeyboardEvent): void {
           {{ providerLabel }} CLI was not detected. Choose an available provider in Settings → Assistant.
         </p>
 
-        <div class="flex items-end gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3 focus-within:border-white/[0.16]">
-          <textarea
-            ref="textareaRef"
-            v-model="draft"
-            rows="1"
-            :placeholder="`Ask ${providerLabel}…`"
-            class="max-h-40 min-h-[2rem] flex-1 resize-none bg-transparent text-[17px] text-slate-200 outline-none placeholder:text-slate-600"
-            @keydown="handleKeydown"
-          />
-          <button
-            v-if="isStreaming"
-            type="button"
-            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/[0.08] text-slate-200 transition hover:bg-white/[0.14]"
-            aria-label="Stop"
-            @click="stop"
-          >
-            <Icon name="lucide:square" class="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
-          <button
-            v-else
-            type="button"
-            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-indigo text-white transition hover:bg-accent-indigo/90 disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-slate-600"
-            :disabled="!draft.trim()"
-            aria-label="Send"
-            @click="submit"
-          >
-            <Icon name="lucide:arrow-up" class="h-4 w-4" aria-hidden="true" />
-          </button>
+        <div class="space-y-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3 focus-within:border-white/[0.16]">
+          <AssistantSkillPicker v-model="selectedSkillIds" />
+          <div class="flex items-end gap-2">
+            <textarea
+              ref="textareaRef"
+              v-model="draft"
+              rows="1"
+              :placeholder="`Ask ${providerLabel}…`"
+              class="max-h-40 min-h-[2rem] flex-1 resize-none bg-transparent text-[17px] text-slate-200 outline-none placeholder:text-slate-600"
+              @keydown="handleKeydown"
+            />
+            <button
+              v-if="isStreaming"
+              type="button"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/[0.08] text-slate-200 transition hover:bg-white/[0.14]"
+              aria-label="Stop"
+              @click="stop"
+            >
+              <Icon name="lucide:square" class="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+            <button
+              v-else
+              type="button"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-indigo text-white transition hover:bg-accent-indigo/90 disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-slate-600"
+              :disabled="!canSubmit"
+              aria-label="Send"
+              @click="submit"
+            >
+              <Icon name="lucide:arrow-up" class="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

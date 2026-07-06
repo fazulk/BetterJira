@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { AssistantProvider, AssistantReasoning } from '~/shared/assistant'
+import type { AssistantSkillSetting } from '~/shared/settings'
 import { computed, ref, watch } from 'vue'
+import AssistantSkillModal from '@/components/settings/AssistantSkillModal.vue'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
+import { formatSkillUpdatedAt, useAssistantSkills } from '@/composables/useAssistantSkills'
 import {
   ASSISTANT_REASONING_LEVELS,
   getAssistantProviderLabel,
@@ -26,6 +29,43 @@ const {
 } = useAssistantSettings()
 
 const feedback = ref<string | null>(null)
+
+const { skills, addSkill, updateSkill, removeSkill } = useAssistantSkills()
+const skillModalOpen = ref(false)
+const editingSkill = ref<AssistantSkillSetting | null>(null)
+
+function openSkillModal(skill: AssistantSkillSetting | null): void {
+  editingSkill.value = skill
+  skillModalOpen.value = true
+}
+
+async function saveSkill(draft: { name: string, body: string }): Promise<void> {
+  try {
+    if (editingSkill.value) {
+      await updateSkill(editingSkill.value.id, draft)
+    }
+    else {
+      await addSkill(draft)
+    }
+    skillModalOpen.value = false
+  }
+  catch (error) {
+    feedback.value = error instanceof Error ? error.message : 'Failed to save skill.'
+  }
+}
+
+async function deleteSkill(): Promise<void> {
+  if (!editingSkill.value) {
+    return
+  }
+  try {
+    await removeSkill(editingSkill.value.id)
+    skillModalOpen.value = false
+  }
+  catch (error) {
+    feedback.value = error instanceof Error ? error.message : 'Failed to delete skill.'
+  }
+}
 
 const promptDraft = ref(settings.value.systemPrompt)
 const promptFeedback = ref<{ kind: 'success' | 'error', message: string } | null>(null)
@@ -223,6 +263,42 @@ async function handleReasoningChange(reasoning: AssistantReasoning): Promise<voi
       </div>
     </div>
 
+    <div>
+      <h3 class="text-sm font-medium text-slate-200">
+        Skills
+      </h3>
+      <p class="mt-0.5 text-xs text-slate-500">
+        Reusable prompts you can attach to a chat message from the composer.
+      </p>
+      <div class="mt-3 overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]">
+        <div class="flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-3">
+          <span class="text-sm text-slate-300">{{ skills.length }} {{ skills.length === 1 ? 'skill' : 'skills' }}</span>
+          <button
+            type="button"
+            class="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/[0.05] hover:text-slate-200"
+            aria-label="Add skill"
+            title="Add skill"
+            @click="openSkillModal(null)"
+          >
+            <Icon name="lucide:plus" class="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+        <p v-if="skills.length === 0" class="px-4 py-4 text-xs text-slate-600">
+          No skills yet. Add one to reuse a prompt in the assistant chat.
+        </p>
+        <button
+          v-for="skill in skills"
+          :key="skill.id"
+          type="button"
+          class="block w-full border-b border-white/[0.04] px-4 py-3 text-left transition last:border-b-0 hover:bg-white/[0.03]"
+          @click="openSkillModal(skill)"
+        >
+          <span class="block text-sm text-slate-200">{{ skill.name }}</span>
+          <span v-if="skill.updatedAt" class="mt-0.5 block text-xs text-slate-600">{{ formatSkillUpdatedAt(skill.updatedAt) }}</span>
+        </button>
+      </div>
+    </div>
+
     <div class="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
       <div class="mb-3 flex items-center justify-between gap-3">
         <div>
@@ -291,5 +367,14 @@ async function handleReasoningChange(reasoning: AssistantReasoning): Promise<voi
         {{ feedback }}
       </p>
     </div>
+
+    <AssistantSkillModal
+      v-if="skillModalOpen"
+      :key="editingSkill?.id ?? 'new'"
+      :skill="editingSkill"
+      @save="saveSkill"
+      @delete="deleteSkill"
+      @close="skillModalOpen = false"
+    />
   </section>
 </template>

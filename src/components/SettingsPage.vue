@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import SettingsAssistantSection from '@/components/settings/SettingsAssistantSection.vue'
-import SettingsInstructionsSection from '@/components/settings/SettingsInstructionsSection.vue'
 import SettingsTeamSections from '@/components/settings/SettingsTeamSections.vue'
 import SettingsWorkspaceSection from '@/components/settings/SettingsWorkspaceSection.vue'
 import { provideSettingsPageContext } from '@/features/settings/settingsPageContext'
@@ -95,7 +94,6 @@ const {
         <SettingsAssistantSection v-show="activeSettingsSection === 'assistant'" />
         <SettingsWorkspaceSection v-show="activeSettingsSection === 'workspace'" />
         <SettingsTeamSections />
-        <SettingsInstructionsSection v-show="activeSettingsSection === 'instructions'" />
       </main>
     </div>
   </div>

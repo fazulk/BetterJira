@@ -9,10 +9,10 @@ export { buildEnabledSpaceSearchQuery, buildUpdatedSinceSearchQuery } from './se
 export { buildTeamSpaceKey, getSpaceProjectKey } from './settingsSpaces'
 export type {
   AiConnectionSettings,
-  AiInstructionPresetSetting,
   AppSettings,
   AppSpaceSetting,
   AppSpaceTeamFilter,
+  AssistantSkillSetting,
   CustomView,
   CustomViewDisplay,
   CustomViewFilter,

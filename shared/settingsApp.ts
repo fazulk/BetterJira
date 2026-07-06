@@ -23,15 +23,15 @@ import {
   normalizeStatusOrder,
 } from './settingsNormalizers'
 import {
-  normalizeAiInstructionPresetSettings,
-  reconcileAiInstructionPresets,
-} from './settingsPresets'
-import {
   getDefaultSidebarSettings,
   normalizeSidebarSettings,
   normalizeSidebarSettingsUpdate,
   reconcileSidebarSettings,
 } from './settingsSidebar'
+import {
+  normalizeAssistantSkillSettings,
+  reconcileAssistantSkills,
+} from './settingsSkills'
 import {
   normalizeSpacesFromRecord,
   reconcileSpaceSettings,
@@ -67,7 +67,7 @@ export function getDefaultAppSettings(): AppSettings {
     },
     ai: getDefaultAiConnectionSettings(),
     assistant: getDefaultAssistantSettings(),
-    aiInstructionPresets: [],
+    assistantSkills: [],
     labelColors: {},
     statusPreferences: {
       colors: {},
@@ -90,7 +90,7 @@ export function normalizeAppSettings(value: unknown): AppSettings {
     jira: normalizeJiraConnectionSettings(recordValue.jira),
     ai: normalizeAiConnectionSettings(recordValue.ai),
     assistant: normalizeAssistantConnectionSettings(recordValue.assistant),
-    aiInstructionPresets: normalizeAiInstructionPresetSettings(recordValue.aiInstructionPresets),
+    assistantSkills: normalizeAssistantSkillSettings(recordValue.assistantSkills),
     labelColors: normalizeLabelColors(recordValue.labelColors),
     statusPreferences: normalizeStatusPreferences(recordValue.statusPreferences),
   })
@@ -133,8 +133,8 @@ export function normalizeAppSettingsUpdate(value: unknown): UpdateAppSettingsInp
     nextSettings.assistant = nextAssistant
   }
 
-  if ('aiInstructionPresets' in recordValue) {
-    nextSettings.aiInstructionPresets = normalizeAiInstructionPresetSettings(recordValue.aiInstructionPresets)
+  if ('assistantSkills' in recordValue) {
+    nextSettings.assistantSkills = normalizeAssistantSkillSettings(recordValue.assistantSkills)
   }
 
   if ('labelColors' in recordValue) {
@@ -178,7 +178,7 @@ export function reconcileAppSettings(settings: AppSettings): AppSettings {
       model: settings.ai.model || getDefaultModelForProvider(DEFAULT_AI_PROVIDER),
     }),
     assistant: normalizeAssistantConnectionSettings(settings.assistant),
-    aiInstructionPresets: reconcileAiInstructionPresets(settings.aiInstructionPresets),
+    assistantSkills: reconcileAssistantSkills(settings.assistantSkills),
     labelColors: normalizeLabelColors(settings.labelColors),
     statusPreferences: {
       colors: normalizeStatusColors(settings.statusPreferences.colors),

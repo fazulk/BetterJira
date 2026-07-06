@@ -39,11 +39,13 @@ export interface UpdateAssistantSettingsInput {
   systemPrompt?: string
 }
 
-export interface AiInstructionPresetSetting {
+export interface AssistantSkillSetting {
   id: string
-  label: string
-  text: string
-  enabled: boolean
+  name: string
+  /** Markdown prompt injected into the chat turn when the skill is attached. */
+  body: string
+  /** Epoch milliseconds of the last save, shown as "Updated Xd ago". */
+  updatedAt: number
 }
 
 export interface FavoriteViewFilter {
@@ -173,7 +175,7 @@ export interface AppSettings {
   jira: JiraConnectionSettings
   ai: AiConnectionSettings
   assistant: AssistantSettings
-  aiInstructionPresets: AiInstructionPresetSetting[]
+  assistantSkills: AssistantSkillSetting[]
   labelColors: LabelColors
   statusPreferences: StatusPreferences
 }
@@ -185,7 +187,7 @@ export interface UpdateAppSettingsInput {
   jira?: UpdateJiraConnectionInput
   ai?: UpdateAiConnectionInput
   assistant?: UpdateAssistantSettingsInput
-  aiInstructionPresets?: AiInstructionPresetSetting[]
+  assistantSkills?: AssistantSkillSetting[]
   labelColors?: LabelColors
   statusPreferences?: UpdateStatusPreferencesInput
 }

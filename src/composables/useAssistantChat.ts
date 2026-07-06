@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import type { AssistantChatMessage } from '~/shared/assistant'
+import type { AssistantChatMessage, AssistantMessageSkill } from '~/shared/assistant'
 import { computed, ref } from 'vue'
 import { streamAssistantChat } from '@/api/assistant'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
@@ -75,22 +75,28 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
     }
   }
 
-  async function send(text: string): Promise<void> {
+  async function send(text: string, skills?: AssistantMessageSkill[]): Promise<void> {
     const trimmed = text.trim()
-    if (!trimmed || isStreaming.value) {
+    const hasSkills = (skills?.length ?? 0) > 0
+    if ((!trimmed && !hasSkills) || isStreaming.value) {
       return
     }
 
     errorText.value = ''
     statusText.value = ''
 
-    messages.value.push({ id: state.nextId++, role: 'user', content: trimmed })
+    messages.value.push({
+      id: state.nextId++,
+      role: 'user',
+      content: trimmed,
+      ...(hasSkills ? { skills } : {}),
+    })
     const assistantMessage: AssistantTranscriptMessage = { id: state.nextId++, role: 'assistant', content: '', pending: true }
     messages.value.push(assistantMessage)
 
     const requestMessages: AssistantChatMessage[] = messages.value
       .filter(message => !(message.role === 'assistant' && message.pending))
-      .map(message => ({ role: message.role, content: message.content }))
+      .map(message => ({ role: message.role, content: message.content, skills: message.skills }))
 
     isStreaming.value = true
     const abortController = new AbortController()

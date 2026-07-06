@@ -55,10 +55,6 @@ export function normalizeAiValue(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-export function normalizeAiInstructionValue(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : ''
-}
-
 function normalizeLabelColorKey(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : ''
 }

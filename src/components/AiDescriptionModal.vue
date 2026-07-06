@@ -2,7 +2,6 @@
 import type { JiraAdfDocument } from '@/types/jira'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import JiraDescriptionEditor from '@/components/JiraDescriptionEditor.vue'
-import { useAiInstructionPresets } from '@/composables/useAiInstructionPresets'
 import { useAiSettings } from '@/composables/useAiSettings'
 import { useGenerateAiDescription } from '@/composables/useGenerateAiDescription'
 import { getProviderLabel } from '~/shared/ai'
@@ -26,7 +25,6 @@ const proposedDescription = ref<JiraAdfDocument | null>(null)
 const proposedDescriptionEditorRef = ref<{ focusEditor: () => void } | null>(null)
 const promptText = ref('')
 const generationError = ref<string | null>(null)
-const { visibleInstructionPresets } = useAiInstructionPresets()
 const { settings: aiSettings } = useAiSettings()
 const generateMutation = useGenerateAiDescription()
 
@@ -67,10 +65,6 @@ function handleModalKeydown(event: KeyboardEvent) {
 
 function confirmChanges() {
   emit('confirm', proposedDescription.value)
-}
-
-function selectPrompt(text: string) {
-  promptText.value = text
 }
 
 async function generateDescription(): Promise<void> {
@@ -156,23 +150,6 @@ async function generateDescription(): Promise<void> {
                 <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 px-3 py-2">
                   <span class="text-[12px] text-slate-600">Model</span>
                   <span class="truncate text-[13px] text-slate-300">{{ aiSettings.model }}</span>
-                </div>
-              </div>
-
-              <div v-if="visibleInstructionPresets.length" class="mb-4">
-                <h3 class="mb-2 text-[12px] font-medium text-slate-400">
-                  Presets
-                </h3>
-                <div class="flex flex-wrap gap-1.5">
-                  <button
-                    v-for="prompt in visibleInstructionPresets"
-                    :key="prompt.id"
-                    type="button"
-                    class="rounded-md border border-white/[0.08] bg-white/[0.025] px-2 py-1 text-[12px] text-slate-400 transition hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-slate-200"
-                    @click="selectPrompt(prompt.text)"
-                  >
-                    {{ prompt.label }}
-                  </button>
                 </div>
               </div>
 

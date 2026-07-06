@@ -55,17 +55,36 @@ function buildSystemInstructions(request: AssistantChatRequest): string {
   ].join('\n')
 }
 
+/** Renders a turn's text, appending any attached skill prompts to that turn. */
+function renderMessageText(message: AssistantChatMessage): string {
+  const content = message.content.trim()
+  const skillBlocks = (message.skills ?? []).map(skill =>
+    `## Skill: ${skill.name}\n\n${skill.body.trim()}`,
+  )
+
+  if (skillBlocks.length === 0) {
+    return content
+  }
+
+  // A turn can be skill-only; the instruction line then carries the request.
+  return [
+    ...(content ? [content] : []),
+    'Apply the following attached skill instructions to this request:',
+    ...skillBlocks,
+  ].join('\n\n')
+}
+
 function buildConversationText(messages: AssistantChatMessage[]): string {
-  const trimmed = messages.filter(message => message.content.trim().length > 0)
+  const trimmed = messages.filter(message => message.content.trim().length > 0 || (message.skills?.length ?? 0) > 0)
 
   if (trimmed.length <= 1) {
-    return trimmed[0]?.content.trim() ?? ''
+    return trimmed[0] ? renderMessageText(trimmed[0]) : ''
   }
 
   const transcript = trimmed
     .map((message) => {
       const speaker = message.role === 'assistant' ? 'Assistant' : 'User'
-      return `${speaker}: ${message.content.trim()}`
+      return `${speaker}: ${renderMessageText(message)}`
     })
     .join('\n\n')
 
