@@ -1,14 +1,34 @@
-<script lang="ts">
-import type { TicketListController } from '@/features/ticket-list/useTicketListController'
+<script setup lang="ts">
+import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 
-import { defineComponent } from 'vue'
-
-export default defineComponent({
-  props: ['controller'],
-  setup(props: { controller: TicketListController }) {
-    return props.controller
-  },
-})
+const {
+  filterMenuOpen,
+  selectedTicket,
+  filterFieldSearchQuery,
+  visibleFilterMenuEntries,
+  activeFilterEntryId,
+  toggleFilterClause,
+  isFilterClauseSelected,
+  isIssueDisplayView,
+  completedRange,
+  issueVisibilityRangeOptions,
+  showSubIssues,
+  showBacklogIssues,
+  isProjectDisplayView,
+  projectClosedRange,
+  projectClosedRangeOptions,
+  hasModifiedFilterOptions,
+  clearCurrentViewFilters,
+  dateFilterFields,
+  activeDateFilterId,
+  activeDateFilterOptions,
+  projectPropertyFilterFields,
+  activeProjectPropertyFilterId,
+  activeFilterOptions,
+  filterSearchQuery,
+  activeFilterEntry,
+  activeValueFilterFieldId,
+} = useTicketListContext()
 </script>
 
 <template>

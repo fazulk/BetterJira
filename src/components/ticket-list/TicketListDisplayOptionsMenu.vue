@@ -1,16 +1,47 @@
-<script lang="ts">
-import type { TicketListController } from '@/features/ticket-list/useTicketListController'
-
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 import TicketListGroupOrderingMenu from './TicketListGroupOrderingMenu.vue'
 
-export default defineComponent({
-  components: { TicketListGroupOrderingMenu },
-  props: ['controller'],
-  setup(props: { controller: TicketListController }) {
-    return { ...props.controller, controller: props.controller }
-  },
-})
+const {
+  displayOptionsOpen,
+  selectedTicket,
+  groupOrderingOpen,
+  isIssueDisplayView,
+  openGroupOrdering,
+  listGrouping,
+  issueGroupingOptions,
+  listSubGrouping,
+  listOrderingDirection,
+  toggleOrderingDirection,
+  listOrdering,
+  issueOrderingOptions,
+  showEmptyGroups,
+  issueRowFieldOptions,
+  isIssueRowFieldVisible,
+  visibleIssueRowFields,
+  toggleIssueRowField,
+  resetIssueDisplayOptions,
+  isProjectDisplayView,
+  projectGrouping,
+  projectGroupingOptions,
+  projectOrdering,
+  projectOrderingOptions,
+  visibleProjectRowFields,
+  projectRowFieldOptions,
+  isProjectRowFieldVisible,
+  toggleProjectRowField,
+  resetProjectDisplayOptions,
+  isInitiativeDisplayView,
+  visibleInitiativeRowFields,
+  initiativeRowFieldOptions,
+  isInitiativeRowFieldVisible,
+  toggleInitiativeRowField,
+  isSavedViewDisplayView,
+  visibleSavedViewRowFields,
+  savedViewRowFieldOptions,
+  isSavedViewRowFieldVisible,
+  toggleSavedViewRowField,
+} = useTicketListContext()
 </script>
 
 <template>
@@ -19,7 +50,7 @@ export default defineComponent({
     data-ticket-list-menu="display-options"
     class="absolute right-0 top-10 z-20 w-[22rem] overflow-hidden rounded-lg border border-white/[0.08] bg-surface-2 shadow-xl shadow-black/35"
   >
-    <TicketListGroupOrderingMenu v-if="groupOrderingOpen" :controller="controller" />
+    <TicketListGroupOrderingMenu v-if="groupOrderingOpen" />
 
     <div v-if="!groupOrderingOpen" class="space-y-0.5 p-2">
       <div class="rounded-md px-2 py-1.5">

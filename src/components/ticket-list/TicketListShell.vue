@@ -1,6 +1,5 @@
-<script lang="ts">
-import type { TicketListController } from '@/features/ticket-list/useTicketListController'
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 import AddSpaceModal from '../AddSpaceModal.vue'
 import CreateTicketModal from '../CreateTicketModal.vue'
 import Sidebar from '../Sidebar.vue'
@@ -16,28 +15,88 @@ import TicketListSearchView from './TicketListSearchView.vue'
 import TicketListSelectionBar from './TicketListSelectionBar.vue'
 import TicketListToolbarArea from './TicketListToolbarArea.vue'
 
-export default defineComponent({
-  components: {
-    AddSpaceModal,
-    CreateTicketModal,
-    Sidebar,
-    TicketDetail,
-    TicketListAssistantHome,
-    TicketListCommandMenu,
-    TicketListSearchView,
-    TicketListToolbarArea,
-    TicketListInitiativesView,
-    TicketListIssueSections,
-    TicketListProjectView,
-    TicketListSavedViewsView,
-    TicketListSelectionBar,
-    TeamSettingsView,
-  },
-  props: ['controller'],
-  setup(props: { controller: TicketListController }) {
-    return { ...props.controller, controller: props.controller }
-  },
-})
+const {
+  showInitialWorkspaceOverlay,
+  effectiveSidebarWidth,
+  tickets,
+  selectedKey,
+  sidebarCollapsed,
+  refreshing,
+  currentView,
+  favoriteViewNavItems,
+  canGoBack,
+  canGoForward,
+  goBack,
+  goForward,
+  openTicket,
+  prefetchTicket,
+  handleRefresh,
+  handleViewChange,
+  openSettings,
+  openCommandMenu,
+  handleFavoriteViewChange,
+  setFavoriteViewIssueCountVisible,
+  openAddSpaceModal,
+  handleLeaveSpace,
+  startSidebarResize,
+  isTeamSettingsView,
+  closeTicket,
+  openChildCreate,
+  currentTeamKey,
+  initiativeRows,
+  initiativeGridTemplate,
+  isInitiativeRowFieldVisible,
+  getProjectHealthClass,
+  getProgressBarClass,
+  getRelativeTimeLabel,
+  isProjectDisplayView,
+  projectSections,
+  visibleProjectCount,
+  projectGrouping,
+  projectGridTemplate,
+  isProjectRowFieldVisible,
+  isProjectSectionCollapsed,
+  toggleProjectSection,
+  isViewsDirectory,
+  displayedSavedViewRows,
+  savedViewGridTemplate,
+  isSavedViewRowFieldVisible,
+  issueSections,
+  visibleIssueCount,
+  hiddenCompletedCount,
+  completedRange,
+  focusedIssueKey,
+  checkedIssueKeySet,
+  issueRowDisplayProps,
+  shouldShowIssueSectionHeader,
+  getDisplayedIssueRowKey,
+  isIssueSectionCollapsed,
+  listGrouping,
+  getStatusCategoryForGroupLabel,
+  toggleIssueSection,
+  toggleCheckedIssue,
+  commandQuery,
+  commandMenuOpen,
+  commandItems,
+  commandActiveIndex,
+  closeCommandMenu,
+  handleCommandMenuKeydown,
+  runCommandItem,
+  checkedIssueCount,
+  checkedIssues,
+  openFirstCheckedIssue,
+  copyCheckedIssueKeys,
+  clearCheckedIssues,
+  isCreateModalOpen,
+  createIssueType,
+  createParentKey,
+  issueTypeLocked,
+  parentLocked,
+  closeCreateModal,
+  handleTicketCreated,
+  isAddSpaceModalOpen,
+  closeAddSpaceModal,
+} = useTicketListContext()
 </script>
 
 <template>
@@ -84,7 +143,7 @@ export default defineComponent({
       <div
         class="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-white/[0.055] bg-issue-detail-bg"
       >
-        <TicketListToolbarArea v-if="!selectedKey && !isTeamSettingsView && currentView !== 'assistant'" :controller="controller" />
+        <TicketListToolbarArea v-if="!selectedKey && !isTeamSettingsView && currentView !== 'assistant'" />
         <div v-if="selectedKey" class="scrollbar-gutter-stable min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
           <TicketDetail
             :ticket-key="selectedKey"
@@ -97,7 +156,7 @@ export default defineComponent({
         </div>
         <TeamSettingsView v-else-if="isTeamSettingsView && currentTeamKey" :space-key="currentTeamKey" />
         <TicketListAssistantHome v-else-if="currentView === 'assistant'" />
-        <TicketListSearchView v-else-if="currentView === 'search'" :controller="controller" />
+        <TicketListSearchView v-else-if="currentView === 'search'" />
         <TicketListInitiativesView
           v-else-if="currentView === 'initiatives'"
           :rows="initiativeRows"

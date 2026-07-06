@@ -1,15 +1,20 @@
-<script lang="ts">
-import type { TicketListController } from '@/features/ticket-list/useTicketListController'
-import { defineComponent } from 'vue'
+<script setup lang="ts">
 import StatusIcon from '@/components/StatusIcon.vue'
+import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 
-export default defineComponent({
-  components: { StatusIcon },
-  props: ['controller'],
-  setup(props: { controller: TicketListController }) {
-    return props.controller
-  },
-})
+const {
+  groupOrderingOpen,
+  closeGroupOrdering,
+  resetCurrentIssueGroupOrdering,
+  issueGroupOrderingRows,
+  startIssueGroupDrag,
+  dropIssueGroup,
+  finishIssueGroupDrag,
+  listGrouping,
+  getStatusCategoryForGroupLabel,
+  getIssueGroupMarkerClass,
+  toggleIssueGroupVisibility,
+} = useTicketListContext()
 </script>
 
 <template>

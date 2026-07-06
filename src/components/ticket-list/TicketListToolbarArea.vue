@@ -1,47 +1,81 @@
-<script lang="ts">
-import type { TicketListController } from '@/features/ticket-list/useTicketListController'
-import { defineComponent, ref } from 'vue'
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 import ViewEditorCard from '../ViewEditorCard.vue'
 import ViewHeaderBreadcrumb from '../ViewHeaderBreadcrumb.vue'
 import TicketListDisplayOptionsMenu from './TicketListDisplayOptionsMenu.vue'
 import TicketListFilterMenu from './TicketListFilterMenu.vue'
 
-export default defineComponent({
-  components: { ViewHeaderBreadcrumb, ViewEditorCard, TicketListDisplayOptionsMenu, TicketListFilterMenu },
-  props: ['controller'],
-  setup(props: { controller: TicketListController }) {
-    const saveMenuOpen = ref(false)
+const {
+  selectedTicket,
+  currentTeamAppearance,
+  currentTeamName,
+  currentTeamSectionLabel,
+  viewTitle,
+  currentView,
+  initiativeRows,
+  isViewsDirectory,
+  displayedSavedViewRows,
+  currentTeamKey,
+  visibleIssueCount,
+  currentViewIsFavoritable,
+  isFavoriteView,
+  toggleCurrentViewFavorite,
+  refreshing,
+  handleRefresh,
+  hasModifiedFilterOptions,
+  filterMenuOpen,
+  toggleFilterMenu,
+  displayOptionsOpen,
+  toggleDisplayOptions,
+  viewTabs,
+  supportsCustomViews,
+  handleViewTabClick,
+  handleViewTabContextMenu,
+  viewEditorMode,
+  startCreateView,
+  hasModifiedDisplayOptions,
+  customViewContextMenu,
+  editContextCustomView,
+  deleteContextCustomView,
+  viewEditorDraft,
+  activeFilterChips,
+  updateViewEditorName,
+  updateViewEditorDescription,
+  updateViewEditorIcon,
+  updateViewEditorColor,
+  openViewEditorFilters,
+  openViewEditorSettings,
+  removeActiveFilterChip,
+  saveViewEditor,
+  cancelViewEditor,
+  openFilterMenu,
+  activeViewIsCustomView,
+  saveCurrentViewChangesToThisView,
+  saveCurrentViewFilters,
+  clearCurrentViewFilters,
+} = useTicketListContext()
 
-    function toggleSaveMenu(): void {
-      saveMenuOpen.value = !saveMenuOpen.value
-    }
+const saveMenuOpen = ref(false)
 
-    function saveChangesToThisView(): void {
-      props.controller.saveCurrentViewChangesToThisView()
-      saveMenuOpen.value = false
-    }
+function toggleSaveMenu(): void {
+  saveMenuOpen.value = !saveMenuOpen.value
+}
 
-    function createNewViewFromChanges(): void {
-      props.controller.saveCurrentViewFilters()
-      saveMenuOpen.value = false
-    }
+function saveChangesToThisView(): void {
+  saveCurrentViewChangesToThisView()
+  saveMenuOpen.value = false
+}
 
-    function clearCurrentViewChanges(): void {
-      props.controller.clearCurrentViewFilters()
-      saveMenuOpen.value = false
-    }
+function createNewViewFromChanges(): void {
+  saveCurrentViewFilters()
+  saveMenuOpen.value = false
+}
 
-    return {
-      ...props.controller,
-      controller: props.controller,
-      clearCurrentViewChanges,
-      createNewViewFromChanges,
-      saveChangesToThisView,
-      saveMenuOpen,
-      toggleSaveMenu,
-    }
-  },
-})
+function clearCurrentViewChanges(): void {
+  clearCurrentViewFilters()
+  saveMenuOpen.value = false
+}
 </script>
 
 <template>
@@ -130,7 +164,7 @@ export default defineComponent({
           <Icon name="lucide:list-filter" class="h-4 w-4" aria-hidden="true" />
         </button>
 
-        <TicketListFilterMenu v-if="filterMenuOpen && !selectedTicket" :controller="controller" />
+        <TicketListFilterMenu v-if="filterMenuOpen && !selectedTicket" />
 
         <button
           v-if="false && !selectedTicket"
@@ -144,7 +178,6 @@ export default defineComponent({
 
         <TicketListDisplayOptionsMenu
           v-if="displayOptionsOpen && !selectedTicket"
-          :controller="controller"
         />
       </div>
     </div>

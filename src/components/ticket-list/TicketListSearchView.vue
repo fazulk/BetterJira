@@ -1,15 +1,25 @@
-<script lang="ts">
-import type { TicketListController } from '@/features/ticket-list/useTicketListController'
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 import IssueRow from '../IssueRow.vue'
 
-export default defineComponent({
-  components: { IssueRow },
-  props: ['controller'],
-  setup(props: { controller: TicketListController }) {
-    return props.controller
-  },
-})
+const {
+  currentView,
+  setSearchInputRef,
+  issueSearch,
+  searchTabs,
+  searchResultTab,
+  searchedTickets,
+  searchedProjectRows,
+  searchedInitiativeRows,
+  getDisplayedIssueRowKey,
+  focusedIssueKey,
+  checkedIssueKeySet,
+  issueRowDisplayProps,
+  openTicket,
+  prefetchTicket,
+  toggleCheckedIssue,
+  getProjectHealthClass,
+} = useTicketListContext()
 </script>
 
 <template>
