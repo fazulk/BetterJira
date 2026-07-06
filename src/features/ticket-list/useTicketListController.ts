@@ -1297,6 +1297,8 @@ export function useTicketListController() {
   const currentViewIsFavoritable = computed(() => currentView.value !== 'search')
   const favoriteViewNavItems = computed<FavoriteViewNavItem[]>(() =>
     favoriteViews.value
+      // 'inbox' favorites can persist from builds that predate the inbox removal
+      .filter(view => view.id !== 'inbox')
       .map((view) => {
         const customView = getCustomView(view.id)
         return {
