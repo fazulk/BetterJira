@@ -450,6 +450,22 @@ export function createRowFieldVisibility<FieldId>(fields: Ref<FieldId[]>): {
   return { isVisible, toggle }
 }
 
+export function getDisplayedIssueRowKey(ticket: JiraTicket): string {
+  return ticket.key
+}
+
+export function sortTicketsByActivity(nextTickets: JiraTicket[]): JiraTicket[] {
+  return [...nextTickets].sort(
+    (left, right) =>
+      getTimeValue(right.updatedAt ?? right.createdAt)
+      - getTimeValue(left.updatedAt ?? left.createdAt)
+      || left.key.localeCompare(right.key, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      }),
+  )
+}
+
 export function isRecentlyUpdated(value?: string | null): boolean {
   if (!value)
     return false
