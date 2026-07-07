@@ -11,6 +11,7 @@ import type {
   FilterMenuEntry,
   FilterOption,
   InitiativeRow,
+  InitiativeRowFieldId,
   IssueGroupingFieldId,
   IssueGroupOrderingRow,
   IssueRowDisplayProps,
@@ -22,8 +23,10 @@ import type {
   ProjectOrderingFieldId,
   ProjectPropertyFilterFieldId,
   ProjectRow,
+  ProjectRowFieldId,
   ProjectSection,
   SavedViewRow,
+  SavedViewRowFieldId,
   SearchResultTab,
   SearchTab,
   ViewFilterClause,
@@ -699,35 +702,13 @@ export function useTicketListController() {
     return entry ?? { id: 'status', label: 'Status', icon: '◌', hasSubmenu: true }
   })
   const activeValueFilterFieldId = computed<FilterFieldId>(() => {
-    if (activeFilterEntryId.value === 'dates')
+    const entryId = activeFilterEntryId.value
+    if (entryId === 'dates')
       return activeDateFilterId.value
-    if (activeFilterEntryId.value === 'projectProperties')
+    if (entryId === 'projectProperties')
       return activeProjectPropertyFilterId.value
-    if (activeFilterEntryId.value === 'status')
-      return 'status'
-    if (activeFilterEntryId.value === 'assignee')
-      return 'assignee'
-    if (activeFilterEntryId.value === 'reporter')
-      return 'reporter'
-    if (activeFilterEntryId.value === 'priority')
-      return 'priority'
-    if (activeFilterEntryId.value === 'labels')
-      return 'labels'
-    if (activeFilterEntryId.value === 'suggestedLabel')
-      return 'suggestedLabel'
-    if (activeFilterEntryId.value === 'project')
-      return 'project'
-    if (activeFilterEntryId.value === 'team')
-      return 'team'
-    if (activeFilterEntryId.value === 'initiative')
-      return 'initiative'
-    if (activeFilterEntryId.value === 'subscribers')
-      return 'subscribers'
-    if (activeFilterEntryId.value === 'shared')
-      return 'shared'
-    if (activeFilterEntryId.value === 'sharedWith')
-      return 'sharedWith'
-    return 'externalSource'
+    // Every other filter-menu entry id is itself a filter field id.
+    return entryId
   })
   const filterableTickets = computed(() => filterTicketsForCurrentView(scopedTickets.value))
   const activeFilterOptions = computed<FilterOption[]>(() => {
@@ -1900,47 +1881,54 @@ export function useTicketListController() {
   function toggleOrderingDirection() {
     listOrderingDirection.value = listOrderingDirection.value === 'asc' ? 'desc' : 'asc'
   }
+  function buildGridTemplate<FieldId>(
+    leadColumn: string,
+    columnWidths: ReadonlyArray<readonly [FieldId, string]>,
+    isVisible: (fieldId: FieldId) => boolean,
+  ): string {
+    return [
+      leadColumn,
+      ...columnWidths.filter(([fieldId]) => isVisible(fieldId)).map(([, width]) => width),
+    ].join(' ')
+  }
   function getProjectGridTemplate(): string {
-    const columns = ['minmax(220px,1.4fr)']
-    if (isProjectRowFieldVisible('health'))
-      columns.push('108px')
-    if (isProjectRowFieldVisible('priority'))
-      columns.push('94px')
-    if (isProjectRowFieldVisible('lead'))
-      columns.push('130px')
-    if (isProjectRowFieldVisible('targetDate'))
-      columns.push('104px')
-    if (isProjectRowFieldVisible('issues'))
-      columns.push('150px')
-    if (isProjectRowFieldVisible('status'))
-      columns.push('116px')
-    return columns.join(' ')
+    return buildGridTemplate<ProjectRowFieldId>(
+      'minmax(220px,1.4fr)',
+      [
+        ['health', '108px'],
+        ['priority', '94px'],
+        ['lead', '130px'],
+        ['targetDate', '104px'],
+        ['issues', '150px'],
+        ['status', '116px'],
+      ],
+      isProjectRowFieldVisible,
+    )
   }
   function getInitiativeGridTemplate(): string {
-    const columns = ['minmax(260px,1.4fr)']
-    if (isInitiativeRowFieldVisible('health'))
-      columns.push('112px')
-    if (isInitiativeRowFieldVisible('lead'))
-      columns.push('124px')
-    if (isInitiativeRowFieldVisible('projects'))
-      columns.push('132px')
-    if (isInitiativeRowFieldVisible('issues'))
-      columns.push('156px')
-    if (isInitiativeRowFieldVisible('updated'))
-      columns.push('112px')
-    return columns.join(' ')
+    return buildGridTemplate<InitiativeRowFieldId>(
+      'minmax(260px,1.4fr)',
+      [
+        ['health', '112px'],
+        ['lead', '124px'],
+        ['projects', '132px'],
+        ['issues', '156px'],
+        ['updated', '112px'],
+      ],
+      isInitiativeRowFieldVisible,
+    )
   }
   function getSavedViewGridTemplate(): string {
-    const columns = ['minmax(260px,1fr)']
-    if (isSavedViewRowFieldVisible('type'))
-      columns.push('112px')
-    if (isSavedViewRowFieldVisible('items'))
-      columns.push('88px')
-    if (isSavedViewRowFieldVisible('owner'))
-      columns.push('132px')
-    if (isSavedViewRowFieldVisible('updated'))
-      columns.push('112px')
-    return columns.join(' ')
+    return buildGridTemplate<SavedViewRowFieldId>(
+      'minmax(260px,1fr)',
+      [
+        ['type', '112px'],
+        ['items', '88px'],
+        ['owner', '132px'],
+        ['updated', '112px'],
+      ],
+      isSavedViewRowFieldVisible,
+    )
   }
   function prefetchTicket(ticketKey: string) {
     if (isLocalTicketKey(ticketKey)) {
