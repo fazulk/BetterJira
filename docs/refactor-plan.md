@@ -230,6 +230,12 @@ Precondition: Phases 2 and 3 complete.
 - **6.4** Extract `useProjectRows` / `useInitiativeRows` aggregation
   pipelines; replace the O(n²) parent lookup in `getProjectKey` with a
   key→ticket Map.
+  - 6.4 accepted delta: ticket lookups now go through a first-wins
+    key→ticket Map (matching `Array#find`). The only site where semantics
+    could diverge is `getInitiativeSourceTicket`: with duplicate ticket keys
+    where the first occurrence is not an initiative but a later one is, the
+    old `find` matched the later ticket; the Map lookup returns null. Keys
+    are unique in practice (cache merges by key), so no observable change.
 - **6.5** Extract interaction composables: `useIssueSelection`,
   `useSidebarResize`, `useCommandMenu`, `useTicketListKeyboard` (dedupe the
   repeated search-escape branch and unreachable enter-guard in

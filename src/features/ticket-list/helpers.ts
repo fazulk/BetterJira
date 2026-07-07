@@ -175,6 +175,14 @@ export function getProjectHealth(status: string, progress: number): ProjectRow['
   return 'On track'
 }
 
+export function getProjectHealthRank(health: ProjectRow['health']): number {
+  if (health === 'At risk')
+    return 0
+  if (health === 'On track')
+    return 1
+  return 2
+}
+
 export function getProjectHealthClass(health: ProjectRow['health']): string {
   if (health === 'Completed')
     return 'bg-[#4dbb83]/10 text-[#63c891] border-[#4dbb83]/20'
