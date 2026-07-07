@@ -56,6 +56,8 @@ export function getFilterFieldLabel(fieldId: FilterFieldId): string {
     return 'Completed date'
   if (fieldId === 'project')
     return 'Project'
+  if (fieldId === 'team')
+    return 'Team'
   if (fieldId === 'projectStatus')
     return 'Project status'
   if (fieldId === 'projectPriority')
