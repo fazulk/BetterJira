@@ -2,7 +2,6 @@ import type { ComponentPublicInstance } from 'vue'
 import type { TicketFilterContext } from './filterEngine'
 import type {
   ActiveFilterChip,
-  CommandMenuItem,
   DateFilterFieldId,
   DateFilterOption,
   FavoriteViewNavItem,
@@ -55,6 +54,9 @@ import { useJiraTickets } from '@/composables/useJiraTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { compareStatusesByPreference, useStatusPreferences } from '@/composables/useStatusPreferences'
 import { useViewOverrides } from '@/composables/useViewOverrides'
+import { useCommandMenu } from '@/features/ticket-list/useCommandMenu'
+import { useIssueSelection } from '@/features/ticket-list/useIssueSelection'
+import { useSidebarResize } from '@/features/ticket-list/useSidebarResize'
 import { useTicketRows } from '@/features/ticket-list/useTicketRows'
 import { useViewStatePersistence } from '@/features/ticket-list/useViewStatePersistence'
 import { getStatusGroup } from '@/types/jira'
@@ -87,7 +89,6 @@ import {
   getBaseViewIdForCustomContext,
   getCustomViewKind,
   getIssueGroupMarkerClass,
-  getIssueTypeIcon,
   getPriorityRank,
   getProgressBarClass,
   getProjectGroupingLabel,
@@ -161,11 +162,8 @@ export function useTicketListController() {
   const { viewOverrides, getViewOverride, upsertViewOverride, removeViewOverride } = useViewOverrides()
   const jiraMeQuery = useJiraCurrentUser(hasJiraCredentialsConfigured)
   const sidebarCollapsed = useLocalStorage('jira2.sidebar.collapsed', false)
-  const defaultSidebarWidth = 300
-  const minSidebarWidth = 208
-  const maxSidebarWidth = 360
   const collapsedSidebarWidth = 48
-  const sidebarWidth = useLocalStorage('jira2.sidebar.width', defaultSidebarWidth)
+  const { sidebarWidth, startSidebarResize } = useSidebarResize({ sidebarCollapsed })
   const router = useRouter()
   // The active view is encoded in the URL (`?view=<id>`) so that switching views
   // creates real browser/Electron history entries. `persistedView` mirrors the active
@@ -227,8 +225,6 @@ export function useTicketListController() {
   const issueSearch = ref('')
   const displayOptionsOpen = ref(false)
   const groupOrderingOpen = ref(false)
-  const isResizingSidebar = ref(false)
-  const activePointerId = ref<number | null>(null)
   const isCreateModalOpen = ref(false)
   const isAddSpaceModalOpen = ref(false)
   const createIssueType = ref('Task')
@@ -236,10 +232,6 @@ export function useTicketListController() {
   const issueTypeLocked = ref(false)
   const parentLocked = ref(false)
   const hasFinishedInitialWorkspaceLoad = ref(false)
-  const commandMenuOpen = ref(false)
-  const commandQuery = ref('')
-  const commandActiveIndex = ref(0)
-  const commandInputRef = ref<HTMLInputElement | null>(null)
   const searchInputRef = ref<HTMLInputElement | null>(null)
   function setSearchInputRef(element: Element | ComponentPublicInstance | null): void {
     searchInputRef.value = element instanceof HTMLInputElement ? element : null
@@ -247,9 +239,6 @@ export function useTicketListController() {
   const lastNonSearchView = ref(currentView.value === 'search' ? 'my-issues' : currentView.value)
   const draggedIssueGroupId = ref<string | null>(null)
   const pendingGotoKey = ref(false)
-  const focusedIssueKey = ref<string | null>(null)
-  const checkedIssueKeys = ref<string[]>([])
-  const selectionAnchorKey = ref<string | null>(null)
   const searchResultTab = useLocalStorage<SearchResultTab>('jira2.linear.searchTab', 'all')
   const filterMenuOpen = ref(false)
   const activeFilterEntryId = ref<FilterEntryId>('status')
@@ -334,10 +323,6 @@ export function useTicketListController() {
       viewOverrides: nextViewOverrides,
     })
   }
-  if (typeof sidebarWidth.value !== 'number' || Number.isNaN(sidebarWidth.value)) {
-    sidebarWidth.value = defaultSidebarWidth
-  }
-  sidebarWidth.value = Math.min(maxSidebarWidth, Math.max(minSidebarWidth, sidebarWidth.value))
   const selectedKey = computed<string | null>({
     get() {
       return typeof route.params.key === 'string' ? route.params.key : null
@@ -878,13 +863,6 @@ export function useTicketListController() {
       ticket => !isCompletedIssueVisible(ticket),
     ).length
   })
-  const checkedIssueKeySet = computed(() => new Set(checkedIssueKeys.value))
-  const checkedIssues = computed(() =>
-    checkedIssueKeys.value
-      .map(key => tickets.value.find(ticket => ticket.key === key))
-      .filter((ticket): ticket is JiraTicket => Boolean(ticket)),
-  )
-  const checkedIssueCount = computed(() => checkedIssueKeys.value.length)
   const baseDisplayedProjectRows = computed(() => {
     const key = currentTeamKey.value
     if (currentTeamSection.value !== 'projects' || !key) {
@@ -1266,179 +1244,25 @@ export function useTicketListController() {
       return
     toggleFavoriteView(currentView.value, getCurrentFavoriteViewFilters())
   }
-  const commandSearchQuery = computed(() => commandQuery.value.trim().toLowerCase())
-  const navigationCommands = computed<CommandMenuItem[]>(() => {
-    const teamCommands = enabledSpaces.value.flatMap<CommandMenuItem>(space => [
-      {
-        id: `team:${space.key}:active`,
-        label: `${space.name || space.key} issues`,
-        description: `Open active issues for ${space.key}`,
-        section: 'Teams',
-        icon: space.key.slice(0, 1).toUpperCase(),
-        execute: () => handleViewChange(`team:${space.key}:active`),
-      },
-      {
-        id: `team:${space.key}:backlog`,
-        label: `${space.name || space.key} backlog`,
-        description: `Open backlog for ${space.key}`,
-        section: 'Teams',
-        icon: space.key.slice(0, 1).toUpperCase(),
-        execute: () => handleViewChange(`team:${space.key}:backlog`),
-      },
-      {
-        id: `team:${space.key}:projects`,
-        label: `${space.name || space.key} projects`,
-        description: `Open projects for ${space.key}`,
-        section: 'Teams',
-        icon: '◈',
-        execute: () => handleViewChange(`team:${space.key}:projects`),
-      },
-      {
-        id: `team:${space.key}:views`,
-        label: `${space.name || space.key} views`,
-        description: `Open saved views for ${space.key}`,
-        section: 'Teams',
-        icon: '◌',
-        execute: () => handleViewChange(`team:${space.key}:views`),
-      },
-    ])
-    return [
-      {
-        id: 'create',
-        label: 'Create issue',
-        description: 'Open the new issue composer',
-        section: 'Actions',
-        icon: '＋',
-        execute: () => openGlobalCreate(),
-      },
-      {
-        id: 'refresh',
-        label: 'Sync Jira',
-        description: 'Refresh issues and selected issue details',
-        section: 'Actions',
-        icon: '↻',
-        execute: () => {
-          void handleRefresh()
-        },
-      },
-      {
-        id: 'my-issues',
-        label: 'My issues',
-        description: 'Open assigned active issues',
-        section: 'Navigation',
-        icon: '◎',
-        execute: () => handleViewChange('my-issues'),
-      },
-      {
-        id: 'search',
-        label: 'Search',
-        description: 'Open workspace search',
-        section: 'Navigation',
-        icon: 'search',
-        execute: () => handleViewChange('search'),
-      },
-      {
-        id: 'initiatives',
-        label: 'Initiatives',
-        description: 'Open roadmap rollups',
-        section: 'Navigation',
-        icon: '◇',
-        execute: () => handleViewChange('initiatives'),
-      },
-      {
-        id: 'projects',
-        label: 'Projects',
-        description: 'Open project table',
-        section: 'Navigation',
-        icon: '◈',
-        execute: () => handleViewChange('projects'),
-      },
-      {
-        id: 'views',
-        label: 'Views',
-        description: 'Open saved views',
-        section: 'Navigation',
-        icon: '◌',
-        execute: () => handleViewChange('views'),
-      },
-      {
-        id: 'settings',
-        label: 'Settings',
-        description: 'Open workspace settings',
-        section: 'Navigation',
-        icon: '⚙',
-        execute: openSettings,
-      },
-      ...teamCommands,
-    ]
-  })
-  const projectCommandItems = computed<CommandMenuItem[]>(() => {
-    const query = commandSearchQuery.value
-    const baseProjects = query
-      ? projectRows.value.filter(project =>
-          [
-            project.key,
-            project.name,
-            project.spaceKey,
-            project.spaceName,
-            project.health,
-            project.priority,
-            project.lead,
-            project.status,
-            'project',
-            'projects',
-            'epic',
-            'epics',
-          ].some(value => value.toLowerCase().includes(query)),
-        )
-      : projectRows.value
-    return baseProjects
-      .slice(0, 20)
-      .map(project => ({
-        id: `project:${project.key}`,
-        label: project.name,
-        description: `${project.key} · ${project.status} · ${project.lead}`,
-        section: 'Projects',
-        icon: '◈',
-        execute: () => openTicket(project.key),
-      }))
-  })
-  const issueCommandItems = computed<CommandMenuItem[]>(() => {
-    const query = commandSearchQuery.value
-    const baseTickets = query
-      ? issueTickets.value.filter(ticket =>
-          [
-            ticket.key,
-            ticket.summary,
-            ticket.status,
-            ticket.priority,
-            ticket.assignee,
-            ticket.spaceKey,
-            ticket.spaceName,
-          ].some(value => value?.toLowerCase().includes(query)),
-        )
-      : scopedTickets.value
-    return sortTickets(baseTickets)
-      .slice(0, 20)
-      .map(ticket => ({
-        id: `issue:${ticket.key}`,
-        label: ticket.summary,
-        description: `${ticket.key} · ${ticket.status} · ${ticket.assignee || 'Unassigned'}`,
-        section: 'Issues',
-        icon: getIssueTypeIcon(ticket.issueType),
-        execute: () => openTicket(ticket.key),
-      }))
-  })
-  const commandItems = computed<CommandMenuItem[]>(() => {
-    const query = commandSearchQuery.value
-    const navigationItems = query
-      ? navigationCommands.value.filter(item =>
-          [item.label, item.description, item.section].some(value =>
-            value?.toLowerCase().includes(query),
-          ),
-        )
-      : navigationCommands.value
-    return [...navigationItems, ...projectCommandItems.value, ...issueCommandItems.value].slice(0, 40)
+  const {
+    commandMenuOpen,
+    commandQuery,
+    commandActiveIndex,
+    commandItems,
+    closeCommandMenu,
+    runCommandItem,
+    handleCommandMenuKeydown,
+  } = useCommandMenu({
+    enabledSpaces,
+    projectRows,
+    issueTickets,
+    scopedTickets,
+    sortTickets,
+    openTicket,
+    handleViewChange,
+    openGlobalCreate,
+    openSettings,
+    handleRefresh,
   })
   watchEffect(() => {
     if (hasFinishedInitialWorkspaceLoad.value) {
@@ -1453,51 +1277,28 @@ export function useTicketListController() {
   })
   watch(selectedKey, (key) => {
     if (key) {
-      focusedIssueKey.value = key
       displayOptionsOpen.value = false
       closeFilterMenu()
     }
   })
-  watch(commandMenuOpen, (isOpen) => {
-    if (!isOpen)
-      return
-    commandActiveIndex.value = 0
-    nextTick(() => {
-      commandInputRef.value?.focus()
-    })
+  const {
+    focusedIssueKey,
+    selectionAnchorKey,
+    checkedIssueKeySet,
+    checkedIssues,
+    checkedIssueCount,
+    toggleCheckedIssue,
+    clearCheckedIssues,
+    addCheckedIssueRange,
+    copyCheckedIssueKeys,
+  } = useIssueSelection({
+    selectedKey,
+    issueSections,
+    collapsedIssueSectionIds,
+    tickets,
+    getFlatVisibleTickets,
+    getDisplayedIssueRowKey,
   })
-  watch(commandSearchQuery, () => {
-    commandActiveIndex.value = 0
-  })
-  watch(commandItems, (items) => {
-    if (commandActiveIndex.value >= items.length) {
-      commandActiveIndex.value = Math.max(items.length - 1, 0)
-    }
-  })
-  watch(
-    [issueSections, collapsedIssueSectionIds],
-    () => {
-      const flatTickets = getFlatVisibleTickets()
-      if (!flatTickets.length) {
-        focusedIssueKey.value = null
-        selectionAnchorKey.value = null
-        return
-      }
-      if (
-        !focusedIssueKey.value
-        || !flatTickets.some(ticket => getDisplayedIssueRowKey(ticket) === focusedIssueKey.value)
-      ) {
-        focusedIssueKey.value = flatTickets[0] ? getDisplayedIssueRowKey(flatTickets[0]) : null
-      }
-      if (
-        selectionAnchorKey.value
-        && !flatTickets.some(ticket => getDisplayedIssueRowKey(ticket) === selectionAnchorKey.value)
-      ) {
-        selectionAnchorKey.value = null
-      }
-    },
-    { immediate: true },
-  )
   function groupTickets(
     nextTickets: JiraTicket[],
     getLabels: (ticket: JiraTicket) => string[],
@@ -2190,38 +1991,6 @@ export function useTicketListController() {
       columns.push('112px')
     return columns.join(' ')
   }
-  function clampSidebarWidth(nextWidth: number): number {
-    return Math.min(maxSidebarWidth, Math.max(minSidebarWidth, nextWidth))
-  }
-  function updateDragState(isActive: boolean) {
-    isResizingSidebar.value = isActive
-    document.body.style.cursor = isActive ? 'col-resize' : ''
-    document.body.style.userSelect = isActive ? 'none' : ''
-  }
-  function stopSidebarResize(pointerId?: number) {
-    if (pointerId !== undefined && activePointerId.value !== pointerId) {
-      return
-    }
-    activePointerId.value = null
-    updateDragState(false)
-  }
-  function handleSidebarResize(event: PointerEvent) {
-    if (!isResizingSidebar.value || sidebarCollapsed.value) {
-      return
-    }
-    sidebarWidth.value = clampSidebarWidth(event.clientX)
-  }
-  function handleSidebarResizeEnd(event: PointerEvent) {
-    stopSidebarResize(event.pointerId)
-  }
-  function startSidebarResize(event: PointerEvent) {
-    if (sidebarCollapsed.value) {
-      return
-    }
-    activePointerId.value = event.pointerId
-    updateDragState(true)
-    event.preventDefault()
-  }
   function prefetchTicket(ticketKey: string) {
     if (isLocalTicketKey(ticketKey)) {
       void queryClient.prefetchQuery({
@@ -2246,49 +2015,11 @@ export function useTicketListController() {
       return
     selectedKey.value = null
   }
-  function toggleCheckedIssue(ticketKey: string) {
-    checkedIssueKeys.value = checkedIssueKeySet.value.has(ticketKey)
-      ? checkedIssueKeys.value.filter(key => key !== ticketKey)
-      : [...checkedIssueKeys.value, ticketKey]
-    selectionAnchorKey.value = ticketKey
-  }
-  function clearCheckedIssues() {
-    checkedIssueKeys.value = []
-    selectionAnchorKey.value = null
-  }
-  function getVisibleTicketRangeKeys(anchorKey: string, targetKey: string): string[] {
-    const flatTickets = getFlatVisibleTickets()
-    const anchorIndex = flatTickets.findIndex(
-      ticket => getDisplayedIssueRowKey(ticket) === anchorKey,
-    )
-    const targetIndex = flatTickets.findIndex(
-      ticket => getDisplayedIssueRowKey(ticket) === targetKey,
-    )
-    if (anchorIndex === -1 || targetIndex === -1)
-      return targetKey ? [targetKey] : []
-    const start = Math.min(anchorIndex, targetIndex)
-    const end = Math.max(anchorIndex, targetIndex)
-    return flatTickets.slice(start, end + 1).map(getDisplayedIssueRowKey)
-  }
-  function addCheckedIssueRange(anchorKey: string, targetKey: string) {
-    const nextKeys = getVisibleTicketRangeKeys(anchorKey, targetKey)
-    const merged = new Set(checkedIssueKeys.value)
-    for (const key of nextKeys) {
-      merged.add(key)
-    }
-    checkedIssueKeys.value = [...merged]
-  }
   function openFirstCheckedIssue() {
     const firstIssue = checkedIssues.value[0]
     if (!firstIssue)
       return
     openTicket(firstIssue.key)
-  }
-  async function copyCheckedIssueKeys() {
-    const text = checkedIssueKeys.value.join(', ')
-    if (!text || !navigator.clipboard)
-      return
-    await navigator.clipboard.writeText(text)
   }
   function openSettings() {
     void navigateTo('/settings')
@@ -2568,11 +2299,6 @@ export function useTicketListController() {
     displayOptionsOpen.value = false
     closeFilterMenu()
   }
-  function closeCommandMenu() {
-    commandMenuOpen.value = false
-    commandQuery.value = ''
-    commandActiveIndex.value = 0
-  }
   function closeDisplayOptions() {
     displayOptionsOpen.value = false
     groupOrderingOpen.value = false
@@ -2607,22 +2333,6 @@ export function useTicketListController() {
       }
       closeFilterMenu()
     }
-  }
-  function runCommandItem(item: CommandMenuItem) {
-    closeCommandMenu()
-    item.execute()
-  }
-  function runActiveCommand() {
-    const item = commandItems.value[commandActiveIndex.value]
-    if (!item)
-      return
-    runCommandItem(item)
-  }
-  function moveCommandSelection(delta: number) {
-    const itemCount = commandItems.value.length
-    if (itemCount === 0)
-      return
-    commandActiveIndex.value = (commandActiveIndex.value + delta + itemCount) % itemCount
   }
   function getIssueSectionCollapseId(section: IssueSection): string {
     return `${currentView.value}:${listGrouping.value}:${section.id}`
@@ -2690,27 +2400,6 @@ export function useTicketListController() {
       addCheckedIssueRange(anchorKey, nextTicketKey)
     }
     focusedIssueKey.value = getDisplayedIssueRowKey(nextTicket)
-  }
-  function handleCommandMenuKeydown(event: KeyboardEvent) {
-    if (event.key === 'ArrowDown') {
-      event.preventDefault()
-      moveCommandSelection(1)
-      return
-    }
-    if (event.key === 'ArrowUp') {
-      event.preventDefault()
-      moveCommandSelection(-1)
-      return
-    }
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      runActiveCommand()
-      return
-    }
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      closeCommandMenu()
-    }
   }
   function handleGlobalKeydown(event: KeyboardEvent) {
     if (event.defaultPrevented)
@@ -2840,11 +2529,6 @@ export function useTicketListController() {
       })
     }
   }
-  watch(sidebarCollapsed, (isCollapsed) => {
-    if (isCollapsed) {
-      stopSidebarResize()
-    }
-  })
   watch(
     currentView,
     (view, previousView) => {
@@ -2861,9 +2545,6 @@ export function useTicketListController() {
   )
   let stopNavigationHistoryAfterEach: (() => void) | null = null
   onMounted(() => {
-    window.addEventListener('pointermove', handleSidebarResize)
-    window.addEventListener('pointerup', handleSidebarResizeEnd)
-    window.addEventListener('pointercancel', handleSidebarResizeEnd)
     document.addEventListener('pointerdown', handleDocumentPointerDown, true)
     document.addEventListener('keydown', handleGlobalKeydown, true)
     window.addEventListener('popstate', syncNavigationHistoryState)
@@ -2879,10 +2560,6 @@ export function useTicketListController() {
     syncNavigationHistoryState()
   })
   onBeforeUnmount(() => {
-    stopSidebarResize()
-    window.removeEventListener('pointermove', handleSidebarResize)
-    window.removeEventListener('pointerup', handleSidebarResizeEnd)
-    window.removeEventListener('pointercancel', handleSidebarResizeEnd)
     document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
     document.removeEventListener('keydown', handleGlobalKeydown, true)
     window.removeEventListener('popstate', syncNavigationHistoryState)
