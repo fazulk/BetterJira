@@ -1,3 +1,4 @@
+import type { Ref } from 'vue'
 import type {
   CustomViewKind,
   DateFilterFieldId,
@@ -404,6 +405,29 @@ export function isInitiativeIssue(ticket: JiraTicket): boolean {
 
 export function isInitiativeIssueType(issueType: string): boolean {
   return issueType.toLowerCase().includes('initiative')
+}
+
+/**
+ * Visibility state for a row-field list: membership check plus a toggle
+ * that refuses to hide the last visible field.
+ */
+export function createRowFieldVisibility<FieldId>(fields: Ref<FieldId[]>): {
+  isVisible: (fieldId: FieldId) => boolean
+  toggle: (fieldId: FieldId) => void
+} {
+  function isVisible(fieldId: FieldId): boolean {
+    return fields.value.includes(fieldId)
+  }
+  function toggle(fieldId: FieldId): void {
+    if (isVisible(fieldId)) {
+      if (fields.value.length === 1)
+        return
+      fields.value = fields.value.filter(item => item !== fieldId)
+      return
+    }
+    fields.value = [...fields.value, fieldId]
+  }
+  return { isVisible, toggle }
 }
 
 export function isRecentlyUpdated(value?: string | null): boolean {

@@ -11,11 +11,9 @@ import type {
   FilterMenuEntry,
   FilterOption,
   InitiativeRow,
-  InitiativeRowFieldId,
   IssueGroupingFieldId,
   IssueGroupOrderingRow,
   IssueRowDisplayProps,
-  IssueRowFieldId,
   IssueSection,
   IssueVisibilityRange,
   MyIssuesViewId,
@@ -24,10 +22,8 @@ import type {
   ProjectOrderingFieldId,
   ProjectPropertyFilterFieldId,
   ProjectRow,
-  ProjectRowFieldId,
   ProjectSection,
   SavedViewRow,
-  SavedViewRowFieldId,
   SearchResultTab,
   SearchTab,
   ViewFilterClause,
@@ -86,6 +82,7 @@ import {
 } from './filterEngine'
 import {
   compareOptionalDates,
+  createRowFieldVisibility,
   getBaseViewIdForCustomContext,
   getCustomViewKind,
   getIssueGroupMarkerClass,
@@ -291,6 +288,14 @@ export function useTicketListController() {
     upsertViewOverride,
     removeViewOverride,
   })
+  const { isVisible: isIssueRowFieldVisible, toggle: toggleIssueRowField }
+    = createRowFieldVisibility(visibleIssueRowFields)
+  const { isVisible: isProjectRowFieldVisible, toggle: toggleProjectRowField }
+    = createRowFieldVisibility(visibleProjectRowFields)
+  const { isVisible: isInitiativeRowFieldVisible, toggle: toggleInitiativeRowField }
+    = createRowFieldVisibility(visibleInitiativeRowFields)
+  const { isVisible: isSavedViewRowFieldVisible, toggle: toggleSavedViewRowField }
+    = createRowFieldVisibility(visibleSavedViewRowFields)
   function copyCustomView(view: CustomView): CustomView {
     return {
       ...view,
@@ -1811,18 +1816,6 @@ export function useTicketListController() {
         }),
     )
   }
-  function isIssueRowFieldVisible(fieldId: IssueRowFieldId): boolean {
-    return visibleIssueRowFields.value.includes(fieldId)
-  }
-  function toggleIssueRowField(fieldId: IssueRowFieldId) {
-    if (isIssueRowFieldVisible(fieldId)) {
-      if (visibleIssueRowFields.value.length === 1)
-        return
-      visibleIssueRowFields.value = visibleIssueRowFields.value.filter(item => item !== fieldId)
-      return
-    }
-    visibleIssueRowFields.value = [...visibleIssueRowFields.value, fieldId]
-  }
   function resetIssueDisplayOptions() {
     const defaults = getDefaultDisplayForView(currentView.value)
     listGrouping.value = normalizeIssueGroupingFieldId(defaults.grouping)
@@ -1906,48 +1899,6 @@ export function useTicketListController() {
   }
   function toggleOrderingDirection() {
     listOrderingDirection.value = listOrderingDirection.value === 'asc' ? 'desc' : 'asc'
-  }
-  function isProjectRowFieldVisible(fieldId: ProjectRowFieldId): boolean {
-    return visibleProjectRowFields.value.includes(fieldId)
-  }
-  function toggleProjectRowField(fieldId: ProjectRowFieldId) {
-    if (isProjectRowFieldVisible(fieldId)) {
-      if (visibleProjectRowFields.value.length === 1)
-        return
-      visibleProjectRowFields.value = visibleProjectRowFields.value.filter(
-        item => item !== fieldId,
-      )
-      return
-    }
-    visibleProjectRowFields.value = [...visibleProjectRowFields.value, fieldId]
-  }
-  function isInitiativeRowFieldVisible(fieldId: InitiativeRowFieldId): boolean {
-    return visibleInitiativeRowFields.value.includes(fieldId)
-  }
-  function toggleInitiativeRowField(fieldId: InitiativeRowFieldId) {
-    if (isInitiativeRowFieldVisible(fieldId)) {
-      if (visibleInitiativeRowFields.value.length === 1)
-        return
-      visibleInitiativeRowFields.value = visibleInitiativeRowFields.value.filter(
-        item => item !== fieldId,
-      )
-      return
-    }
-    visibleInitiativeRowFields.value = [...visibleInitiativeRowFields.value, fieldId]
-  }
-  function isSavedViewRowFieldVisible(fieldId: SavedViewRowFieldId): boolean {
-    return visibleSavedViewRowFields.value.includes(fieldId)
-  }
-  function toggleSavedViewRowField(fieldId: SavedViewRowFieldId) {
-    if (isSavedViewRowFieldVisible(fieldId)) {
-      if (visibleSavedViewRowFields.value.length === 1)
-        return
-      visibleSavedViewRowFields.value = visibleSavedViewRowFields.value.filter(
-        item => item !== fieldId,
-      )
-      return
-    }
-    visibleSavedViewRowFields.value = [...visibleSavedViewRowFields.value, fieldId]
   }
   function getProjectGridTemplate(): string {
     const columns = ['minmax(220px,1.4fr)']
