@@ -13,10 +13,8 @@ import type {
   FilterOption,
   InitiativeRow,
   InitiativeRowFieldId,
-  IssueGroupConfigMap,
   IssueGroupingFieldId,
   IssueGroupOrderingRow,
-  IssueOrderingFieldId,
   IssueRowDisplayProps,
   IssueRowFieldId,
   IssueSection,
@@ -58,13 +56,13 @@ import { useJiraTickets } from '@/composables/useJiraTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { compareStatusesByPreference, useStatusPreferences } from '@/composables/useStatusPreferences'
 import { useViewOverrides } from '@/composables/useViewOverrides'
+import { useViewStatePersistence } from '@/features/ticket-list/useViewStatePersistence'
 import { getStatusGroup } from '@/types/jira'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
 import { isLocalTicketKey } from '~/shared/localTickets'
 import { DEFAULT_CUSTOM_VIEW_COLOR, DEFAULT_CUSTOM_VIEW_ICON } from '~/shared/settings'
 import {
   clausesToCustomViewFilters,
-  createViewFilterClause,
   customViewFiltersToClauses,
   getFilterFieldLabel,
   isFilterFieldId,
@@ -131,10 +129,6 @@ import {
   copyViewDisplay,
   filterClausesMatch,
   filterGroupsMatch,
-  getDefaultViewDisplay,
-  normalizeDirection,
-  normalizeInitiativeRowFields,
-  normalizeIssueGroupConfigMap,
   normalizeIssueGroupingFieldId,
   normalizeIssueOrderingFieldId,
   normalizeIssueRowFields,
@@ -143,7 +137,6 @@ import {
   normalizeProjectGroupingFieldId,
   normalizeProjectOrderingFieldId,
   normalizeProjectRowFields,
-  normalizeSavedViewRowFields,
   viewDisplayMatches,
 } from './viewDisplay'
 
@@ -227,58 +220,6 @@ export function useTicketListController() {
   const issueSearch = ref('')
   const displayOptionsOpen = ref(false)
   const groupOrderingOpen = ref(false)
-  const listGrouping = ref<IssueGroupingFieldId>('none')
-  const listOrdering = ref<IssueOrderingFieldId>('manual')
-  const projectGrouping = ref<ProjectGroupingFieldId>('none')
-  const projectOrdering = ref<ProjectOrderingFieldId>('manual')
-  const projectClosedRange = ref<ProjectClosedRange>('hidden')
-  const listGroupingDirection = ref<'asc' | 'desc'>('asc')
-  const listOrderingDirection = ref<'asc' | 'desc'>('asc')
-  const issueGroupOrders = ref<IssueGroupConfigMap>({})
-  const hiddenIssueGroupIds = ref<IssueGroupConfigMap>({})
-  const completedRange = ref<IssueVisibilityRange>('hidden')
-  const showSubIssuesRange = ref<IssueVisibilityRange>('hidden')
-  const showTriageIssuesRange = ref<IssueVisibilityRange>('hidden')
-  const showSubIssues = computed({
-    get: () => showSubIssuesRange.value !== 'hidden',
-    set: (value: boolean) => {
-      showSubIssuesRange.value = value ? 'all' : 'hidden'
-    },
-  })
-  const showBacklogIssues = computed({
-    get: () => showTriageIssuesRange.value !== 'hidden',
-    set: (value: boolean) => {
-      showTriageIssuesRange.value = value ? 'all' : 'hidden'
-    },
-  })
-  const collapsedIssueSectionIds = ref<string[]>([])
-  const collapsedProjectSectionIds = ref<string[]>([])
-  const visibleIssueRowFields = ref<IssueRowFieldId[]>([
-    'id',
-    'status',
-    'assignee',
-    'priority',
-    'project',
-    'due',
-    'labels',
-    'created',
-  ])
-  const visibleProjectRowFields = ref<ProjectRowFieldId[]>([
-    'health',
-    'priority',
-    'lead',
-    'targetDate',
-    'issues',
-    'status',
-  ])
-  const visibleInitiativeRowFields = ref<InitiativeRowFieldId[]>([
-    'health',
-    'lead',
-    'projects',
-    'issues',
-    'updated',
-  ])
-  const visibleSavedViewRowFields = ref<SavedViewRowFieldId[]>(['owner'])
   const isResizingSidebar = ref(false)
   const activePointerId = ref<number | null>(null)
   const isCreateModalOpen = ref(false)
@@ -314,94 +255,46 @@ export function useTicketListController() {
   const viewEditorDraft = ref<CustomView | null>(null)
   const viewEditorPreviousViewId = ref<string | null>(null)
   const viewEditorPreviousDisplay = ref<CustomViewDisplay | null>(null)
-  const suppressViewDisplaySync = ref(false)
   const customViewContextMenu = ref({ open: false, viewId: '', x: 0, y: 0 })
-  function captureDisplay(): CustomViewDisplay {
-    return {
-      grouping: listGrouping.value,
-      ordering: listOrdering.value,
-      groupingDirection: listGroupingDirection.value,
-      orderingDirection: listOrderingDirection.value,
-      completedRange: completedRange.value,
-      showSubIssuesRange: showSubIssuesRange.value,
-      showTriageIssuesRange: showTriageIssuesRange.value,
-      issueGroupOrders: copyIssueGroupConfigMap(issueGroupOrders.value),
-      hiddenIssueGroupIds: copyIssueGroupConfigMap(hiddenIssueGroupIds.value),
-      collapsedIssueSectionIds: [...collapsedIssueSectionIds.value],
-      visibleIssueRowFields: [...visibleIssueRowFields.value],
-      visibleProjectRowFields: [...visibleProjectRowFields.value],
-      projectGrouping: projectGrouping.value,
-      projectOrdering: projectOrdering.value,
-      projectClosedRange: projectClosedRange.value,
-      collapsedProjectSectionIds: [...collapsedProjectSectionIds.value],
-      visibleInitiativeRowFields: [...visibleInitiativeRowFields.value],
-      visibleSavedViewRowFields: [...visibleSavedViewRowFields.value],
-    }
-  }
-  function applyDisplay(display: CustomViewDisplay): void {
-    listGrouping.value = normalizeIssueGroupingFieldId(display.grouping)
-    listOrdering.value = normalizeIssueOrderingFieldId(display.ordering)
-    listGroupingDirection.value = normalizeDirection(display.groupingDirection)
-    listOrderingDirection.value = normalizeDirection(display.orderingDirection)
-    completedRange.value = normalizeIssueVisibilityRange(display.completedRange)
-    showSubIssuesRange.value = normalizeIssueVisibilityRange(display.showSubIssuesRange)
-    showTriageIssuesRange.value = normalizeIssueVisibilityRange(display.showTriageIssuesRange)
-    issueGroupOrders.value = normalizeIssueGroupConfigMap(display.issueGroupOrders)
-    hiddenIssueGroupIds.value = normalizeIssueGroupConfigMap(display.hiddenIssueGroupIds)
-    collapsedIssueSectionIds.value = [...display.collapsedIssueSectionIds]
-    visibleIssueRowFields.value = normalizeIssueRowFields(display.visibleIssueRowFields)
-    visibleProjectRowFields.value = normalizeProjectRowFields(display.visibleProjectRowFields)
-    projectGrouping.value = normalizeProjectGroupingFieldId(display.projectGrouping)
-    projectOrdering.value = normalizeProjectOrderingFieldId(display.projectOrdering)
-    projectClosedRange.value = normalizeProjectClosedRange(display.projectClosedRange)
-    collapsedProjectSectionIds.value = [...display.collapsedProjectSectionIds]
-    visibleInitiativeRowFields.value = normalizeInitiativeRowFields(display.visibleInitiativeRowFields)
-    visibleSavedViewRowFields.value = normalizeSavedViewRowFields(display.visibleSavedViewRowFields)
-  }
-  function getDefaultFiltersForView(viewId: string): ViewFilterClause[] {
-    if (viewEditorDraft.value?.id === viewId) {
-      return customViewFiltersToClauses(viewEditorDraft.value.filters)
-    }
-    const customView = getCustomView(viewId)
-    if (customView) {
-      return customViewFiltersToClauses(customView.filters)
-    }
-    if (viewId === 'my-issues') {
-      return [createViewFilterClause('assignee', 'current-user', 'Current user')]
-    }
-    if (viewId === 'my-created') {
-      return [createViewFilterClause('reporter', 'current-user', 'Current user')]
-    }
-    return []
-  }
-  function getDefaultDisplayForView(viewId: string): CustomViewDisplay {
-    if (viewEditorDraft.value?.id === viewId) {
-      return copyViewDisplay(viewEditorDraft.value.display)
-    }
-    const customView = getCustomView(viewId)
-    if (customView) {
-      return copyViewDisplay(customView.display)
-    }
-    const display = getDefaultViewDisplay()
-    const parsed = parseTeamViewId(viewId)
-    const section = parsed?.section
-    if (parsed && (section === 'all' || section === 'active' || !section)) {
-      return {
-        ...display,
-        grouping: 'status',
-        completedRange: section === 'all' ? 'all' : display.completedRange,
-        showTriageIssuesRange: section === 'all' ? 'all' : display.showTriageIssuesRange,
-      }
-    }
-    if (section === 'backlog' || section === 'triage') {
-      return {
-        ...display,
-        grouping: 'status',
-        showTriageIssuesRange: 'all',
-      }
-    }
-    return display
-  }
+  const {
+    listGrouping,
+    listOrdering,
+    projectGrouping,
+    projectOrdering,
+    projectClosedRange,
+    listGroupingDirection,
+    listOrderingDirection,
+    issueGroupOrders,
+    hiddenIssueGroupIds,
+    completedRange,
+    showSubIssuesRange,
+    showTriageIssuesRange,
+    showSubIssues,
+    showBacklogIssues,
+    collapsedIssueSectionIds,
+    collapsedProjectSectionIds,
+    visibleIssueRowFields,
+    visibleProjectRowFields,
+    visibleInitiativeRowFields,
+    visibleSavedViewRowFields,
+    currentViewFilters,
+    captureDisplay,
+    applyDisplay,
+    getDefaultFiltersForView,
+    getDefaultDisplayForView,
+    resolveDisplayForView,
+    persistViewStateForView,
+    withViewDisplaySyncSuppressed,
+  } = useViewStatePersistence({
+    currentView,
+    viewEditorDraft,
+    customViews,
+    getCustomView,
+    viewOverrides,
+    getViewOverride,
+    upsertViewOverride,
+    removeViewOverride,
+  })
   function copyCustomView(view: CustomView): CustomView {
     return {
       ...view,
@@ -725,16 +618,6 @@ export function useTicketListController() {
   const normalizedFilterFieldSearch = computed(() =>
     filterFieldSearchQuery.value.trim().toLowerCase(),
   )
-  const currentViewFilters = computed(() => {
-    if (viewEditorDraft.value && currentView.value === viewEditorDraft.value.id) {
-      return customViewFiltersToClauses(viewEditorDraft.value.filters)
-    }
-    const override = getViewOverride(currentView.value)
-    if (override) {
-      return customViewFiltersToClauses(override.filters)
-    }
-    return getDefaultFiltersForView(currentView.value)
-  })
   const activeFilterChips = computed<ActiveFilterChip[]>(() => {
     const chips: ActiveFilterChip[] = currentViewFilters.value.map(
       (filter): ActiveFilterChip => ({
@@ -857,104 +740,6 @@ export function useTicketListController() {
   })
   const activeDateFilterOptions = computed<DateFilterOption[]>(() =>
     getDateFilterOptions(activeDateFilterId.value),
-  )
-  function resolveDisplayForView(viewId: string): CustomViewDisplay {
-    if (viewEditorDraft.value?.id === viewId) {
-      return copyViewDisplay(viewEditorDraft.value.display)
-    }
-    const override = getViewOverride(viewId)
-    if (override) {
-      return copyViewDisplay(override.display)
-    }
-    return getDefaultDisplayForView(viewId)
-  }
-  function persistViewStateForView(
-    viewId: string,
-    filters: readonly ViewFilterClause[],
-    display: CustomViewDisplay,
-  ): void {
-    const normalizedDisplay = copyViewDisplay(display)
-    const customFilters = clausesToCustomViewFilters(filters)
-
-    if (viewEditorDraft.value?.id === viewId) {
-      viewEditorDraft.value = {
-        ...viewEditorDraft.value,
-        filters: customFilters,
-        display: normalizedDisplay,
-      }
-      return
-    }
-
-    const defaultFilters = getDefaultFiltersForView(viewId)
-    const defaultDisplay = getDefaultDisplayForView(viewId)
-    if (
-      filterClausesMatch(filters, defaultFilters)
-      && viewDisplayMatches(normalizedDisplay, defaultDisplay)
-    ) {
-      removeViewOverride(viewId)
-      return
-    }
-
-    upsertViewOverride(viewId, {
-      filters: customFilters,
-      display: normalizedDisplay,
-    })
-  }
-  watch(
-    currentView,
-    (nextViewId) => {
-      if (suppressViewDisplaySync.value) {
-        return
-      }
-      suppressViewDisplaySync.value = true
-      applyDisplay(resolveDisplayForView(nextViewId))
-      void nextTick(() => {
-        suppressViewDisplaySync.value = false
-      })
-    },
-    { immediate: true },
-  )
-  watch(
-    [
-      listGrouping,
-      listOrdering,
-      projectGrouping,
-      projectOrdering,
-      projectClosedRange,
-      listGroupingDirection,
-      listOrderingDirection,
-      issueGroupOrders,
-      hiddenIssueGroupIds,
-      completedRange,
-      showSubIssuesRange,
-      showTriageIssuesRange,
-      collapsedIssueSectionIds,
-      collapsedProjectSectionIds,
-      visibleIssueRowFields,
-      visibleProjectRowFields,
-      visibleInitiativeRowFields,
-      visibleSavedViewRowFields,
-    ],
-    () => {
-      if (suppressViewDisplaySync.value) {
-        return
-      }
-      persistViewStateForView(currentView.value, currentViewFilters.value, captureDisplay())
-    },
-    { deep: true },
-  )
-  watch(
-    [customViews, viewOverrides],
-    () => {
-      if (suppressViewDisplaySync.value) {
-        return
-      }
-      suppressViewDisplaySync.value = true
-      applyDisplay(resolveDisplayForView(currentView.value))
-      void nextTick(() => {
-        suppressViewDisplaySync.value = false
-      })
-    },
   )
   watch(visibleFilterMenuEntries, (entries) => {
     const firstEntry = entries[0]
@@ -2346,19 +2131,15 @@ export function useTicketListController() {
         filters: [],
         display: defaults,
       }
-      suppressViewDisplaySync.value = true
-      applyDisplay(defaults)
-      void nextTick(() => {
-        suppressViewDisplaySync.value = false
+      withViewDisplaySyncSuppressed(() => {
+        applyDisplay(defaults)
       })
       return
     }
 
     removeViewOverride(currentView.value)
-    suppressViewDisplaySync.value = true
-    applyDisplay(defaults)
-    void nextTick(() => {
-      suppressViewDisplaySync.value = false
+    withViewDisplaySyncSuppressed(() => {
+      applyDisplay(defaults)
     })
   }
   function openFilterMenu() {
@@ -2869,25 +2650,21 @@ export function useTicketListController() {
   function cancelViewEditor(): void {
     const previousViewId = viewEditorPreviousViewId.value
     const previousDisplay = viewEditorPreviousDisplay.value
-    suppressViewDisplaySync.value = true
-    if (previousDisplay) {
-      applyDisplay(previousDisplay)
-    }
-    finishViewEditor()
-    if (previousViewId) {
-      currentView.value = previousViewId
-    }
-    nextTick(() => {
-      suppressViewDisplaySync.value = false
+    withViewDisplaySyncSuppressed(() => {
+      if (previousDisplay) {
+        applyDisplay(previousDisplay)
+      }
+      finishViewEditor()
+      if (previousViewId) {
+        currentView.value = previousViewId
+      }
     })
   }
   function discardViewEditorAndSwitch(viewId: string): void {
-    suppressViewDisplaySync.value = true
-    finishViewEditor()
-    currentView.value = viewId
-    applyDisplay(resolveDisplayForView(viewId))
-    nextTick(() => {
-      suppressViewDisplaySync.value = false
+    withViewDisplaySyncSuppressed(() => {
+      finishViewEditor()
+      currentView.value = viewId
+      applyDisplay(resolveDisplayForView(viewId))
     })
   }
   function activateCustomView(viewId: string): void {
@@ -3385,9 +3162,6 @@ export function useTicketListController() {
     syncNavigationHistoryState()
   })
   onBeforeUnmount(() => {
-    if (!suppressViewDisplaySync.value) {
-      persistViewStateForView(currentView.value, currentViewFilters.value, captureDisplay())
-    }
     stopSidebarResize()
     window.removeEventListener('pointermove', handleSidebarResize)
     window.removeEventListener('pointerup', handleSidebarResizeEnd)
