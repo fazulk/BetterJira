@@ -1,5 +1,19 @@
 # Phase 7 — Finish the ticket-list controller decomposition
 
+> **Status (2026-07-07): executed, target not reached — superseded by
+> `docs/phase-8-controller-spillover.md`.** WP-1 through WP-7 landed in
+> commit `ecd82f2` (controller 2,691 → 1,714 lines; gate green: eslint
+> clean, typecheck 0, 227 tests). Extracted: `useIssueGrouping` (392),
+> `useFavoriteViews` (295), `useTicketNavigation` (275), `useViewEditor`
+> (277), `useCustomViewDirectory` (214), `useTicketVisibility` (113), plus
+> `getDisplayedIssueRowKey`/`sortTicketsByActivity` into `helpers.ts`.
+> WP-7 rewrote `handleGlobalKeydown` as a guard chain + match/run table.
+> Two regressions caught and fixed in the reviewer pass (editor tab-click
+> routing, search-escape vs selected-ticket ordering). **Not done:** the
+> WP-1/WP-2 tests, the WP-8 final sweep, and the WP-9 spillover — all
+> carried into Phase 8. Accepted deltas are recorded in
+> `docs/refactor-plan.md`.
+
 Status of the input: `src/features/ticket-list/useTicketListController.ts` is
 2,691 lines after Phase 6 (started at 4,701). Everything left is orchestration
 plus seven coherent feature clusters. This document is a complete, ordered

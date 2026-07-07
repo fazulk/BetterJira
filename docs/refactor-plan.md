@@ -282,7 +282,9 @@ hazard notes: **`docs/phase-7-controller-finish.md`**. Summary:
   trap documented in the plan)
 - **WP-7** shrink `handleGlobalKeydown` in place — no extraction
 - **WP-8** final sweep: dead exports, size audit, phase-wide reviewer pass
-- **WP-9** (spillover, only if needed) `useFilterMenu` (~350)
+  (not executed — carried into Phase 8)
+- **WP-9** (spillover) `useFilterMenu` (~350) — needed; planned in detail as
+  Phase 8 (WP-9a/9b)
 
 Same ground rules as Phase 6: single writer, gate after every WP
 (eslint --fix → typecheck → vitest), commit per WP, reviewer passes after
@@ -293,6 +295,77 @@ Delegation: **no parallel fan-out in this phase.** Every task rewrites
 run one at a time with the full gate between each, and a reviewer-subagent
 behavior-preservation pass after each major extraction (6.2–6.5), not just
 at phase end.
+
+### Phase 7 outcome (2026-07-07)
+
+WP-1…WP-7 executed in commit `ecd82f2`; gate green throughout (eslint
+clean, typecheck 0, 227 tests). Controller: 2,691 → 1,714 lines. Extracted
+modules: `useIssueGrouping` (392), `useFavoriteViews` (295),
+`useTicketNavigation` (275), `useViewEditor` (277), `useCustomViewDirectory`
+(214), `useTicketVisibility` (113). Reviewer pass caught and fixed two
+regressions before commit: editor tab-click routing bypassing the
+view-editor discard branch, and search-view Escape closing search before
+selected-ticket handling. The <1,000 target was **not** reached; the WP-1/
+WP-2 tests and WP-8 final sweep were not done. All three carry into Phase 8.
+
+### Phase 7 recorded behavior deltas (accepted)
+
+- `getDisplayedIssueRowKey` and `sortTicketsByActivity` moved to
+  `helpers.ts` as pure exports (shared by grouping, navigation, and the
+  custom-view directory) instead of living in any one composable.
+- `useViewEditor` initializes before `useTicketNavigation`, so it receives
+  controller-local shims `closeTicketForEditor`/`handleViewChangeForEditor`
+  instead of the navigation composable's functions. Equivalent because
+  editor flows never pass `command`/`create`/`search` ids and
+  `finishViewEditor` runs before the editor's only `handleViewChange` call
+  (`deleteContextCustomView`), making the skipped branches unreachable.
+  Cleanup scheduled in Phase 8 WP-14.
+- `handleViewTabClick` stays in the controller (composes the editor's
+  `activateCustomView` with navigation's `handleViewChange`); the
+  controller-level `handleFavoriteViewChange` wraps navigation + favorite
+  filter restore. `useTicketNavigation` still exports a vestigial
+  `handleFavoriteViewChange` pass-through — dead code, removal scheduled in
+  Phase 8 WP-14.
+- `handleGlobalKeydown` was rewritten (WP-7) as a guard chain plus a
+  match/run table rather than moved verbatim. Deltas: the unreachable
+  `!selectedKey.value` enter-guard was deleted; the `g` (goto prefix) key
+  now receives `event.preventDefault()` where it previously did not — no
+  observable change since `g` has no browser default action outside
+  editable targets, which are guarded earlier.
+
+---
+
+## Phase 8 — Controller spillover (1,714 → target <1,000 lines)
+
+Full plan with initialization-order constraints, per-WP moves/deps, and
+honest arithmetic: **`docs/phase-8-controller-spillover.md`**. Summary:
+
+- **WP-0** characterization tests for `useIssueGrouping` and
+  `useTicketVisibility` (carried from Phase 7 — do first)
+- **WP-9a** `useViewFilters` — filter application adapters + clause CRUD
+  (~170; must initialize before the directory/favorites composables)
+- **WP-9b** `useFilterMenu` — menu UI state, chips, options (~230–290 with
+  the display-options/pointerdown menus folded in)
+- **WP-10** `useProjectSections` — project display pipeline (~110; before
+  WP-9b)
+- **WP-11** `useTicketSearch` — search pipeline (~70; before
+  `useIssueGrouping`; removes a `no-use-before-define` suppression)
+- **WP-12** grid templates → `helpers.ts` (~45, pure move)
+- **WP-13** `useViewContext` — view-identity computeds (~180, contingent on
+  the post-WP-12 size audit; `viewTabs` stays in the controller to break
+  the directory cycle)
+- **WP-14** Phase 7 debt cleanup (vestigial nav export, editor shims,
+  keyboard tightening) + final sweep (dead exports, size audit, deltas,
+  phase-wide reviewer pass). Keyboard extraction is the designated stretch
+  move only if still >1,000.
+
+Expected landing: ~1,060–1,130 with the base WPs, ~960–1,030 with the
+stretch. If it stalls in the 1,000–1,100 band with all WPs exhausted, stop
+and renegotiate the target here rather than inventing abstractions.
+
+Same ground rules as Phases 6–7: single writer, gate after every WP
+(eslint --fix → typecheck → vitest), commit per WP, reviewer passes after
+WP-9b and WP-13, verbatim bodies, deltas recorded here.
 
 ---
 
