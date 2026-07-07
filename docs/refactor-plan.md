@@ -200,6 +200,17 @@ workers in parallel; 5.2 → 5.3 → 5.4 sequential within the server worker.
 Caveat: if Phase 4 runs concurrently, 4.5 and 5.1 both touch
 `src/api/jira.ts` — the orchestrator sequences those two tasks explicitly.
 
+### Phase 4/5 recorded behavior deltas (reviewer-verified, accepted)
+
+- Description saves now also merge the server ticket into the list cache on
+  success (previously detail-cache only) — convergent with all other fields.
+- Local tickets gain optimistic updates for status/priority/assignee/
+  description; local optimistic status uses the target status name.
+- Team/watching updates regain parent summary/issueType propagation.
+- Local-ticket file I/O failures now surface as 500 (previously swallowed
+  into 400 by the per-route catch); remote domain validation is now 400
+  (previously 500); upstream Jira failures map 404→404, else 502.
+
 ## Phase 6 — Controller decomposition (4,701 → target <800 lines)
 
 Precondition: Phases 2 and 3 complete.
