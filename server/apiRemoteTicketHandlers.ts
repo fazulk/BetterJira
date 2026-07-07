@@ -1,16 +1,20 @@
 import type { H3Event } from 'h3'
 import { readBody, readMultipartFormData } from 'h3'
-import { isJiraAdfDocument } from '../shared/jiraAdf'
 import { isRecord } from '../shared/typeGuards'
+import { generateAiDescriptionResponse } from './apiAiHandlers'
 import {
   API_HEADERS,
   badRequestResponse,
   decodePathSegment,
-  generateAiDescriptionResponse,
   isJiraRemoteTicketKey,
   jiraContentResponse,
   notFoundResponse,
+  parseDescriptionBody,
+  parseLabelsBody,
+  parseNullableStringBodyField,
+  parseStringBodyField,
 } from './apiRouteUtils'
+import { JiraApiError } from './errors'
 import {
   addTicketMessage,
   getAssignableUsers,
@@ -71,8 +75,11 @@ export async function handleRemoteTicketApiRoute(
       const jiraResponse = await getJiraAttachmentContentByFilename(ticketKey, filename)
       return jiraContentResponse(jiraResponse)
     }
-    catch {
-      return notFoundResponse()
+    catch (error) {
+      if (error instanceof JiraApiError && error.status === 404) {
+        return notFoundResponse()
+      }
+      throw error
     }
   }
 
@@ -83,7 +90,7 @@ export async function handleRemoteTicketApiRoute(
 
   if (segments.length === 3 && segments[2] === 'messages' && method === 'POST') {
     const body = await readBody<unknown>(event)
-    const messageText = isRecord(body) && typeof body.body === 'string' ? body.body : ''
+    const messageText = parseStringBodyField(body, 'body')
     const message = await addTicketMessage(ticketKey, messageText)
     return Response.json(message, { headers: API_HEADERS })
   }
@@ -95,16 +102,14 @@ export async function handleRemoteTicketApiRoute(
 
   if (segments.length === 3 && segments[2] === 'title' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    const title = isRecord(body) && typeof body.title === 'string' ? body.title : ''
+    const title = parseStringBodyField(body, 'title')
     const ticket = await updateTicketTitle(ticketKey, title)
     return Response.json(ticket, { headers: API_HEADERS })
   }
 
   if (segments.length === 3 && segments[2] === 'description' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    const descriptionAdf = isRecord(body) && isJiraAdfDocument(body.descriptionAdf)
-      ? body.descriptionAdf
-      : null
+    const descriptionAdf = parseDescriptionBody(body)
     const ticket = await updateTicketDescription(ticketKey, descriptionAdf)
     return Response.json(ticket, { headers: API_HEADERS })
   }
@@ -115,9 +120,7 @@ export async function handleRemoteTicketApiRoute(
 
   if (segments.length === 3 && segments[2] === 'assignee' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    const accountId = isRecord(body) && typeof body.accountId === 'string'
-      ? body.accountId
-      : null
+    const accountId = parseNullableStringBodyField(body, 'accountId')
     const ticket = await updateTicketAssignee(ticketKey, accountId)
     return Response.json(ticket, { headers: API_HEADERS })
   }
@@ -129,7 +132,7 @@ export async function handleRemoteTicketApiRoute(
 
   if (segments.length === 3 && segments[2] === 'priority' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    const priorityId = isRecord(body) && typeof body.priorityId === 'string' ? body.priorityId : ''
+    const priorityId = parseStringBodyField(body, 'priorityId')
     const ticket = await updateTicketPriority(ticketKey, priorityId)
     return Response.json(ticket, { headers: API_HEADERS })
   }
@@ -145,16 +148,9 @@ export async function handleRemoteTicketApiRoute(
 
   if (segments.length === 3 && segments[2] === 'labels' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    if (!isRecord(body) || !Array.isArray(body.labels)) {
+    const labels = parseLabelsBody(body)
+    if (labels === null) {
       return badRequestResponse('labels must be an array of strings.')
-    }
-
-    const labels: string[] = []
-    for (const label of body.labels) {
-      if (typeof label !== 'string') {
-        return badRequestResponse('labels must be an array of strings.')
-      }
-      labels.push(label)
     }
 
     const ticket = await updateTicketLabels(ticketKey, labels)
@@ -173,7 +169,7 @@ export async function handleRemoteTicketApiRoute(
 
   if (segments.length === 3 && segments[2] === 'status' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    const transitionId = isRecord(body) && typeof body.transitionId === 'string' ? body.transitionId : ''
+    const transitionId = parseStringBodyField(body, 'transitionId')
     const ticket = await updateTicketStatus(ticketKey, transitionId)
     return Response.json(ticket, { headers: API_HEADERS })
   }

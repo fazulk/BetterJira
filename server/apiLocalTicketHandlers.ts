@@ -3,11 +3,15 @@ import { readBody } from 'h3'
 import { isJiraAdfDocument } from '../shared/jiraAdf'
 import { normalizeLocalTicketKey } from '../shared/localTickets'
 import { isRecord } from '../shared/typeGuards'
+import { generateAiDescriptionResponse } from './apiAiHandlers'
 import {
   API_HEADERS,
   badRequestResponse,
-  generateAiDescriptionResponse,
   notFoundResponse,
+  parseDescriptionBody,
+  parseLabelsBody,
+  parseNullableStringBodyField,
+  parseStringBodyField,
 } from './apiRouteUtils'
 import {
   createLocalTicket,
@@ -54,30 +58,16 @@ export async function handleLocalTicketApiRoute(
 
   if (segments.length === 4 && segments[3] === 'title' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    const title = isRecord(body) && typeof body.title === 'string' ? body.title : ''
-    try {
-      const ticket = updateLocalTicketTitle(ticketKey, title)
-      return Response.json(ticket, { headers: API_HEADERS })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update title.'
-      return badRequestResponse(message)
-    }
+    const title = parseStringBodyField(body, 'title')
+    const ticket = updateLocalTicketTitle(ticketKey, title)
+    return Response.json(ticket, { headers: API_HEADERS })
   }
 
   if (segments.length === 4 && segments[3] === 'description' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    const descriptionAdf = isRecord(body) && isJiraAdfDocument(body.descriptionAdf)
-      ? body.descriptionAdf
-      : null
-    try {
-      const ticket = updateLocalTicketDescription(ticketKey, descriptionAdf)
-      return Response.json(ticket, { headers: API_HEADERS })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update description.'
-      return badRequestResponse(message)
-    }
+    const descriptionAdf = parseDescriptionBody(body)
+    const ticket = updateLocalTicketDescription(ticketKey, descriptionAdf)
+    return Response.json(ticket, { headers: API_HEADERS })
   }
 
   if (segments.length === 4 && segments[3] === 'ai-description' && method === 'POST') {
@@ -86,69 +76,34 @@ export async function handleLocalTicketApiRoute(
 
   if (segments.length === 4 && segments[3] === 'status' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    const transitionId = isRecord(body) && typeof body.transitionId === 'string' ? body.transitionId : ''
-    try {
-      const ticket = updateLocalTicketStatus(ticketKey, transitionId)
-      return Response.json(ticket, { headers: API_HEADERS })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update status.'
-      return badRequestResponse(message)
-    }
+    const transitionId = parseStringBodyField(body, 'transitionId')
+    const ticket = updateLocalTicketStatus(ticketKey, transitionId)
+    return Response.json(ticket, { headers: API_HEADERS })
   }
 
   if (segments.length === 4 && segments[3] === 'priority' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    const priorityName = isRecord(body) && typeof body.priorityName === 'string' ? body.priorityName : ''
-    try {
-      const ticket = updateLocalTicketPriority(ticketKey, priorityName)
-      return Response.json(ticket, { headers: API_HEADERS })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update priority.'
-      return badRequestResponse(message)
-    }
+    const priorityName = parseStringBodyField(body, 'priorityName')
+    const ticket = updateLocalTicketPriority(ticketKey, priorityName)
+    return Response.json(ticket, { headers: API_HEADERS })
   }
 
   if (segments.length === 4 && segments[3] === 'assignee' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    const assigneeName = isRecord(body) && body.assigneeName === null
-      ? null
-      : isRecord(body) && typeof body.assigneeName === 'string'
-        ? body.assigneeName
-        : null
-    try {
-      const ticket = updateLocalTicketAssignee(ticketKey, assigneeName)
-      return Response.json(ticket, { headers: API_HEADERS })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update assignee.'
-      return badRequestResponse(message)
-    }
+    const assigneeName = parseNullableStringBodyField(body, 'assigneeName')
+    const ticket = updateLocalTicketAssignee(ticketKey, assigneeName)
+    return Response.json(ticket, { headers: API_HEADERS })
   }
 
   if (segments.length === 4 && segments[3] === 'labels' && method === 'PUT') {
     const body = await readBody<unknown>(event)
-    if (!isRecord(body) || !Array.isArray(body.labels)) {
+    const labels = parseLabelsBody(body)
+    if (labels === null) {
       return badRequestResponse('labels must be an array of strings.')
     }
 
-    const labels: string[] = []
-    for (const label of body.labels) {
-      if (typeof label !== 'string') {
-        return badRequestResponse('labels must be an array of strings.')
-      }
-      labels.push(label)
-    }
-
-    try {
-      const ticket = updateLocalTicketLabels(ticketKey, labels)
-      return Response.json(ticket, { headers: API_HEADERS })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update labels.'
-      return badRequestResponse(message)
-    }
+    const ticket = updateLocalTicketLabels(ticketKey, labels)
+    return Response.json(ticket, { headers: API_HEADERS })
   }
 
   return null
@@ -172,20 +127,14 @@ async function createLocalTicketResponse(event: H3Event): Promise<Response> {
   const parentKey = typeof body.parentKey === 'string' ? body.parentKey : null
   const dueDate = typeof body.dueDate === 'string' ? body.dueDate : null
 
-  try {
-    const ticket = createLocalTicket({
-      summary,
-      descriptionAdf,
-      priority,
-      assigneeName,
-      statusId: statusId === 'todo' || statusId === 'in_progress' || statusId === 'done' ? statusId : undefined,
-      parentKey,
-      dueDate,
-    })
-    return Response.json(ticket, { headers: API_HEADERS })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create ticket.'
-    return badRequestResponse(message)
-  }
+  const ticket = createLocalTicket({
+    summary,
+    descriptionAdf,
+    priority,
+    assigneeName,
+    statusId: statusId === 'todo' || statusId === 'in_progress' || statusId === 'done' ? statusId : undefined,
+    parentKey,
+    dueDate,
+  })
+  return Response.json(ticket, { headers: API_HEADERS })
 }

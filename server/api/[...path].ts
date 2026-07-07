@@ -6,6 +6,7 @@ import { handleGeneralApiRoute } from '../apiGeneralHandlers'
 import { handleLocalTicketApiRoute } from '../apiLocalTicketHandlers'
 import { handleRemoteTicketApiRoute } from '../apiRemoteTicketHandlers'
 import { API_HEADERS, notFoundResponse, parseRefreshUpdatedSince } from '../apiRouteUtils'
+import { JiraApiError, ValidationError } from '../errors'
 import { addClient, removeClient } from '../events'
 import { forceRefreshTickets } from '../jira'
 import { MissingJiraCredentialsError } from '../jiraCredentials'
@@ -89,6 +90,18 @@ export default defineEventHandler(async (event) => {
         code: 'JIRA_CREDENTIALS_MISSING',
         missingKeys: error.missingKeys,
       }, { status: 409, headers: API_HEADERS })
+    }
+
+    if (error instanceof ValidationError) {
+      console.error('Validation error:', error.message)
+      return Response.json({ error: error.message }, { status: 400, headers: API_HEADERS })
+    }
+
+    if (error instanceof JiraApiError) {
+      // Convention: upstream 404 passes through; every other Jira failure is a 502.
+      const status = error.status === 404 ? 404 : 502
+      console.error('Jira API error:', error.message)
+      return Response.json({ error: error.message }, { status, headers: API_HEADERS })
     }
 
     const message = error instanceof Error ? error.message : 'Unknown request error'

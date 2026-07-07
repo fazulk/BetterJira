@@ -1,3 +1,4 @@
+export { buildEnabledSpaceSearchQuery, buildUpdatedSinceSearchQuery } from './jql'
 export {
   getDefaultAppSettings,
   normalizeAppSettings,
@@ -5,7 +6,6 @@ export {
   reconcileAppSettings,
 } from './settingsApp'
 export { hasConfiguredJiraCredentials } from './settingsConnections'
-export { buildEnabledSpaceSearchQuery, buildUpdatedSinceSearchQuery } from './settingsJql'
 export { buildTeamSpaceKey, getSpaceProjectKey } from './settingsSpaces'
 export type {
   AiConnectionSettings,

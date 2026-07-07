@@ -1,4 +1,5 @@
 import { env } from './config'
+import { JiraApiError } from './errors'
 import { getJiraCredentials } from './jiraCredentials'
 
 export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
@@ -131,7 +132,7 @@ export async function jiraFetch(path: string, options?: JiraFetchOptions): Promi
 
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`JIRA API ${res.status}: ${body.slice(0, 200)}`)
+    throw new JiraApiError(res.status, `JIRA API ${res.status}: ${body.slice(0, 200)}`)
   }
 
   if (res.status === 204)

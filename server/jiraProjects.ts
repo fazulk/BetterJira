@@ -10,6 +10,7 @@ import {
 
 } from '../shared/settings'
 import { isRecord } from '../shared/typeGuards'
+import { JiraApiError } from './errors'
 import { getJiraConfig, jiraFetch } from './jiraClient'
 import { isJiraApiProject } from './jiraIssueMapping'
 import { matchesIssueType } from './jiraIssueTypePolicy'
@@ -203,11 +204,8 @@ export async function resolveProjectKey(
       }
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : ''
-      const isMissingProject = message.includes('No project could be found')
-        || message.includes('404')
-
-      if (!isMissingProject) {
+      // The configured project may not exist; fall back to candidate projects.
+      if (!(error instanceof JiraApiError && error.status === 404)) {
         throw error
       }
     }

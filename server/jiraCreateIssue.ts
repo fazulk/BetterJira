@@ -11,6 +11,7 @@ import {
   plainTextToAdf,
 } from '../shared/jiraAdf'
 import { isRecord } from '../shared/typeGuards'
+import { JiraApiError } from './errors'
 import { broadcast } from './events'
 import { getJiraConfig, jiraFetch } from './jiraClient'
 import { resolveTeamFieldId } from './jiraIssueMapping'
@@ -147,11 +148,8 @@ export async function getCreateIssueTypes(parentKey?: string | null): Promise<Ji
       }
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : ''
-      const isMissingProject = message.includes('No project could be found')
-        || message.includes('404')
-
-      if (!isMissingProject) {
+      // The configured project may not exist; fall back to candidate projects.
+      if (!(error instanceof JiraApiError && error.status === 404)) {
         throw error
       }
     }

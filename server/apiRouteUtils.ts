@@ -1,8 +1,6 @@
 import type { JiraAdfDocument } from '../shared/jiraAdf'
-import { AI_PROVIDERS, isAiProvider } from '../shared/ai'
 import { isJiraAdfDocument } from '../shared/jiraAdf'
 import { isRecord } from '../shared/typeGuards'
-import { generateTicketDescription } from './ai/generateDescription'
 
 export const API_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -108,41 +106,45 @@ export function jiraContentResponse(jiraResponse: Response): Response {
   })
 }
 
-export async function generateAiDescriptionResponse(body: unknown): Promise<Response> {
-  const instruction = isRecord(body) && typeof body.instruction === 'string'
-    ? body.instruction.trim()
-    : ''
-
-  if (!instruction) {
-    return badRequestResponse('AI instruction cannot be empty.')
+/** Reads a required string body field; returns '' when absent or not a string. */
+export function parseStringBodyField(body: unknown, key: string): string {
+  if (!isRecord(body)) {
+    return ''
   }
 
-  const provider = isRecord(body) && isAiProvider(body.provider)
-    ? body.provider
+  const value = body[key]
+  return typeof value === 'string' ? value : ''
+}
+
+/** Reads an optional string body field; returns null when absent or not a string. */
+export function parseNullableStringBodyField(body: unknown, key: string): string | null {
+  if (!isRecord(body)) {
+    return null
+  }
+
+  const value = body[key]
+  return typeof value === 'string' ? value : null
+}
+
+export function parseDescriptionBody(body: unknown): JiraAdfDocument | null {
+  return isRecord(body) && isJiraAdfDocument(body.descriptionAdf)
+    ? body.descriptionAdf
     : null
+}
 
-  if (!provider) {
-    return badRequestResponse(`provider must be one of: ${AI_PROVIDERS.join(', ')}.`)
+/** Returns the labels array, or null when the body is not `{ labels: string[] }`. */
+export function parseLabelsBody(body: unknown): string[] | null {
+  if (!isRecord(body) || !Array.isArray(body.labels)) {
+    return null
   }
 
-  const model = isRecord(body) && typeof body.model === 'string'
-    ? body.model.trim()
-    : ''
-
-  if (!model) {
-    return badRequestResponse('model must be a non-empty string.')
+  const labels: string[] = []
+  for (const label of body.labels) {
+    if (typeof label !== 'string') {
+      return null
+    }
+    labels.push(label)
   }
 
-  const currentDescriptionAdf = isRecord(body) && isJiraAdfDocument(body.currentDescriptionAdf)
-    ? body.currentDescriptionAdf
-    : null
-
-  const description = await generateTicketDescription({
-    instruction,
-    currentDescriptionAdf,
-    provider,
-    model,
-  })
-
-  return Response.json(description, { headers: API_HEADERS })
+  return labels
 }

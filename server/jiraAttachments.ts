@@ -1,5 +1,6 @@
 import type { JiraAttachment } from './jiraTypes'
 import { isRecord } from '../shared/typeGuards'
+import { JiraApiError } from './errors'
 import {
   createJiraAuthenticationError,
   formatJiraLogLines,
@@ -46,7 +47,7 @@ export async function getJiraAttachmentContent(attachmentId: string): Promise<Re
 
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`JIRA attachment API ${res.status}: ${body.slice(0, 200)}`)
+    throw new JiraApiError(res.status, `JIRA attachment API ${res.status}: ${body.slice(0, 200)}`)
   }
 
   return res
@@ -58,7 +59,7 @@ export async function getJiraAttachmentContentByFilename(ticketKey: string, file
   const attachment = ticket.attachments?.find(candidate => candidate.filename === filename)
     ?? ticket.attachments?.find(candidate => candidate.filename.trim().toLowerCase() === normalizedFilename)
   if (!attachment) {
-    throw new Error(`No attachment named ${filename} found on ${ticketKey}.`)
+    throw new JiraApiError(404, `No attachment named ${filename} found on ${ticketKey}.`)
   }
 
   return getJiraAttachmentContent(attachment.id)

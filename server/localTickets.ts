@@ -13,6 +13,7 @@ import {
   storedLocalToJiraShape,
 } from '../shared/localTickets'
 import { isRecord } from '../shared/typeGuards'
+import { ValidationError } from './errors'
 import { getAppDataDir } from './runtimePaths'
 
 const localTicketsFilePath = resolve(getAppDataDir(), 'local-tickets.json')
@@ -159,16 +160,16 @@ export function createLocalTicket(input: CreateLocalTicketInput): JiraTicketLike
   const state = readFileState()
   const summary = typeof input.summary === 'string' ? input.summary.trim() : ''
   if (!summary) {
-    throw new Error('Summary is required.')
+    throw new ValidationError('Summary is required.')
   }
 
   const parentKey = input.parentKey ? normalizeLocalTicketKey(input.parentKey) : null
   if (input.parentKey && !parentKey) {
-    throw new Error('parentKey must be a valid LOCAL-* key.')
+    throw new ValidationError('parentKey must be a valid LOCAL-* key.')
   }
 
   if (parentKey && !ticketByKey(state.tickets, parentKey)) {
-    throw new Error('Parent ticket not found.')
+    throw new ValidationError('Parent ticket not found.')
   }
 
   const statusId = input.statusId ? normalizeLocalStatusId(input.statusId) ?? 'todo' : 'todo'
@@ -207,12 +208,12 @@ function updateStored(
   const state = readFileState()
   const index = state.tickets.findIndex(t => normalizeLocalTicketKey(key) === `LOCAL-${t.numericId}`)
   if (index === -1) {
-    throw new Error('Ticket not found.')
+    throw new ValidationError('Ticket not found.')
   }
 
   const current = state.tickets[index]
   if (!current) {
-    throw new Error('Ticket not found.')
+    throw new ValidationError('Ticket not found.')
   }
 
   const next = updater(current, state.tickets)
@@ -225,7 +226,7 @@ function updateStored(
 export function updateLocalTicketTitle(key: string, title: string): JiraTicketLike {
   const trimmed = typeof title === 'string' ? title.trim() : ''
   if (!trimmed) {
-    throw new Error('Title cannot be empty.')
+    throw new ValidationError('Title cannot be empty.')
   }
 
   return updateStored(key, stored => ({
@@ -246,7 +247,7 @@ export function updateLocalTicketDescription(key: string, descriptionAdf: unknow
 export function updateLocalTicketStatus(key: string, transitionId: string): JiraTicketLike {
   const nextStatus = normalizeLocalStatusId(transitionId)
   if (!nextStatus) {
-    throw new Error('Invalid status transition.')
+    throw new ValidationError('Invalid status transition.')
   }
 
   return updateStored(key, (stored) => {
