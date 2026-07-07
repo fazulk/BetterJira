@@ -98,6 +98,7 @@ import {
   getTicketLabels,
   getTimeValue,
   getViewsDirectoryTabFromViewId,
+  isBacklogIssueTicket,
   isEditableTarget,
   isEpicIssue,
   isInitiativeIssue,
@@ -1496,9 +1497,6 @@ export function useTicketListController() {
     if (section === 'backlog')
       return isBacklogIssueTicket(ticket)
     return true
-  }
-  function isBacklogIssueTicket(ticket: JiraTicket): boolean {
-    return ticket.status.trim().toLowerCase() === 'backlog'
   }
   function isCompletedIssueVisible(ticket: JiraTicket): boolean {
     if (getStatusGroup(ticket.statusCategory) !== 'done')

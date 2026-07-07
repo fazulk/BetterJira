@@ -7,8 +7,16 @@ import { fetchLocalTicket } from '@/api/localTickets'
 import { localTicketQueryKey, ticketQueryKey } from '@/composables/queryKeys'
 import { usePinnedTickets } from '@/composables/usePinnedTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
-import { getTeamViewId, isSubIssueTicket, isTeamViewForTeam, parseTeamViewId } from '@/features/ticket-list/helpers'
-import { getStatusGroup } from '@/types/jira'
+import {
+  getTeamViewId,
+  isActiveIssueTicket,
+  isBacklogIssueTicket,
+  isEpicIssue,
+  isInitiativeIssue,
+  isSubIssueTicket,
+  isTeamViewForTeam,
+  parseTeamViewId,
+} from '@/features/ticket-list/helpers'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
 import { isLocalTicketKey, LOCAL_SPACE_KEY } from '~/shared/localTickets'
 
@@ -70,22 +78,6 @@ function getTeamKeyFromViewId(viewId: string): string | null {
   return parseTeamViewId(viewId)?.teamKey || null
 }
 
-function isEpicIssue(ticket: JiraTicket): boolean {
-  return isEpicIssueType(ticket.issueType)
-}
-
-function isEpicIssueType(issueType: string): boolean {
-  return issueType.toLowerCase().includes('epic')
-}
-
-function isInitiativeIssue(ticket: JiraTicket): boolean {
-  return ticket.issueType.toLowerCase().includes('initiative')
-}
-
-function isBacklogIssueTicket(ticket: JiraTicket): boolean {
-  return ticket.status.trim().toLowerCase() === 'backlog'
-}
-
 export function useSidebarNavigation(
   props: SidebarNavigationProps,
   emit: SidebarNavigationEmit,
@@ -120,7 +112,7 @@ export function useSidebarNavigation(
   const issueTickets = computed(() => visibleTickets.value.filter(
     ticket => !projectTicketKeySet.value.has(ticket.key) && !initiativeTicketKeySet.value.has(ticket.key),
   ))
-  const activeTickets = computed(() => issueTickets.value.filter(ticket => getStatusGroup(ticket.statusCategory) !== 'done'))
+  const activeTickets = computed(() => issueTickets.value.filter(isActiveIssueTicket))
   const workspaceExpanded = ref(true)
   const favoritesExpanded = ref(true)
   const expandedTeamKeys = useLocalStorage<string[]>('jira2.expandedTeams', [])

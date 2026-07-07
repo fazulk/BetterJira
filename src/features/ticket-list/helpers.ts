@@ -423,6 +423,10 @@ export function isInitiativeIssueType(issueType: string): boolean {
   return issueType.toLowerCase().includes('initiative')
 }
 
+export function isBacklogIssueTicket(ticket: JiraTicket): boolean {
+  return ticket.status.trim().toLowerCase() === 'backlog'
+}
+
 /**
  * Visibility state for a row-field list: membership check plus a toggle
  * that refuses to hide the last visible field.
