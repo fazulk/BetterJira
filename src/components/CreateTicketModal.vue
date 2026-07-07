@@ -14,9 +14,9 @@ import CreateTicketTeamSelector from '@/components/create-ticket/CreateTicketTea
 import { useCreateAssignableUsers } from '@/composables/useCreateAssignableUsers'
 import { useCreateIssueTypes } from '@/composables/useCreateIssueTypes'
 import { useCreateLocalTicket } from '@/composables/useCreateLocalTicket'
-import { useCreatePriorities } from '@/composables/useCreatePriorities'
 import { useCreateTicket } from '@/composables/useCreateTicket'
 import { useJiraCurrentUser } from '@/composables/useJiraCurrentUser'
+import { usePriorities } from '@/composables/usePriorities'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { HARDCODED_CREATE_FIELDS } from '@/features/create-ticket/constants'
 import { getAllowedIssueTypesForParent, getCreateIssueTypeLabel, getIssueTypeBadgeClass } from '@/features/create-ticket/issueTypePolicy'
@@ -104,7 +104,7 @@ const {
 
 const createAssignableUsersQuery = useCreateAssignableUsers(activeIssueType, effectiveParentKey, effectiveSpaceKey, jiraFieldQueriesEnabled)
 const createIssueTypesQuery = useCreateIssueTypes(effectiveParentKey, jiraFieldQueriesEnabled)
-const createPrioritiesQuery = useCreatePriorities(activeIssueType, effectiveParentKey, jiraFieldQueriesEnabled)
+const createPrioritiesQuery = usePriorities(computed(() => Boolean(activeIssueType.value) && jiraFieldQueriesEnabled.value))
 
 const jiraMeQueryEnabled = computed(() => props.open && isLocalSpace.value && hasJiraCredentialsConfigured.value)
 const jiraMeQuery = useJiraCurrentUser(jiraMeQueryEnabled)

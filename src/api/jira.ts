@@ -290,10 +290,6 @@ export async function updateTicketAssignee(key: string, accountId: string | null
   return res.json()
 }
 
-export const fetchCreatePriorities = fetchAllPriorities
-
-export const fetchPriorities = fetchAllPriorities
-
 export async function updateTicketPriority(key: string, priorityId: string): Promise<JiraTicket> {
   const res = await fetch(`${BASE}/tickets/${key}/priority`, {
     method: 'PUT',
