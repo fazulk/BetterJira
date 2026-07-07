@@ -306,10 +306,26 @@ export function parseTeamViewId(viewId: string): { teamKey: string | undefined, 
   return scope === 'team' ? { teamKey, section } : null
 }
 
+export type TeamViewSection
+  = 'triage' | 'all' | 'active' | 'backlog' | 'projects' | 'views' | 'project-views' | 'settings'
+    // 'issues' appears only in custom-view context keys, never as a navigable view id.
+    | 'issues'
+
+export function getTeamViewId(teamKey: string, section: TeamViewSection): string {
+  return `team:${teamKey}:${section}`
+}
+
+/** Whether viewId is any sectioned view of the given team (`team:<key>:*`). */
+export function isTeamViewForTeam(viewId: string, teamKey: string): boolean {
+  return viewId.startsWith(`team:${teamKey}:`)
+}
+
 export function getBaseViewIdForCustomContext(contextKey: string): string {
   const parsed = parseTeamViewId(contextKey)
   if (parsed?.teamKey) {
-    return parsed.section === 'projects' ? `team:${parsed.teamKey}:projects` : `team:${parsed.teamKey}:all`
+    return parsed.section === 'projects'
+      ? getTeamViewId(parsed.teamKey, 'projects')
+      : getTeamViewId(parsed.teamKey, 'all')
   }
   return contextKey
 }

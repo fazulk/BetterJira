@@ -41,6 +41,7 @@ const {
   getTeamViewId,
   isActiveView,
   isTeamExpanded,
+  isTeamViewForTeam,
   isTeamIssuesView,
   isTeamViewsView,
   leaveCurrentTeam,
@@ -247,7 +248,7 @@ const {
           <div v-for="team in teamItems" :key="team.key" class="space-y-0.5">
             <div
               class="flex h-7 w-full items-center rounded-md text-[13px] text-[#c6c8ce] transition hover:bg-white/[0.045] hover:text-[#f0f1f4]"
-              :class="viewNavigationIsActive && currentViewId.startsWith(`team:${team.key}:`) ? 'bg-white/[0.055]' : ''"
+              :class="viewNavigationIsActive && isTeamViewForTeam(currentViewId, team.key) ? 'bg-white/[0.055]' : ''"
               @contextmenu="openTeamMenu(team, $event)"
             >
               <button

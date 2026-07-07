@@ -3,7 +3,7 @@ import type { CommandMenuItem, ProjectRow } from './types'
 import type { JiraTicket } from '@/types/jira'
 import type { AppSpaceSetting } from '~/shared/settings'
 import { computed, nextTick, ref, watch } from 'vue'
-import { getIssueTypeIcon } from './helpers'
+import { getIssueTypeIcon, getTeamViewId } from './helpers'
 
 interface CommandMenuDeps {
   enabledSpaces: ComputedRef<AppSpaceSetting[]>
@@ -46,36 +46,36 @@ export function useCommandMenu(deps: CommandMenuDeps) {
   const navigationCommands = computed<CommandMenuItem[]>(() => {
     const teamCommands = enabledSpaces.value.flatMap<CommandMenuItem>(space => [
       {
-        id: `team:${space.key}:active`,
+        id: getTeamViewId(space.key, 'active'),
         label: `${space.name || space.key} issues`,
         description: `Open active issues for ${space.key}`,
         section: 'Teams',
         icon: space.key.slice(0, 1).toUpperCase(),
-        execute: () => handleViewChange(`team:${space.key}:active`),
+        execute: () => handleViewChange(getTeamViewId(space.key, 'active')),
       },
       {
-        id: `team:${space.key}:backlog`,
+        id: getTeamViewId(space.key, 'backlog'),
         label: `${space.name || space.key} backlog`,
         description: `Open backlog for ${space.key}`,
         section: 'Teams',
         icon: space.key.slice(0, 1).toUpperCase(),
-        execute: () => handleViewChange(`team:${space.key}:backlog`),
+        execute: () => handleViewChange(getTeamViewId(space.key, 'backlog')),
       },
       {
-        id: `team:${space.key}:projects`,
+        id: getTeamViewId(space.key, 'projects'),
         label: `${space.name || space.key} projects`,
         description: `Open projects for ${space.key}`,
         section: 'Teams',
         icon: '◈',
-        execute: () => handleViewChange(`team:${space.key}:projects`),
+        execute: () => handleViewChange(getTeamViewId(space.key, 'projects')),
       },
       {
-        id: `team:${space.key}:views`,
+        id: getTeamViewId(space.key, 'views'),
         label: `${space.name || space.key} views`,
         description: `Open saved views for ${space.key}`,
         section: 'Teams',
         icon: '◌',
-        execute: () => handleViewChange(`team:${space.key}:views`),
+        execute: () => handleViewChange(getTeamViewId(space.key, 'views')),
       },
     ])
     return [

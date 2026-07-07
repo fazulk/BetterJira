@@ -94,6 +94,7 @@ import {
   getProjectHealthRank,
   getRelativeTimeLabel,
   getTeamSectionLabel,
+  getTeamViewId,
   getTicketLabels,
   getTimeValue,
   getViewsDirectoryTabFromViewId,
@@ -101,6 +102,7 @@ import {
   isEpicIssue,
   isInitiativeIssue,
   isSubIssueTicket,
+  isTeamViewForTeam,
   parseTeamViewId,
 } from './helpers'
 import {
@@ -424,10 +426,10 @@ export function useTicketListController() {
     if (parsed?.teamKey) {
       const { teamKey, section } = parsed
       if (section === 'projects' || section === 'project-views') {
-        return `team:${teamKey}:projects`
+        return getTeamViewId(teamKey, 'projects')
       }
       if (section === 'views' || section === 'all' || section === 'active' || section === 'backlog') {
-        return `team:${teamKey}:issues`
+        return getTeamViewId(teamKey, 'issues')
       }
       return null
     }
@@ -578,9 +580,9 @@ export function useTicketListController() {
         || currentTeamSection.value === 'backlog')
     ) {
       return [
-        { id: `team:${currentTeamKey.value}:all`, label: 'All issues' },
-        { id: `team:${currentTeamKey.value}:active`, label: 'Active' },
-        { id: `team:${currentTeamKey.value}:backlog`, label: 'Backlog' },
+        { id: getTeamViewId(currentTeamKey.value, 'all'), label: 'All issues' },
+        { id: getTeamViewId(currentTeamKey.value, 'active'), label: 'Active' },
+        { id: getTeamViewId(currentTeamKey.value, 'backlog'), label: 'Backlog' },
         ...customViewTabs.value,
       ]
     }
@@ -588,10 +590,10 @@ export function useTicketListController() {
       return [{ id: activeBaseViewId.value, label: 'All projects' }, ...customViewTabs.value]
     }
     if (isViewsDirectory.value) {
-      const tabPrefix = currentTeamKey.value ? `team:${currentTeamKey.value}:` : ''
+      const teamKey = currentTeamKey.value
       return [
-        { id: `${tabPrefix}views`, label: 'Issues' },
-        { id: `${tabPrefix}project-views`, label: 'Projects' },
+        { id: teamKey ? getTeamViewId(teamKey, 'views') : 'views', label: 'Issues' },
+        { id: teamKey ? getTeamViewId(teamKey, 'project-views') : 'project-views', label: 'Projects' },
       ]
     }
     return []
@@ -2213,7 +2215,7 @@ export function useTicketListController() {
   }
   async function handleLeaveSpace(spaceKey: string): Promise<void> {
     await deleteSpace(spaceKey)
-    if (currentView.value.startsWith(`team:${spaceKey}:`)) {
+    if (isTeamViewForTeam(currentView.value, spaceKey)) {
       handleViewChange('my-issues')
     }
   }

@@ -7,7 +7,7 @@ import { fetchLocalTicket } from '@/api/localTickets'
 import { localTicketQueryKey, ticketQueryKey } from '@/composables/queryKeys'
 import { usePinnedTickets } from '@/composables/usePinnedTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
-import { isSubIssueTicket, parseTeamViewId } from '@/features/ticket-list/helpers'
+import { getTeamViewId, isSubIssueTicket, isTeamViewForTeam, parseTeamViewId } from '@/features/ticket-list/helpers'
 import { getStatusGroup } from '@/types/jira'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
 import { isLocalTicketKey, LOCAL_SPACE_KEY } from '~/shared/localTickets'
@@ -64,12 +64,6 @@ interface FavoriteMenuState {
   showIssueCount: boolean
   x: number
   y: number
-}
-
-type TeamViewSection = 'triage' | 'all' | 'active' | 'backlog' | 'projects' | 'views' | 'project-views' | 'settings'
-
-export function getTeamViewId(spaceKey: string, section: TeamViewSection): string {
-  return `team:${spaceKey}:${section}`
 }
 
 function getTeamKeyFromViewId(viewId: string): string | null {
@@ -431,6 +425,7 @@ export function useSidebarNavigation(
     getTeamViewId,
     isActiveView,
     isTeamExpanded,
+    isTeamViewForTeam,
     isTeamIssuesView,
     isTeamViewsView,
     leaveCurrentTeam,

@@ -19,6 +19,7 @@ import { useLocalTicket } from '@/composables/useLocalTicket'
 import { usePinnedTickets } from '@/composables/usePinnedTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { useToast } from '@/composables/useToast'
+import { getTeamViewId } from '@/features/ticket-list/helpers'
 import { buildJiraIssueUrl } from '@/utils/jiraIssueUrl'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
 import { getAssistantActionLabel } from '~/shared/assistant'
@@ -134,7 +135,7 @@ const detailBreadcrumbViewId = computed(() => {
   const spaceKey = ticket.value?.spaceKey
   if (!spaceKey)
     return isProjectDetail.value ? 'projects' : 'my-issues'
-  return isProjectDetail.value ? `team:${spaceKey}:projects` : `team:${spaceKey}:all`
+  return isProjectDetail.value ? getTeamViewId(spaceKey, 'projects') : getTeamViewId(spaceKey, 'all')
 })
 const detailChildActionLabel = computed(() => {
   if (isInitiativeDetail.value)
