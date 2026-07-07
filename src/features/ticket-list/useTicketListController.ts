@@ -200,6 +200,17 @@ export function useTicketListController() {
       }
     },
   )
+  // Registered before useViewStatePersistence so its currentView sync watch
+  // never observes these removed legacy view ids.
+  watchEffect(() => {
+    if (
+      currentView.value === 'inbox'
+      || currentView.value === 'my-subscribed'
+      || currentView.value === 'my-activity'
+    ) {
+      currentView.value = 'my-issues'
+    }
+  })
   const canGoBack = ref(false)
   const canGoForward = ref(false)
   function syncNavigationHistoryState(): void {
@@ -512,15 +523,6 @@ export function useTicketListController() {
   function isMyIssuesView(viewId: string): viewId is MyIssuesViewId {
     return viewId === 'my-issues' || viewId === 'my-created'
   }
-  watchEffect(() => {
-    if (
-      currentView.value === 'inbox'
-      || currentView.value === 'my-subscribed'
-      || currentView.value === 'my-activity'
-    ) {
-      currentView.value = 'my-issues'
-    }
-  })
   const viewTitle = computed(() => {
     if (selectedTicket.value)
       return selectedTicket.value.key
