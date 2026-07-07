@@ -1,7 +1,6 @@
 import type { JiraAdfDocument, JiraTicket } from '@/types/jira'
 import type { LocalStatusId } from '~/shared/localTickets'
-
-const BASE = '/api'
+import { apiFetch } from '@/api/http'
 
 export interface CreateLocalTicketInput {
   summary: string
@@ -13,141 +12,62 @@ export interface CreateLocalTicketInput {
   dueDate?: string | null
 }
 
-export async function fetchLocalTickets(): Promise<JiraTicket[]> {
-  const res = await fetch(`${BASE}/local/tickets`)
-  if (!res.ok)
-    throw new Error(`Failed to fetch local tickets: ${res.statusText}`)
-  return res.json()
+export function fetchLocalTickets(): Promise<JiraTicket[]> {
+  return apiFetch('/local/tickets', 'Failed to fetch local tickets')
 }
 
-export async function fetchLocalTicket(key: string): Promise<JiraTicket> {
-  const res = await fetch(`${BASE}/local/tickets/${encodeURIComponent(key)}`)
-  if (!res.ok)
-    throw new Error(`Failed to fetch local ticket: ${res.statusText}`)
-  return res.json()
+export function fetchLocalTicket(key: string): Promise<JiraTicket> {
+  return apiFetch(['local', 'tickets', key], 'Failed to fetch local ticket')
 }
 
-export async function createLocalTicket(input: CreateLocalTicketInput): Promise<JiraTicket> {
-  const res = await fetch(`${BASE}/local/tickets`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(input),
-  })
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to create local ticket: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return res.json()
+export function createLocalTicket(input: CreateLocalTicketInput): Promise<JiraTicket> {
+  return apiFetch('/local/tickets', 'Failed to create local ticket', { method: 'POST', json: input })
 }
 
-export async function updateLocalTicketTitle(key: string, title: string): Promise<JiraTicket> {
-  const res = await fetch(`${BASE}/local/tickets/${encodeURIComponent(key)}/title`, {
+export function updateLocalTicketTitle(key: string, title: string): Promise<JiraTicket> {
+  return apiFetch(['local', 'tickets', key, 'title'], 'Failed to update title', {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ title }),
+    json: { title },
   })
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to update title: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return res.json()
 }
 
-export async function updateLocalTicketDescription(
+export function updateLocalTicketDescription(
   key: string,
   descriptionAdf: JiraAdfDocument | null,
 ): Promise<JiraTicket> {
-  const res = await fetch(`${BASE}/local/tickets/${encodeURIComponent(key)}/description`, {
+  return apiFetch(['local', 'tickets', key, 'description'], 'Failed to update description', {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ descriptionAdf }),
+    json: { descriptionAdf },
   })
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to update description: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return res.json()
 }
 
-export async function updateLocalTicketStatus(key: string, transitionId: string): Promise<JiraTicket> {
-  const res = await fetch(`${BASE}/local/tickets/${encodeURIComponent(key)}/status`, {
+export function updateLocalTicketStatus(key: string, transitionId: string): Promise<JiraTicket> {
+  return apiFetch(['local', 'tickets', key, 'status'], 'Failed to update status', {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ transitionId }),
+    json: { transitionId },
   })
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to update status: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return res.json()
 }
 
-export async function updateLocalTicketPriority(key: string, priorityName: string): Promise<JiraTicket> {
-  const res = await fetch(`${BASE}/local/tickets/${encodeURIComponent(key)}/priority`, {
+export function updateLocalTicketPriority(key: string, priorityName: string): Promise<JiraTicket> {
+  return apiFetch(['local', 'tickets', key, 'priority'], 'Failed to update priority', {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ priorityName }),
+    json: { priorityName },
   })
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to update priority: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return res.json()
 }
 
-export async function updateLocalTicketAssignee(
+export function updateLocalTicketAssignee(
   key: string,
   assigneeName: string | null,
 ): Promise<JiraTicket> {
-  const res = await fetch(`${BASE}/local/tickets/${encodeURIComponent(key)}/assignee`, {
+  return apiFetch(['local', 'tickets', key, 'assignee'], 'Failed to update assignee', {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ assigneeName }),
+    json: { assigneeName },
   })
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to update assignee: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return res.json()
 }
 
-export async function updateLocalTicketLabels(key: string, labels: string[]): Promise<JiraTicket> {
-  const res = await fetch(`${BASE}/local/tickets/${encodeURIComponent(key)}/labels`, {
+export function updateLocalTicketLabels(key: string, labels: string[]): Promise<JiraTicket> {
+  return apiFetch(['local', 'tickets', key, 'labels'], 'Failed to update labels', {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ labels }),
+    json: { labels },
   })
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to update labels: ${res.status} ${res.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return res.json()
 }

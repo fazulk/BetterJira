@@ -8,88 +8,42 @@ import type {
   UpdateAssistantSettingsInput,
   UpdateJiraConnectionInput,
 } from '~/shared/settings'
+import { apiFetch } from '@/api/http'
 
-const SETTINGS_BASE = '/api/settings'
-const SPACES_BASE = '/api/spaces'
-const TEAMS_BASE = '/api/teams'
-const AI_PROVIDERS_BASE = '/api/ai/providers'
-
-export async function fetchAppSettings(): Promise<AppSettings> {
-  const response = await fetch(SETTINGS_BASE)
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(`Failed to fetch settings: ${response.status} ${response.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return response.json()
+export function fetchAppSettings(): Promise<AppSettings> {
+  return apiFetch('/settings', 'Failed to fetch settings')
 }
 
-export async function updateAppSettings(input: UpdateAppSettingsInput): Promise<AppSettings> {
-  const response = await fetch(SETTINGS_BASE, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(input),
-  })
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(`Failed to update settings: ${response.status} ${response.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return response.json()
+export function updateAppSettings(input: UpdateAppSettingsInput): Promise<AppSettings> {
+  return apiFetch('/settings', 'Failed to update settings', { method: 'PUT', json: input })
 }
 
-export async function updateJiraConnection(input: UpdateJiraConnectionInput): Promise<AppSettings> {
+export function updateJiraConnection(input: UpdateJiraConnectionInput): Promise<AppSettings> {
   return updateAppSettings({
     jira: input,
   })
 }
 
-export async function updateAiConnection(input: UpdateAiConnectionInput): Promise<AppSettings> {
+export function updateAiConnection(input: UpdateAiConnectionInput): Promise<AppSettings> {
   return updateAppSettings({
     ai: input,
   })
 }
 
-export async function updateAssistantConnection(input: UpdateAssistantSettingsInput): Promise<AppSettings> {
+export function updateAssistantConnection(input: UpdateAssistantSettingsInput): Promise<AppSettings> {
   return updateAppSettings({
     assistant: input,
   })
 }
 
-export async function fetchAvailableSpaces(): Promise<JiraSpaceDirectoryEntry[]> {
-  const response = await fetch(SPACES_BASE)
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(`Failed to fetch spaces: ${response.status} ${response.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return response.json()
+export function fetchAvailableSpaces(): Promise<JiraSpaceDirectoryEntry[]> {
+  return apiFetch('/spaces', 'Failed to fetch spaces')
 }
 
-export async function fetchAvailableTeams(query?: string): Promise<JiraTeamRef[]> {
-  const url = query ? `${TEAMS_BASE}?query=${encodeURIComponent(query)}` : TEAMS_BASE
-  const response = await fetch(url)
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(`Failed to fetch teams: ${response.status} ${response.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return response.json()
+export function fetchAvailableTeams(query?: string): Promise<JiraTeamRef[]> {
+  return apiFetch('/teams', 'Failed to fetch teams', { query: { query } })
 }
 
-export async function fetchAiProviderAvailability(): Promise<AiProviderAvailabilityResponse> {
-  const response = await fetch(AI_PROVIDERS_BASE)
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(`Failed to fetch AI providers: ${response.status} ${response.statusText}${body ? ` - ${body}` : ''}`)
-  }
-
-  return response.json()
+export function fetchAiProviderAvailability(): Promise<AiProviderAvailabilityResponse> {
+  return apiFetch('/ai/providers', 'Failed to fetch AI providers')
 }
