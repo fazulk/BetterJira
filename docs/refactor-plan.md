@@ -249,6 +249,21 @@ Precondition: Phases 2 and 3 complete.
 - **6.8** Final sweep: lint + typecheck + tests green; dead-export scan over
   touched files; verify no file grew past 1,000 lines.
 
+### Phase 6 outcome (2026-07-07)
+
+6.1–6.8 executed; gate green throughout (typecheck 0, eslint clean, 227
+tests). Controller: 4,701 → 2,691 lines. Extracted modules: filterEngine
+(715), useViewStatePersistence (~370), useTicketRows (353), useCommandMenu
+(287), useIssueSelection (121), useSidebarResize (78). One regression found
+and fixed in review: watch-registration order vs the legacy inbox redirect
+(4fd0c5d). useTicketListKeyboard was evaluated and deliberately NOT
+extracted — handleGlobalKeydown dispatches over ~27 heterogeneous deps and
+extraction would only relocate the bag. The <800 target was not reached;
+remaining bulk is custom-view editor/favorites/view management (~700),
+issue sections + sorting pipeline (~450), navigation/open-close routing,
+keyboard dispatcher, and menu plumbing. Further decomposition is optional
+follow-up, not blocked.
+
 Delegation: **no parallel fan-out in this phase.** Every task rewrites
 `useTicketListController.ts`; the controller is single-writer. Extractions
 run one at a time with the full gate between each, and a reviewer-subagent
