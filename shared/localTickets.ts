@@ -59,11 +59,13 @@ export function getLocalStatusIdFromDisplayName(display: string): LocalStatusId 
 export function getLocalTransitions(currentStatusId: LocalStatusId): Array<{
   id: string
   name: string
+  statusName: string
   statusCategory: string
 }> {
   return LOCAL_STATUS_DEFINITIONS.filter(def => def.id !== currentStatusId).map(def => ({
     id: def.id,
     name: `Move to ${def.name}`,
+    statusName: def.name,
     statusCategory: def.statusCategory,
   }))
 }

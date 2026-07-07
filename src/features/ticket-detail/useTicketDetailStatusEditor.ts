@@ -75,7 +75,10 @@ export function useTicketDetailStatusEditor(input: TicketDetailStatusEditorInput
       await updateStatusMutation.mutateAsync({
         key: input.ticket.value.key,
         transitionId: selectedTransition.id,
-        statusName: selectedTransition.name,
+        // Local transition names are "Move to X" labels; the optimistic status is the target name.
+        statusName: 'statusName' in selectedTransition && typeof selectedTransition.statusName === 'string'
+          ? selectedTransition.statusName
+          : selectedTransition.name,
         statusCategory: selectedTransition.statusCategory,
       })
       isEditingStatus.value = false
