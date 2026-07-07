@@ -43,6 +43,7 @@ Per-phase delegation summary:
 | 4 | Sequential chain (4.1 → 4.2 → 4.3 → 4.4); 4.5 parallel-safe alongside 4.3/4.4 |
 | 5 | **Runs in parallel with Phase 4** (client mutation files vs API/server files are disjoint). Within it: 5.1 (client) parallel to 5.2–5.4 (server, sequential chain) |
 | 6 | Strictly sequential, single agent — every task rewrites the controller. Reviewer pass after each extraction (6.2, 6.3, 6.4, 6.5), not just at phase end |
+| 7 | Strictly sequential, single writer, same discipline as Phase 6 — see `docs/phase-7-controller-finish.md` |
 
 ---
 
@@ -261,8 +262,31 @@ extracted — handleGlobalKeydown dispatches over ~27 heterogeneous deps and
 extraction would only relocate the bag. The <800 target was not reached;
 remaining bulk is custom-view editor/favorites/view management (~700),
 issue sections + sorting pipeline (~450), navigation/open-close routing,
-keyboard dispatcher, and menu plumbing. Further decomposition is optional
-follow-up, not blocked.
+keyboard dispatcher, and menu plumbing. The remaining decomposition is
+planned in detail as Phase 7.
+
+---
+
+## Phase 7 — Finish the controller decomposition (2,691 → <1,000 lines)
+
+Full plan with per-work-package instructions, dependency ordering, and
+hazard notes: **`docs/phase-7-controller-finish.md`**. Summary:
+
+- **WP-1** `useIssueGrouping` — sections, sorting, group ordering (~400)
+- **WP-2** `useTicketVisibility` — current-view scoping predicates (~110)
+- **WP-3** custom-view directory derivation (~190)
+- **WP-4** `useFavoriteViews` (~360; depends on WP-2/WP-3)
+- **WP-5** `useViewEditor` + custom-view context menu (~260; circular-init
+  constraint with `useViewStatePersistence` documented in the plan)
+- **WP-6** `useTicketNavigation` + modals (~220; `useCommandMenu` hoisting
+  trap documented in the plan)
+- **WP-7** shrink `handleGlobalKeydown` in place — no extraction
+- **WP-8** final sweep: dead exports, size audit, phase-wide reviewer pass
+- **WP-9** (spillover, only if needed) `useFilterMenu` (~350)
+
+Same ground rules as Phase 6: single writer, gate after every WP
+(eslint --fix → typecheck → vitest), commit per WP, reviewer passes after
+WP-2/WP-4/WP-6, verbatim bodies, deltas recorded here.
 
 Delegation: **no parallel fan-out in this phase.** Every task rewrites
 `useTicketListController.ts`; the controller is single-writer. Extractions
