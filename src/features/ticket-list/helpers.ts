@@ -3,9 +3,12 @@ import type {
   CustomViewKind,
   DateFilterFieldId,
   DateFilterOperator,
+  InitiativeRowFieldId,
   InsightSlice,
   ProjectGroupingFieldId,
   ProjectRow,
+  ProjectRowFieldId,
+  SavedViewRowFieldId,
   ViewsDirectoryTabId,
 } from './types'
 import type { JiraTicket } from '@/types/jira'
@@ -287,6 +290,63 @@ export function getRelativeTimeLabel(value?: string | null): string {
   if (absMs < day)
     return relativeFormatter.format(Math.round(diffMs / hour), 'hour')
   return relativeFormatter.format(Math.round(diffMs / day), 'day')
+}
+
+function buildGridTemplate<FieldId>(
+  leadColumn: string,
+  columnWidths: ReadonlyArray<readonly [FieldId, string]>,
+  isVisible: (fieldId: FieldId) => boolean,
+): string {
+  return [
+    leadColumn,
+    ...columnWidths.filter(([fieldId]) => isVisible(fieldId)).map(([, width]) => width),
+  ].join(' ')
+}
+
+export function getProjectGridTemplate(isVisible: (fieldId: ProjectRowFieldId) => boolean): string {
+  return buildGridTemplate<ProjectRowFieldId>(
+    'minmax(220px,1.4fr)',
+    [
+      ['health', '108px'],
+      ['priority', '94px'],
+      ['lead', '130px'],
+      ['targetDate', '104px'],
+      ['issues', '150px'],
+      ['status', '116px'],
+    ],
+    isVisible,
+  )
+}
+
+export function getInitiativeGridTemplate(
+  isVisible: (fieldId: InitiativeRowFieldId) => boolean,
+): string {
+  return buildGridTemplate<InitiativeRowFieldId>(
+    'minmax(260px,1.4fr)',
+    [
+      ['health', '112px'],
+      ['lead', '124px'],
+      ['projects', '132px'],
+      ['issues', '156px'],
+      ['updated', '112px'],
+    ],
+    isVisible,
+  )
+}
+
+export function getSavedViewGridTemplate(
+  isVisible: (fieldId: SavedViewRowFieldId) => boolean,
+): string {
+  return buildGridTemplate<SavedViewRowFieldId>(
+    'minmax(260px,1fr)',
+    [
+      ['type', '112px'],
+      ['items', '88px'],
+      ['owner', '132px'],
+      ['updated', '112px'],
+    ],
+    isVisible,
+  )
 }
 
 export function isEditableTarget(target: EventTarget | null): boolean {

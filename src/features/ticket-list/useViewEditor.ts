@@ -200,6 +200,21 @@ export function useViewEditor(deps: UseViewEditorDeps) {
     }
     deps.viewEditorDraft.value = { ...deps.viewEditorDraft.value, color: value }
   }
+  function saveCurrentViewFilters() {
+    startCreateView()
+  }
+  function saveCurrentViewChangesToThisView(): void {
+    const customView = deps.getCustomView(deps.currentView.value)
+    if (!customView) {
+      return
+    }
+
+    saveCustomViewAndRemoveOverride({
+      ...copyCustomView(customView),
+      filters: clausesToCustomViewFilters(deps.currentViewFilters.value),
+      display: deps.captureDisplay(),
+    })
+  }
   function openViewEditorFilters(): void {
     deps.openFilterMenu()
   }
@@ -267,6 +282,8 @@ export function useViewEditor(deps: UseViewEditorDeps) {
     updateViewEditorDescription,
     updateViewEditorIcon,
     updateViewEditorColor,
+    saveCurrentViewFilters,
+    saveCurrentViewChangesToThisView,
     openViewEditorFilters,
     openViewEditorSettings,
     closeCustomViewContextMenu,

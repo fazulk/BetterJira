@@ -4,15 +4,23 @@ import type {
   IssueGroupingFieldId,
   IssueGroupOrderingRow,
   IssueOrderingFieldId,
+  IssueRowFieldId,
   IssueSection,
   IssueVisibilityRange,
   MyIssuesViewId,
+  ViewFilterClause,
 } from './types'
 import type { JiraTicket } from '@/types/jira'
-import type { StatusPreferences } from '~/shared/settings'
+import type { CustomViewDisplay, StatusPreferences } from '~/shared/settings'
 import { computed, ref } from 'vue'
 import { compareStatusesByPreference } from '@/composables/useStatusPreferences'
 import { getPriorityRank, getTicketLabels, getTimeValue } from './helpers'
+import {
+  copyIssueGroupConfigMap,
+  normalizeIssueGroupingFieldId,
+  normalizeIssueOrderingFieldId,
+  normalizeIssueRowFields,
+} from './viewDisplay'
 
 interface UseIssueGroupingDeps {
   searchedTickets: ComputedRef<JiraTicket[]>
@@ -26,13 +34,18 @@ interface UseIssueGroupingDeps {
   issueGroupOrders: Ref<IssueGroupConfigMap>
   hiddenIssueGroupIds: Ref<IssueGroupConfigMap>
   collapsedIssueSectionIds: Ref<string[]>
+  visibleIssueRowFields: Ref<IssueRowFieldId[]>
   completedRange: Ref<IssueVisibilityRange>
+  currentViewFilters: Ref<ViewFilterClause[]>
   statusPreferences: ComputedRef<StatusPreferences>
   filterTicketsForCurrentViewWithoutCompletedRange: (tickets: JiraTicket[]) => JiraTicket[]
   ticketMatchesQuery: (ticket: JiraTicket, query: string) => boolean
   applyViewFiltersToTickets: (tickets: JiraTicket[]) => JiraTicket[]
   isCompletedIssueVisible: (ticket: JiraTicket) => boolean
   normalizedIssueSearch: ComputedRef<string>
+  getDefaultDisplayForView: (viewId: string) => CustomViewDisplay
+  persistViewStateForView: (viewId: string, filters: ViewFilterClause[], display: CustomViewDisplay) => void
+  captureDisplay: () => CustomViewDisplay
 }
 
 function isMyIssuesView(viewId: string): viewId is MyIssuesViewId {
@@ -333,6 +346,18 @@ export function useIssueGrouping(deps: UseIssueGroupingDeps) {
   function toggleOrderingDirection() {
     deps.listOrderingDirection.value = deps.listOrderingDirection.value === 'asc' ? 'desc' : 'asc'
   }
+  function resetIssueDisplayOptions() {
+    const defaults = deps.getDefaultDisplayForView(deps.currentView.value)
+    deps.listGrouping.value = normalizeIssueGroupingFieldId(defaults.grouping)
+    deps.listOrdering.value = normalizeIssueOrderingFieldId(defaults.ordering)
+    deps.listGroupingDirection.value = defaults.groupingDirection
+    deps.listOrderingDirection.value = defaults.orderingDirection
+    deps.issueGroupOrders.value = copyIssueGroupConfigMap(defaults.issueGroupOrders)
+    deps.hiddenIssueGroupIds.value = copyIssueGroupConfigMap(defaults.hiddenIssueGroupIds)
+    deps.collapsedIssueSectionIds.value = [...defaults.collapsedIssueSectionIds]
+    deps.visibleIssueRowFields.value = normalizeIssueRowFields(defaults.visibleIssueRowFields)
+    deps.persistViewStateForView(deps.currentView.value, deps.currentViewFilters.value, deps.captureDisplay())
+  }
   function getIssueSectionCollapseId(section: IssueSection): string {
     return `${deps.currentView.value}:${deps.listGrouping.value}:${section.id}`
   }
@@ -382,6 +407,7 @@ export function useIssueGrouping(deps: UseIssueGroupingDeps) {
     finishIssueGroupDrag,
     dropIssueGroup,
     toggleOrderingDirection,
+    resetIssueDisplayOptions,
     getIssueSectionCollapseId,
     isIssueSectionCollapsed,
     shouldShowIssueSectionHeader,

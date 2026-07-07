@@ -138,10 +138,6 @@ export function useTicketNavigation(deps: UseTicketNavigationDeps) {
     deps.clearCheckedIssues()
     closeTicket()
   }
-  function handleFavoriteViewChange(viewId: string) {
-    // Restoring filters is owned by the caller; this function is patched by the controller wrapper.
-    handleViewChange(viewId)
-  }
   function openAddSpaceModal(): void {
     isAddSpaceModalOpen.value = true
   }
@@ -262,7 +258,6 @@ export function useTicketNavigation(deps: UseTicketNavigationDeps) {
     focusSearchInputWhenReady,
     closeSearchView,
     handleViewChange,
-    handleFavoriteViewChange,
     openAddSpaceModal,
     closeAddSpaceModal,
     handleLeaveSpace,

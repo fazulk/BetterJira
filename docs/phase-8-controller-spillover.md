@@ -1,5 +1,15 @@
 # Phase 8 — Controller spillover: filter menu, project sections, search, view context
 
+> **Status (2026-07-07): executed, target reached.** Controller moved from
+> **1,714 → 998 lines**. Gate green: `bunx eslint . --fix`,
+> `bun run typecheck`, `bunx vitest run` (10 files / 240 tests). Extracted:
+> `useViewFilters`, `useFilterMenu`, `useProjectSections`,
+> `useTicketSearch`, `useViewContext`, `useTicketListKeyboard`, and
+> `useTicketListMenus`; moved grid-template helpers into `helpers.ts`;
+> added characterization tests for `useIssueGrouping` and
+> `useTicketVisibility`; removed the vestigial `handleFavoriteViewChange`
+> export from `useTicketNavigation`. Reviewer pass found no blockers.
+
 Status of the input: `src/features/ticket-list/useTicketListController.ts` is
 **1,714 lines** after Phase 7 (commit `ecd82f2`; started Phase 7 at 2,691).
 Phase 7 extracted grouping, visibility, custom-view directory, favorites, the

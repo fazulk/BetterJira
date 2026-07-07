@@ -367,6 +367,35 @@ Same ground rules as Phases 6–7: single writer, gate after every WP
 (eslint --fix → typecheck → vitest), commit per WP, reviewer passes after
 WP-9b and WP-13, verbatim bodies, deltas recorded here.
 
+### Phase 8 outcome (2026-07-07)
+
+WP-0, WP-9a, WP-9b, WP-10, WP-11, WP-12, WP-13, and the WP-14 keyboard/menu
+stretch executed; gate green (eslint clean, typecheck 0, 240 tests).
+Controller: 1,714 → **998 lines**, target reached. Extracted modules:
+`useViewFilters` (151), `useFilterMenu` (311), `useProjectSections` (163),
+`useTicketSearch` (99), `useViewContext` (190), `useTicketListKeyboard`
+(172), `useTicketListMenus` (76). `helpers.ts` gained the grid-template
+builders. Added `tests/issue-grouping.test.ts` and
+`tests/ticket-visibility.test.ts` (227 → 240 tests). Final reviewer pass
+found no blockers; capture-phase listener flags preserved in the keyboard
+and pointerdown composables.
+
+### Phase 8 recorded behavior deltas (accepted)
+
+- `watch(visibleFilterMenuEntries, …)` moved from the controller into
+  `useFilterMenu`; reviewer verified there are no sibling watchers on the
+  same sources, so registration-order risk is negligible.
+- The document `pointerdown` listener moved into `useTicketListMenus` and the
+  document `keydown` listener moved into `useTicketListKeyboard`, both still
+  registered with capture `true`. Their `onMounted` hooks now register at the
+  composable call sites rather than the controller's final `onMounted`; they
+  are different event types and preserve the prior capture behavior.
+- `saveCurrentViewFilters` and `saveCurrentViewChangesToThisView` moved into
+  `useViewEditor`; they use the same editor-owned copy/save helpers and the
+  same `currentViewFilters`/`captureDisplay` inputs as before.
+- `resetIssueDisplayOptions` moved into `useIssueGrouping`; the defaults,
+  row-field reset, group-order reset, and persistence call remain unchanged.
+
 ---
 
 ## Deferred (noted in audit, intentionally out of scope)
