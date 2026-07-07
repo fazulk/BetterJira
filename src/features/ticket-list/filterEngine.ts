@@ -443,7 +443,7 @@ export function buildDateFilterOptions(
   }))
 }
 
-export function getDateFilterOptionCount(
+function getDateFilterOptionCount(
   context: FilterContextKind,
   fieldId: DateFilterFieldId,
   operator: DateFilterOperator,
@@ -469,7 +469,7 @@ export function getDateFilterOptionCount(
   ).length
 }
 
-export function ticketMatchesCurrentUserReporter(
+function ticketMatchesCurrentUserReporter(
   ticket: JiraTicket,
   currentUserName: string,
 ): boolean {
@@ -482,7 +482,7 @@ export function ticketMatchesCurrentUserReporter(
   )
 }
 
-export function getInitiativeDateValue(
+function getInitiativeDateValue(
   initiative: InitiativeRow,
   fieldId: DateFilterFieldId,
 ): string | undefined {
@@ -491,7 +491,7 @@ export function getInitiativeDateValue(
   return undefined
 }
 
-export function getSavedViewDateValue(
+function getSavedViewDateValue(
   row: SavedViewRow,
   fieldId: DateFilterFieldId,
 ): string | undefined {
