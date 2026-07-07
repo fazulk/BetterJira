@@ -268,10 +268,21 @@ export function isEditableTarget(target: EventTarget | null): boolean {
   return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
 }
 
+/**
+ * Parses the `team:<key>:<section>` view-id grammar. Returns null for
+ * non-team ids. Segments are returned raw: `teamKey` may be undefined
+ * (`'team'`) or empty (`'team:'`); callers keep their own validation because
+ * some call sites intentionally accept empty keys (locked by tests).
+ */
+export function parseTeamViewId(viewId: string): { teamKey: string | undefined, section: string | undefined } | null {
+  const [scope, teamKey, section] = viewId.split(':')
+  return scope === 'team' ? { teamKey, section } : null
+}
+
 export function getBaseViewIdForCustomContext(contextKey: string): string {
-  const [scope, key, section] = contextKey.split(':')
-  if (scope === 'team' && key) {
-    return section === 'projects' ? `team:${key}:projects` : `team:${key}:all`
+  const parsed = parseTeamViewId(contextKey)
+  if (parsed?.teamKey) {
+    return parsed.section === 'projects' ? `team:${parsed.teamKey}:projects` : `team:${parsed.teamKey}:all`
   }
   return contextKey
 }
@@ -279,8 +290,8 @@ export function getBaseViewIdForCustomContext(contextKey: string): string {
 export function getViewsDirectoryTabFromViewId(viewId: string): ViewsDirectoryTabId | null {
   if (viewId === 'views' || viewId === 'project-views')
     return viewId
-  const [scope, , section] = viewId.split(':')
-  if (scope === 'team' && (section === 'views' || section === 'project-views'))
+  const section = parseTeamViewId(viewId)?.section
+  if (section === 'views' || section === 'project-views')
     return section
   return null
 }
@@ -290,12 +301,12 @@ export function getCustomViewKind(contextKey: string): CustomViewKind | null {
     return 'issues'
   if (contextKey === 'projects')
     return 'projects'
-  const [scope, , section] = contextKey.split(':')
-  if (scope !== 'team')
+  const parsed = parseTeamViewId(contextKey)
+  if (!parsed)
     return null
-  if (section === 'issues')
+  if (parsed.section === 'issues')
     return 'issues'
-  if (section === 'projects')
+  if (parsed.section === 'projects')
     return 'projects'
   return null
 }

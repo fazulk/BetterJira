@@ -98,6 +98,7 @@ import {
   isInitiativeIssueType,
   isSubIssueTicket,
   normalizeFilterValue,
+  parseTeamViewId,
 } from './helpers'
 import {
   dateFilterFields,
@@ -371,8 +372,9 @@ export function useTicketListController() {
       return copyViewDisplay(customView.display)
     }
     const display = getDefaultViewDisplay()
-    const [scope, , section] = viewId.split(':')
-    if (scope === 'team' && (section === 'all' || section === 'active' || !section)) {
+    const parsed = parseTeamViewId(viewId)
+    const section = parsed?.section
+    if (parsed && (section === 'all' || section === 'active' || !section)) {
       return {
         ...display,
         grouping: 'status',
@@ -509,19 +511,14 @@ export function useTicketListController() {
       : currentView.value,
   )
   function getContextKeyForViewId(viewId: string): string | null {
-    const [scope, key, section] = viewId.split(':')
-    if (scope === 'team' && key) {
-      if (section === 'views') {
-        return `team:${key}:issues`
+    const parsed = parseTeamViewId(viewId)
+    if (parsed?.teamKey) {
+      const { teamKey, section } = parsed
+      if (section === 'projects' || section === 'project-views') {
+        return `team:${teamKey}:projects`
       }
-      if (section === 'project-views') {
-        return `team:${key}:projects`
-      }
-      if (section === 'projects') {
-        return `team:${key}:projects`
-      }
-      if (section === 'all' || section === 'active' || section === 'backlog') {
-        return `team:${key}:issues`
+      if (section === 'views' || section === 'all' || section === 'active' || section === 'backlog') {
+        return `team:${teamKey}:issues`
       }
       return null
     }
@@ -545,8 +542,8 @@ export function useTicketListController() {
   )
   const supportsCustomViews = computed(() => contextKeyForCurrentView.value !== null)
   const currentTeamKey = computed(() => {
-    const [scope, key] = activeBaseViewId.value.split(':')
-    return scope === 'team' ? (key ?? null) : null
+    const parsed = parseTeamViewId(activeBaseViewId.value)
+    return parsed ? (parsed.teamKey ?? null) : null
   })
   const currentTeamName = computed(() => {
     const key = currentTeamKey.value
@@ -555,8 +552,8 @@ export function useTicketListController() {
     return enabledSpaces.value.find(space => space.key === key)?.name ?? key
   })
   const currentTeamSection = computed(() => {
-    const [scope, , section] = activeBaseViewId.value.split(':')
-    return scope === 'team' ? (section ?? 'active') : null
+    const parsed = parseTeamViewId(activeBaseViewId.value)
+    return parsed ? (parsed.section ?? 'active') : null
   })
   const currentTeamAppearance = computed(() => {
     const key = currentTeamKey.value
@@ -1380,23 +1377,20 @@ export function useTicketListController() {
   }
 
   function getFavoriteViewTeamKey(viewId: string): string | null {
-    const [scope, key] = getFavoriteViewBaseId(viewId).split(':')
-    return scope === 'team' && key ? key : null
+    return parseTeamViewId(getFavoriteViewBaseId(viewId))?.teamKey || null
   }
 
   function getFavoriteViewTeamSection(viewId: string): string | null {
-    const [scope, , section] = getFavoriteViewBaseId(viewId).split(':')
-    return scope === 'team' ? (section ?? 'active') : null
+    const parsed = parseTeamViewId(getFavoriteViewBaseId(viewId))
+    return parsed ? (parsed.section ?? 'active') : null
   }
 
   function isFavoriteProjectView(viewId: string): boolean {
-    const [scope, , section] = viewId.split(':')
-    return viewId === 'projects' || (scope === 'team' && section === 'projects')
+    return viewId === 'projects' || parseTeamViewId(viewId)?.section === 'projects'
   }
 
   function isFavoriteTeamSettingsView(viewId: string): boolean {
-    const [scope, , section] = viewId.split(':')
-    return scope === 'team' && section === 'settings'
+    return parseTeamViewId(viewId)?.section === 'settings'
   }
 
   function getFavoriteViewIssueTickets(viewId: string): JiraTicket[] {
@@ -1505,8 +1499,7 @@ export function useTicketListController() {
     return activeTeamKey ? viewTeamKey === activeTeamKey : viewTeamKey === null
   }
   function getCustomViewTeamKey(contextKey: string): string | null {
-    const [scope, key] = contextKey.split(':')
-    return scope === 'team' && key ? key : null
+    return parseTeamViewId(contextKey)?.teamKey || null
   }
   function customViewToSavedViewRow(view: CustomView): SavedViewRow {
     const kind = getCustomViewKind(view.contextKey)
@@ -1585,9 +1578,10 @@ export function useTicketListController() {
       return 'Views · Issues'
     if (viewId === 'project-views')
       return 'Views · Projects'
-    const [scope, key, section] = viewId.split(':')
-    if (scope === 'team' && key) {
-      const teamName = enabledSpaces.value.find(space => space.key === key)?.name || key
+    const parsed = parseTeamViewId(viewId)
+    if (parsed?.teamKey) {
+      const { teamKey, section } = parsed
+      const teamName = enabledSpaces.value.find(space => space.key === teamKey)?.name || teamKey
       const sectionLabel = getTeamSectionLabel(section)
       const kind = section === 'projects' || section === 'project-views'
         ? 'projects'

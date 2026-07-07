@@ -7,7 +7,7 @@ import { fetchLocalTicket } from '@/api/localTickets'
 import { localTicketQueryKey, ticketQueryKey } from '@/composables/queryKeys'
 import { usePinnedTickets } from '@/composables/usePinnedTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
-import { isSubIssueTicket } from '@/features/ticket-list/helpers'
+import { isSubIssueTicket, parseTeamViewId } from '@/features/ticket-list/helpers'
 import { getStatusGroup } from '@/types/jira'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
 import { isLocalTicketKey, LOCAL_SPACE_KEY } from '~/shared/localTickets'
@@ -73,12 +73,7 @@ export function getTeamViewId(spaceKey: string, section: TeamViewSection): strin
 }
 
 function getTeamKeyFromViewId(viewId: string): string | null {
-  if (!viewId.startsWith('team:')) {
-    return null
-  }
-
-  const [, teamKey] = viewId.split(':')
-  return teamKey || null
+  return parseTeamViewId(viewId)?.teamKey || null
 }
 
 function isEpicIssue(ticket: JiraTicket): boolean {
