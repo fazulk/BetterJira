@@ -38,6 +38,24 @@ export function normalizeFilterValue(value?: string | null): string {
   return normalized || 'none'
 }
 
+export function getTicketLabels(ticket: JiraTicket): string[] {
+  const labels: string[] = []
+  const seen = new Set<string>()
+  for (const label of ticket.labels ?? []) {
+    const trimmed = label.trim()
+    const normalized = normalizeFilterValue(trimmed)
+    if (!trimmed || seen.has(normalized))
+      continue
+    seen.add(normalized)
+    labels.push(trimmed)
+  }
+  return labels
+}
+
+export function isActiveIssueTicket(ticket: JiraTicket): boolean {
+  return getStatusGroup(ticket.statusCategory) !== 'done'
+}
+
 export function dateMatchesOperator(
   value: string | undefined,
   operator: DateFilterOperator,

@@ -1,9 +1,9 @@
 import type { ComponentPublicInstance } from 'vue'
+import type { TicketFilterContext } from './filterEngine'
 import type {
   ActiveFilterChip,
   CommandMenuItem,
   DateFilterFieldId,
-  DateFilterOperator,
   DateFilterOption,
   FavoriteViewNavItem,
   FilterContextKind,
@@ -70,25 +70,37 @@ import {
   isFilterFieldId,
 } from './filterDisplay'
 import {
+  buildDateFilterOptions,
+  buildInitiativeFilterOptions,
+  buildIssueFilterOptions,
+  buildProjectFilterOptions,
+  buildSavedViewFilterOptions,
+  filterInitiativesByClauses,
+  filterProjectsByClauses,
+  filterSavedViewsByClauses,
+  filterTicketsByClauses,
+  initiativeMatchesFilter,
+  projectMatchesFilter as projectMatchesFilterClause,
+  savedViewMatchesFilter,
+  ticketMatchesFilter as ticketMatchesFilterClause,
+} from './filterEngine'
+import {
   compareOptionalDates,
-  dateMatchesOperator,
   formatCompactDate,
   getBaseViewIdForCustomContext,
   getCustomViewKind,
-  getDateFilterOperator,
   getIssueGroupMarkerClass,
   getIssueTypeIcon,
   getMostCommonLead,
   getPriorityRank,
   getProgressBarClass,
-  getProjectDateValue,
   getProjectGroupingLabel,
   getProjectGroupingRank,
   getProjectHealth,
   getProjectHealthClass,
   getRelativeTimeLabel,
   getTeamSectionLabel,
-  getTicketDateValue,
+  getTicketLabels,
   getTimeValue,
   getViewsDirectoryTabFromViewId,
   isEditableTarget,
@@ -97,7 +109,6 @@ import {
   isInitiativeIssue,
   isInitiativeIssueType,
   isSubIssueTicket,
-  normalizeFilterValue,
   parseTeamViewId,
 } from './helpers'
 import {
@@ -1933,19 +1944,6 @@ export function useTicketListController() {
     }
     return ['All issues']
   }
-  function getTicketLabels(ticket: JiraTicket): string[] {
-    const labels: string[] = []
-    const seen = new Set<string>()
-    for (const label of ticket.labels ?? []) {
-      const trimmed = label.trim()
-      const normalized = normalizeFilterValue(trimmed)
-      if (!trimmed || seen.has(normalized))
-        continue
-      seen.add(normalized)
-      labels.push(trimmed)
-    }
-    return labels
-  }
   function getIssueGroupingRank(label: string, fieldId: IssueGroupingFieldId): number {
     if (fieldId === 'priority')
       return getPriorityRank(label)
@@ -2070,9 +2068,6 @@ export function useTicketListController() {
   function isBacklogIssueTicket(ticket: JiraTicket): boolean {
     return ticket.status.trim().toLowerCase() === 'backlog'
   }
-  function isActiveIssueTicket(ticket: JiraTicket): boolean {
-    return getStatusGroup(ticket.statusCategory) !== 'done'
-  }
   function isCompletedIssueVisible(ticket: JiraTicket): boolean {
     if (getStatusGroup(ticket.statusCategory) !== 'done')
       return true
@@ -2155,335 +2150,26 @@ export function useTicketListController() {
     return getIssueFilterOptions(fieldId)
   }
   function getIssueFilterOptions(fieldId: FilterFieldId): FilterOption[] {
-    const baseTickets = filterableTickets.value
-    if (fieldId === 'status') {
-      return countFilterOptions(
-        baseTickets.map(ticket => ({
-          value: normalizeFilterValue(ticket.status || 'No status'),
-          label: ticket.status || 'No status',
-          icon: '◌',
-        })),
-      )
-    }
-    if (fieldId === 'assignee' || fieldId === 'sharedWith') {
-      const currentUser = currentUserName.value || 'Current user'
-      const people = baseTickets.map(ticket => ({
-        value: normalizeFilterValue(ticket.assignee || 'Unassigned'),
-        label: ticket.assignee || 'Unassigned',
-        icon: '♙',
-      }))
-      return countFilterOptions([
-        { value: 'current-user', label: 'Current user', icon: '♙' },
-        ...people,
-      ])
-        .map(option =>
-          option.value === 'current-user'
-            ? {
-                ...option,
-                count: currentUserName.value
-                  ? baseTickets.filter(
-                    ticket =>
-                      normalizeFilterValue(ticket.assignee) === normalizeFilterValue(currentUser),
-                  ).length
-                  : 0,
-              }
-            : option,
-        )
-        .filter(option => option.count > 0)
-    }
-    if (fieldId === 'reporter') {
-      const people = baseTickets.map(ticket => ({
-        value: normalizeFilterValue(ticket.reporter || 'Unknown'),
-        label: ticket.reporter || 'Unknown',
-        icon: '♙',
-      }))
-      return countFilterOptions([
-        { value: 'current-user', label: 'Current user', icon: '♙' },
-        ...people,
-      ])
-        .map(option =>
-          option.value === 'current-user'
-            ? {
-                ...option,
-                count: baseTickets.filter(ticket => ticketMatchesCurrentUserReporter(ticket))
-                  .length,
-              }
-            : option,
-        )
-        .filter(option => option.count > 0)
-    }
-    if (fieldId === 'priority') {
-      return countFilterOptions(
-        baseTickets.map(ticket => ({
-          value: normalizeFilterValue(ticket.priority || 'No priority'),
-          label: ticket.priority || 'No priority',
-          icon: '▥',
-        })),
-      )
-    }
-    if (fieldId === 'labels' || fieldId === 'suggestedLabel') {
-      return countFilterOptions(
-        baseTickets.flatMap((ticket) => {
-          const labels = getTicketLabels(ticket)
-          if (labels.length === 0) {
-            return [
-              {
-                value: normalizeFilterValue('No labels'),
-                label: 'No labels',
-                icon: '▭',
-              },
-            ]
-          }
-          return labels.map(label => ({
-            value: normalizeFilterValue(label),
-            label,
-            icon: '▭',
-          }))
-        }),
-      )
-    }
-    if (fieldId === 'project') {
-      return countFilterOptions(
-        baseTickets.map((ticket) => {
-          const projectKey = getProjectKey(ticket)
-          const project = projectKey
-            ? projectRows.value.find(row => row.key === projectKey)
-            : null
-          return {
-            value: projectKey ?? 'no-project',
-            label: project?.name ?? projectKey ?? 'No project',
-            icon: '◇',
-          }
-        }),
-      )
-    }
-    if (fieldId === 'team') {
-      return countFilterOptions(
-        baseTickets.map(ticket => ({
-          value: ticket.team?.id ?? 'no-team',
-          label: ticket.team?.name ?? 'No team',
-          icon: '◴',
-        })),
-      )
-    }
-    if (fieldId === 'projectStatus') {
-      return countFilterOptions(
-        baseDisplayedProjectRows.value.map(project => ({
-          value: normalizeFilterValue(project.status || 'No status'),
-          label: project.status || 'No status',
-          icon: '◌',
-        })),
-      )
-    }
-    if (fieldId === 'projectPriority') {
-      return countFilterOptions(
-        baseDisplayedProjectRows.value.map(project => ({
-          value: normalizeFilterValue(project.priority || 'No priority'),
-          label: project.priority || 'No priority',
-          icon: '▥',
-        })),
-      )
-    }
-    if (fieldId === 'projectLead') {
-      return countFilterOptions(
-        baseDisplayedProjectRows.value.map(project => ({
-          value: normalizeFilterValue(project.lead || 'Unassigned'),
-          label: project.lead || 'Unassigned',
-          icon: '♙',
-        })),
-      )
-    }
-    if (fieldId === 'initiative') {
-      return countFilterOptions(
-        baseInitiativeRows.value.map(initiative => ({
-          value: initiative.id,
-          label: initiative.name,
-          icon: '◒',
-        })),
-      )
-    }
-    if (fieldId === 'subscribers') {
-      return countFilterOptions(
-        baseTickets.map(ticket => ({
-          value: ticket.isWatching ? 'watching' : 'not-watching',
-          label: ticket.isWatching ? 'Watching' : 'Not watching',
-          icon: '♧',
-        })),
-      )
-    }
-    if (fieldId === 'shared') {
-      return [
-        {
-          value: 'shared',
-          label: 'Shared',
-          count: baseTickets.filter(ticket => (ticket.watchCount ?? 0) > 0).length,
-          icon: '♢',
-        },
-      ]
-    }
-    if (fieldId === 'externalSource') {
-      return countFilterOptions(
-        baseTickets.map(ticket => ({
-          value: isLocalTicketKey(ticket.key) ? 'local' : 'jira',
-          label: isLocalTicketKey(ticket.key) ? 'Local' : 'Jira',
-          icon: '◇',
-        })),
-      )
-    }
-    return []
+    return buildIssueFilterOptions(filterableTickets.value, fieldId, {
+      currentUserName: currentUserName.value,
+      projectRows: projectRows.value,
+      displayedProjectRows: baseDisplayedProjectRows.value,
+      initiativeRows: baseInitiativeRows.value,
+      getProjectKey,
+    })
   }
   function getProjectFilterOptions(fieldId: FilterFieldId): FilterOption[] {
-    const baseProjects = baseDisplayedProjectRows.value
-    if (fieldId === 'status' || fieldId === 'projectStatus') {
-      return countFilterOptions(
-        baseProjects.map(project => ({
-          value: normalizeFilterValue(project.status || 'No status'),
-          label: project.status || 'No status',
-          icon: '◌',
-        })),
-      )
-    }
-    if (fieldId === 'assignee' || fieldId === 'projectLead' || fieldId === 'sharedWith') {
-      const currentUser = currentUserName.value || 'Current user'
-      const people = baseProjects.map(project => ({
-        value: normalizeFilterValue(project.lead || 'Unassigned'),
-        label: project.lead || 'Unassigned',
-        icon: '♙',
-      }))
-      return countFilterOptions([
-        { value: 'current-user', label: 'Current user', icon: '♙' },
-        ...people,
-      ])
-        .map(option =>
-          option.value === 'current-user'
-            ? {
-                ...option,
-                count: currentUserName.value
-                  ? baseProjects.filter(
-                    project =>
-                      normalizeFilterValue(project.lead) === normalizeFilterValue(currentUser),
-                  ).length
-                  : 0,
-              }
-            : option,
-        )
-        .filter(option => option.count > 0)
-    }
-    if (fieldId === 'priority' || fieldId === 'projectPriority') {
-      return countFilterOptions(
-        baseProjects.map(project => ({
-          value: normalizeFilterValue(project.priority || 'No priority'),
-          label: project.priority || 'No priority',
-          icon: '▥',
-        })),
-      )
-    }
-    if (fieldId === 'labels' || fieldId === 'suggestedLabel') {
-      return countFilterOptions(
-        baseProjects.map(project => ({
-          value: normalizeFilterValue(project.health),
-          label: project.health,
-          icon: project.health === 'Completed' ? '✓' : project.health === 'At risk' ? '◆' : '○',
-        })),
-      )
-    }
-    if (fieldId === 'project') {
-      return countFilterOptions(
-        baseProjects.map(project => ({
-          value: project.key,
-          label: project.name,
-          icon: '◇',
-        })),
-      )
-    }
-    if (fieldId === 'team') {
-      return countFilterOptions(baseProjects.flatMap(project => getProjectTeamFilterEntries(project)))
-    }
-    if (fieldId === 'initiative') {
-      return countFilterOptions(
-        baseInitiativeRows.value.map(initiative => ({
-          value: initiative.id,
-          label: initiative.name,
-          icon: '◒',
-        })),
-      )
-        .map(option => ({
-          ...option,
-          count: baseProjects.filter(project => project.initiativeKey === option.value).length,
-        }))
-        .filter(option => option.count > 0)
-    }
-    if (fieldId === 'externalSource') {
-      return [{ value: 'jira', label: 'Jira', count: baseProjects.length, icon: '◇' }]
-    }
-    return []
+    return buildProjectFilterOptions(baseDisplayedProjectRows.value, fieldId, {
+      currentUserName: currentUserName.value,
+      initiativeRows: baseInitiativeRows.value,
+      getProjectTeamFilterEntries,
+    })
   }
   function getInitiativeFilterOptions(fieldId: FilterFieldId): FilterOption[] {
-    const baseInitiatives = baseInitiativeRows.value
-    if (fieldId === 'status' || fieldId === 'labels' || fieldId === 'suggestedLabel') {
-      return countFilterOptions(
-        baseInitiatives.map(initiative => ({
-          value: normalizeFilterValue(initiative.health),
-          label: initiative.health,
-          icon:
-            initiative.health === 'Completed' ? '✓' : initiative.health === 'At risk' ? '◆' : '○',
-        })),
-      )
-    }
-    if (fieldId === 'assignee' || fieldId === 'projectLead' || fieldId === 'sharedWith') {
-      return countFilterOptions(
-        baseInitiatives.map(initiative => ({
-          value: normalizeFilterValue(initiative.lead || 'Unassigned'),
-          label: initiative.lead || 'Unassigned',
-          icon: '♙',
-        })),
-      )
-    }
-    if (fieldId === 'initiative') {
-      return countFilterOptions(
-        baseInitiatives.map(initiative => ({
-          value: initiative.id,
-          label: initiative.name,
-          icon: '◒',
-        })),
-      )
-    }
-    if (fieldId === 'externalSource') {
-      return [
-        {
-          value: 'jira',
-          label: 'Jira',
-          count: baseInitiatives.length,
-          icon: '◇',
-        },
-      ]
-    }
-    return []
+    return buildInitiativeFilterOptions(baseInitiativeRows.value, fieldId)
   }
   function getSavedViewFilterOptions(fieldId: FilterFieldId): FilterOption[] {
-    const baseViews = baseDisplayedSavedViewRows.value
-    if (fieldId === 'assignee' || fieldId === 'sharedWith') {
-      return countFilterOptions(
-        baseViews.map(row => ({
-          value: normalizeFilterValue(row.owner),
-          label: row.owner,
-          icon: '♙',
-        })),
-      )
-    }
-    if (fieldId === 'labels' || fieldId === 'suggestedLabel' || fieldId === 'project') {
-      return countFilterOptions(
-        baseViews.map(row => ({
-          value: normalizeFilterValue(row.category),
-          label: row.category,
-          icon: row.icon,
-        })),
-      )
-    }
-    if (fieldId === 'externalSource') {
-      return [{ value: 'jira', label: 'Jira', count: baseViews.length, icon: '◇' }]
-    }
-    return []
+    return buildSavedViewFilterOptions(baseDisplayedSavedViewRows.value, fieldId)
   }
   function getIssueVisibilityRangeLabel(range: IssueVisibilityRange): string {
     return issueVisibilityRangeOptions.find(option => option.id === range)?.label ?? range
@@ -2491,145 +2177,28 @@ export function useTicketListController() {
   function getProjectClosedRangeLabel(range: ProjectClosedRange): string {
     return projectClosedRangeOptions.find(option => option.id === range)?.label ?? range
   }
-  function countFilterOptions(
-    entries: Array<{ value: string, label: string, icon: string }>,
-  ): FilterOption[] {
-    const optionMap = new Map<string, FilterOption>()
-    for (const entry of entries) {
-      const existing = optionMap.get(entry.value)
-      optionMap.set(entry.value, {
-        value: entry.value,
-        label: existing?.label ?? entry.label,
-        icon: existing?.icon ?? entry.icon,
-        count: (existing?.count ?? 0) + 1,
-      })
-    }
-    return [...optionMap.values()]
-      .filter(option => option.count > 0)
-      .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
-  }
   function getDateFilterOptions(fieldId: DateFilterFieldId): DateFilterOption[] {
-    const context = getActiveFilterContext()
-    const options: Array<{ value: DateFilterOperator, label: string }> = [
-      { value: 'hasDate', label: 'Is set' },
-      { value: 'noDate', label: 'Is not set' },
-      { value: 'past', label: 'Before today' },
-      { value: 'today', label: 'Today' },
-      { value: 'next7', label: 'Next 7 days' },
-      { value: 'next30', label: 'Next 30 days' },
-    ]
-    return options.map(option => ({
-      ...option,
-      count: getDateFilterOptionCount(context, fieldId, option.value),
-    }))
+    return buildDateFilterOptions(getActiveFilterContext(), fieldId, {
+      tickets: filterableTickets.value,
+      projectRows: baseDisplayedProjectRows.value,
+      initiativeRows: baseInitiativeRows.value,
+      savedViewRows: baseDisplayedSavedViewRows.value,
+    })
   }
-  function getDateFilterOptionCount(
-    context: FilterContextKind,
-    fieldId: DateFilterFieldId,
-    operator: DateFilterOperator,
-  ): number {
-    if (context === 'projects') {
-      return baseDisplayedProjectRows.value.filter(project =>
-        dateMatchesOperator(getProjectDateValue(project, fieldId), operator),
-      ).length
+  function getTicketFilterContext(): TicketFilterContext {
+    return {
+      currentUserName: currentUserName.value,
+      getProjectKey,
+      getTicketProject,
+      getTicketInitiativeIds,
+      getProjectTeamFilterEntries,
     }
-    if (context === 'initiatives') {
-      return baseInitiativeRows.value.filter(initiative =>
-        dateMatchesOperator(getInitiativeDateValue(initiative, fieldId), operator),
-      ).length
-    }
-    if (context === 'views') {
-      return baseDisplayedSavedViewRows.value.filter(row =>
-        dateMatchesOperator(getSavedViewDateValue(row, fieldId), operator),
-      ).length
-    }
-    return filterableTickets.value.filter(ticket =>
-      dateMatchesOperator(getTicketDateValue(ticket, fieldId), operator),
-    ).length
-  }
-  function ticketMatchesCurrentUserReporter(ticket: JiraTicket): boolean {
-    if (isLocalTicketKey(ticket.key)) {
-      return true
-    }
-    return (
-      Boolean(currentUserName.value)
-      && normalizeFilterValue(ticket.reporter) === normalizeFilterValue(currentUserName.value)
-    )
-  }
-  function getInitiativeDateValue(
-    initiative: InitiativeRow,
-    fieldId: DateFilterFieldId,
-  ): string | undefined {
-    if (fieldId === 'updatedDate')
-      return initiative.updatedAt
-    return undefined
-  }
-  function getSavedViewDateValue(
-    row: SavedViewRow,
-    fieldId: DateFilterFieldId,
-  ): string | undefined {
-    if (fieldId === 'updatedDate')
-      return row.updatedAt
-    return undefined
   }
   function applyViewFiltersToTickets(nextTickets: JiraTicket[]): JiraTicket[] {
-    const filters = currentViewFilters.value
-    if (!filters.length)
-      return nextTickets
-    return nextTickets.filter(ticket => filterGroupsMatch(ticket, filters, ticketMatchesFilter))
+    return filterTicketsByClauses(nextTickets, currentViewFilters.value, getTicketFilterContext())
   }
   function ticketMatchesFilter(ticket: JiraTicket, filter: ViewFilterClause): boolean {
-    if (filter.fieldId === 'status') {
-      return normalizeFilterValue(ticket.status || 'No status') === filter.value
-    }
-    if (filter.fieldId === 'assignee' || filter.fieldId === 'sharedWith') {
-      if (filter.value === 'current-user') {
-        return currentUserName.value
-          ? normalizeFilterValue(ticket.assignee) === normalizeFilterValue(currentUserName.value)
-          : isActiveIssueTicket(ticket)
-      }
-      return normalizeFilterValue(ticket.assignee || 'Unassigned') === filter.value
-    }
-    if (filter.fieldId === 'reporter') {
-      if (filter.value === 'current-user') {
-        return ticketMatchesCurrentUserReporter(ticket)
-      }
-      return normalizeFilterValue(ticket.reporter || 'Unknown') === filter.value
-    }
-    if (filter.fieldId === 'priority')
-      return normalizeFilterValue(ticket.priority || 'No priority') === filter.value
-    if (filter.fieldId === 'labels' || filter.fieldId === 'suggestedLabel') {
-      const labels = getTicketLabels(ticket)
-      if (labels.length === 0)
-        return filter.value === normalizeFilterValue('No labels')
-      return labels.some(label => normalizeFilterValue(label) === filter.value)
-    }
-    if (filter.fieldId === 'project')
-      return (getProjectKey(ticket) ?? 'no-project') === filter.value
-    if (filter.fieldId === 'team')
-      return (ticket.team?.id ?? 'no-team') === filter.value
-    if (
-      filter.fieldId === 'projectStatus'
-      || filter.fieldId === 'projectPriority'
-      || filter.fieldId === 'projectLead'
-    ) {
-      const project = getTicketProject(ticket)
-      if (!project)
-        return false
-      return projectMatchesFilter(project, filter)
-    }
-    if (filter.fieldId === 'initiative')
-      return getTicketInitiativeIds(ticket).includes(filter.value)
-    if (filter.fieldId === 'subscribers')
-      return filter.value === 'watching' ? ticket.isWatching === true : ticket.isWatching !== true
-    if (filter.fieldId === 'shared')
-      return (ticket.watchCount ?? 0) > 0
-    if (filter.fieldId === 'externalSource')
-      return filter.value === (isLocalTicketKey(ticket.key) ? 'local' : 'jira')
-    return dateMatchesOperator(
-      getTicketDateValue(ticket, filter.fieldId),
-      getDateFilterOperator(filter.value),
-    )
+    return ticketMatchesFilterClause(ticket, filter, getTicketFilterContext())
   }
   function getTicketProject(ticket: JiraTicket): ProjectRow | null {
     const projectKey = getProjectKey(ticket)
@@ -2646,50 +2215,12 @@ export function useTicketListController() {
     return project?.initiativeKey ? [project.initiativeKey] : []
   }
   function applyViewFiltersToProjects(nextProjects: ProjectRow[]): ProjectRow[] {
-    const filters = currentViewFilters.value
-    if (!filters.length)
-      return nextProjects
-    return nextProjects.filter(project =>
-      filterGroupsMatch(project, filters, projectMatchesFilter),
-    )
+    return filterProjectsByClauses(nextProjects, currentViewFilters.value, {
+      getProjectTeamFilterEntries,
+    })
   }
   function projectMatchesFilter(project: ProjectRow, filter: ViewFilterClause): boolean {
-    if (filter.fieldId === 'status' || filter.fieldId === 'projectStatus')
-      return normalizeFilterValue(project.status || 'No status') === filter.value
-    if (
-      filter.fieldId === 'assignee'
-      || filter.fieldId === 'projectLead'
-      || filter.fieldId === 'sharedWith'
-    ) {
-      return normalizeFilterValue(project.lead || 'Unassigned') === filter.value
-    }
-    if (filter.fieldId === 'priority' || filter.fieldId === 'projectPriority')
-      return normalizeFilterValue(project.priority || 'No priority') === filter.value
-    if (filter.fieldId === 'labels' || filter.fieldId === 'suggestedLabel')
-      return normalizeFilterValue(project.health) === filter.value
-    if (filter.fieldId === 'project')
-      return project.key === filter.value
-    if (filter.fieldId === 'team')
-      return getProjectTeamFilterEntries(project).some(entry => entry.value === filter.value)
-    if (filter.fieldId === 'initiative') {
-      return project.initiativeKey === filter.value
-    }
-    if (filter.fieldId === 'externalSource')
-      return filter.value === 'jira'
-    if (filter.fieldId === 'subscribers' || filter.fieldId === 'shared')
-      return true
-    if (
-      filter.fieldId === 'dueDate'
-      || filter.fieldId === 'createdDate'
-      || filter.fieldId === 'updatedDate'
-      || filter.fieldId === 'completedDate'
-    ) {
-      return dateMatchesOperator(
-        getProjectDateValue(project, filter.fieldId),
-        getDateFilterOperator(filter.value),
-      )
-    }
-    return false
+    return projectMatchesFilterClause(project, filter, { getProjectTeamFilterEntries })
   }
   function applyProjectClosedRange(projects: ProjectRow[]): ProjectRow[] {
     return projects.filter(
@@ -2747,82 +2278,10 @@ export function useTicketListController() {
       )
   }
   function applyViewFiltersToInitiatives(nextInitiatives: InitiativeRow[]): InitiativeRow[] {
-    const filters = currentViewFilters.value
-    if (!filters.length)
-      return nextInitiatives
-    return nextInitiatives.filter(initiative =>
-      filterGroupsMatch(initiative, filters, initiativeMatchesFilter),
-    )
-  }
-  function initiativeMatchesFilter(initiative: InitiativeRow, filter: ViewFilterClause): boolean {
-    if (filter.fieldId === 'initiative')
-      return initiative.id === filter.value
-    if (filter.fieldId === 'shared')
-      return true
-    if (
-      filter.fieldId === 'status'
-      || filter.fieldId === 'labels'
-      || filter.fieldId === 'suggestedLabel'
-    ) {
-      return normalizeFilterValue(initiative.health) === filter.value
-    }
-    if (
-      filter.fieldId === 'assignee'
-      || filter.fieldId === 'projectLead'
-      || filter.fieldId === 'sharedWith'
-    ) {
-      return normalizeFilterValue(initiative.lead || 'Unassigned') === filter.value
-    }
-    if (filter.fieldId === 'externalSource')
-      return filter.value === 'jira'
-    if (
-      filter.fieldId === 'dueDate'
-      || filter.fieldId === 'createdDate'
-      || filter.fieldId === 'updatedDate'
-      || filter.fieldId === 'completedDate'
-    ) {
-      return dateMatchesOperator(
-        getInitiativeDateValue(initiative, filter.fieldId),
-        getDateFilterOperator(filter.value),
-      )
-    }
-    return false
+    return filterInitiativesByClauses(nextInitiatives, currentViewFilters.value)
   }
   function applyViewFiltersToSavedViews(nextViews: SavedViewRow[]): SavedViewRow[] {
-    const filters = currentViewFilters.value
-    if (!filters.length)
-      return nextViews
-    return nextViews.filter(row => filterGroupsMatch(row, filters, savedViewMatchesFilter))
-  }
-  function savedViewMatchesFilter(row: SavedViewRow, filter: ViewFilterClause): boolean {
-    if (filter.fieldId === 'shared')
-      return true
-    if (filter.fieldId === 'assignee' || filter.fieldId === 'sharedWith')
-      return normalizeFilterValue(row.owner) === filter.value
-    if (
-      filter.fieldId === 'labels'
-      || filter.fieldId === 'suggestedLabel'
-      || filter.fieldId === 'project'
-    ) {
-      return (
-        normalizeFilterValue(row.category) === filter.value
-        || normalizeFilterValue(row.name).includes(filter.value)
-      )
-    }
-    if (filter.fieldId === 'externalSource')
-      return filter.value === 'jira'
-    if (
-      filter.fieldId === 'dueDate'
-      || filter.fieldId === 'createdDate'
-      || filter.fieldId === 'updatedDate'
-      || filter.fieldId === 'completedDate'
-    ) {
-      return dateMatchesOperator(
-        getSavedViewDateValue(row, filter.fieldId),
-        getDateFilterOperator(filter.value),
-      )
-    }
-    return false
+    return filterSavedViewsByClauses(nextViews, currentViewFilters.value)
   }
   function setActiveCustomViewFilters(filters: ViewFilterClause[]): void {
     persistViewStateForView(currentView.value, filters, captureDisplay())
