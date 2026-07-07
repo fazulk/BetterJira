@@ -5,7 +5,6 @@ import { computed, nextTick, ref, watch } from 'vue'
 import TicketDetailPropertiesSection from '@/components/ticket-detail/TicketDetailPropertiesSection.vue'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { useTicketDevStatus } from '@/composables/useTicketDevStatus'
-import { useUpdateLocalTicketLabels } from '@/composables/useUpdateLocalTicketLabels'
 import { useUpdateTicketLabels } from '@/composables/useUpdateTicketLabels'
 import { buildJiraIssueUrl } from '@/utils/jiraIssueUrl'
 
@@ -61,16 +60,13 @@ const detailProjectParent = computed(() => {
 const detailProjectParentLabel = computed(() => detailProjectParent.value?.summary ?? '')
 const detailLabels = computed(() => normalizeLabels(props.ticket.labels ?? []))
 const updateTicketLabelsMutation = useUpdateTicketLabels()
-const updateLocalTicketLabelsMutation = useUpdateLocalTicketLabels()
 const isEditingLabels = ref(false)
 const labelsDraft = ref<string[]>([])
 const labelDraft = ref('')
 const labelError = ref('')
 const labelInputRef = ref<HTMLInputElement | null>(null)
 const canEditLabels = computed(() => props.isLocalTicket || props.jiraDataEnabled)
-const anyLabelsPending = computed(() => (
-  updateTicketLabelsMutation.isPending.value || updateLocalTicketLabelsMutation.isPending.value
-))
+const anyLabelsPending = computed(() => updateTicketLabelsMutation.isPending.value)
 
 function normalizeLabels(labels: string[]): string[] {
   const nextLabels: string[] = []
@@ -183,12 +179,7 @@ async function saveLabels(): Promise<void> {
   }
 
   try {
-    if (props.isLocalTicket) {
-      await updateLocalTicketLabelsMutation.mutateAsync({ key: props.ticket.key, labels: nextLabels })
-    }
-    else {
-      await updateTicketLabelsMutation.mutateAsync({ key: props.ticket.key, labels: nextLabels })
-    }
+    await updateTicketLabelsMutation.mutateAsync({ key: props.ticket.key, labels: nextLabels })
     isEditingLabels.value = false
     labelError.value = ''
   }

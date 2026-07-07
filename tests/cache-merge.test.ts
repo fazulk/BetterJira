@@ -3,7 +3,7 @@
  *
  * These tests lock in what the CURRENT code does (discovered by reading and
  * running it), ahead of a refactor that will consolidate the duplicated merge
- * algorithm. The canonical exported helper is `mergeLocalTicketList` in
+ * algorithm. The canonical exported helper is `mergeTicketList` in
  * src/composables/useLocalTickets.ts; the private `mergeTicket` clone in
  * src/composables/useUpdateTicketTitle.ts (and `mergeUpdatedTicket` inside
  * useJiraTickets) implement the same algorithm.
@@ -11,13 +11,9 @@
 import type { JiraTicket } from '@/types/jira'
 import { QueryClient } from '@tanstack/vue-query'
 import { describe, expect, it } from 'vitest'
-import {
-  getCachedTickets,
-  getCachedTicketsQueryKey,
-  TICKETS_QUERY_KEY,
-  ticketsQueryKey,
-} from '@/composables/useJiraTickets'
-import { mergeLocalTicketList } from '@/composables/useLocalTickets'
+import { TICKETS_QUERY_KEY, ticketsQueryKey } from '@/composables/queryKeys'
+import { mergeTicketList } from '@/composables/ticketCache'
+import { getCachedTickets, getCachedTicketsQueryKey } from '@/composables/useJiraTickets'
 
 function makeTicket(overrides: Partial<JiraTicket> & { key: string }): JiraTicket {
   return {
@@ -43,7 +39,7 @@ function nth<T>(items: readonly T[], index: number): T {
   return item
 }
 
-describe('mergeLocalTicketList', () => {
+describe('mergeTicketList', () => {
   it('replaces the entry matching by key with a shallow merge {...ticket, ...updatedTicket}', () => {
     const original = makeTicket({
       key: 'T-1',
@@ -60,7 +56,7 @@ describe('mergeLocalTicketList', () => {
     })
     delete updated.description
 
-    const result = nth(mergeLocalTicketList([original], updated), 0)
+    const result = nth(mergeTicketList([original], updated), 0)
 
     // New object, not the original or the updated ticket itself.
     expect(result).not.toBe(original)
@@ -89,7 +85,7 @@ describe('mergeLocalTicketList', () => {
       labels: [],
     })
 
-    const result = nth(mergeLocalTicketList([original], updated), 0)
+    const result = nth(mergeTicketList([original], updated), 0)
 
     // The updated ticket's parent object replaces the old one wholesale.
     expect(result.parent).toBe(updated.parent)
@@ -112,7 +108,7 @@ describe('mergeLocalTicketList', () => {
       assignee: 'someone-new',
     })
 
-    const result = nth(mergeLocalTicketList([child], updatedParent), 0)
+    const result = nth(mergeTicketList([child], updatedParent), 0)
 
     // New ticket object with a new parent object.
     expect(result).not.toBe(child)
@@ -141,7 +137,7 @@ describe('mergeLocalTicketList', () => {
     })
     const updated = makeTicket({ key: 'T-1' })
 
-    const result = mergeLocalTicketList([unrelated, noParent, otherParent], updated)
+    const result = mergeTicketList([unrelated, noParent, otherParent], updated)
 
     expect(result[0]).toBe(unrelated)
     expect(result[1]).toBe(noParent)
@@ -150,7 +146,7 @@ describe('mergeLocalTicketList', () => {
 
   it('returns a new empty array for an empty list', () => {
     const input: JiraTicket[] = []
-    const result = mergeLocalTicketList(input, makeTicket({ key: 'T-1' }))
+    const result = mergeTicketList(input, makeTicket({ key: 'T-1' }))
 
     expect(result).toEqual([])
     expect(result).not.toBe(input) // .map always returns a new array
@@ -158,7 +154,7 @@ describe('mergeLocalTicketList', () => {
 
   it('does NOT append the updated ticket when it is not present in the list', () => {
     const existing = makeTicket({ key: 'A-1' })
-    const result = mergeLocalTicketList([existing], makeTicket({ key: 'MISSING-1' }))
+    const result = mergeTicketList([existing], makeTicket({ key: 'MISSING-1' }))
 
     expect(result).toHaveLength(1)
     expect(result[0]).toBe(existing)
@@ -176,7 +172,7 @@ describe('mergeLocalTicketList', () => {
     // Updated ticket has no `parent` property, so the shallow merge keeps the
     // stale parent object untouched — it is NOT refreshed to the new summary.
 
-    const result = nth(mergeLocalTicketList([selfParented], updated), 0)
+    const result = nth(mergeTicketList([selfParented], updated), 0)
 
     expect(result.summary).toBe('new')
     expect(result.parent).toBe(selfParented.parent)
@@ -200,7 +196,7 @@ describe('mergeLocalTicketList', () => {
     })
     const updated = makeTicket({ key: 'T-1', summary: 'fresh', issueType: 'Story' })
 
-    const result = mergeLocalTicketList([dupA, dupB, childA, childB], updated)
+    const result = mergeTicketList([dupA, dupB, childA, childB], updated)
 
     expect(nth(result, 0).summary).toBe('fresh')
     expect(nth(result, 1).summary).toBe('fresh')

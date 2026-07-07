@@ -5,18 +5,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { fetchTickets, refreshCache } from '@/api/jira'
 import { fetchLocalTickets } from '@/api/localTickets'
+import { ticketQueryKey, TICKETS_QUERY_KEY, ticketsQueryKey } from '@/composables/queryKeys'
+import { mergeCreatedTicketList, mergeTicketList } from '@/composables/ticketCache'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { useToast } from '@/composables/useToast'
 import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
 import { buildEnabledSpaceSearchQuery } from '~/shared/settings'
 import { isRecord } from '~/shared/typeGuards'
-
-export const TICKETS_QUERY_KEY = ['tickets'] as const
-const TICKETS_QUERY_SCHEMA_VERSION = 'labels-v1'
-
-export function ticketsQueryKey(spaceKeys: readonly string[]): QueryKey {
-  return [...TICKETS_QUERY_KEY, TICKETS_QUERY_SCHEMA_VERSION, ...spaceKeys]
-}
 
 function isTicketsQueryKey(queryKey: QueryKey): boolean {
   return queryKey.length > 0 && queryKey[0] === TICKETS_QUERY_KEY[0]
@@ -269,62 +264,16 @@ export function useJiraTickets() {
 
   function mergeUpdatedTicket(updatedTicket: JiraTicket) {
     queryClient.setQueryData<JiraTicket[]>(activeTicketsQueryKey.value, (current = []) =>
-      current.map((ticket) => {
-        if (ticket.key === updatedTicket.key) {
-          return {
-            ...ticket,
-            ...updatedTicket,
-          }
-        }
+      mergeTicketList(current, updatedTicket))
 
-        if (ticket.parent?.key === updatedTicket.key) {
-          return {
-            ...ticket,
-            parent: {
-              ...ticket.parent,
-              summary: updatedTicket.summary,
-              issueType: updatedTicket.issueType,
-            },
-          }
-        }
-
-        return ticket
-      }))
-
-    queryClient.setQueryData(['ticket', updatedTicket.key], updatedTicket)
+    queryClient.setQueryData(ticketQueryKey(updatedTicket.key), updatedTicket)
   }
 
   function mergeCreatedTicket(createdTicket: JiraTicket) {
-    queryClient.setQueryData<JiraTicket[]>(activeTicketsQueryKey.value, (current = []) => {
-      const existingIndex = current.findIndex(ticket => ticket.key === createdTicket.key)
-      if (existingIndex === -1) {
-        return [...current, createdTicket]
-      }
+    queryClient.setQueryData<JiraTicket[]>(activeTicketsQueryKey.value, (current = []) =>
+      mergeCreatedTicketList(current, createdTicket))
 
-      return current.map((ticket) => {
-        if (ticket.key === createdTicket.key) {
-          return {
-            ...ticket,
-            ...createdTicket,
-          }
-        }
-
-        if (ticket.parent?.key === createdTicket.key) {
-          return {
-            ...ticket,
-            parent: {
-              ...ticket.parent,
-              summary: createdTicket.summary,
-              issueType: createdTicket.issueType,
-            },
-          }
-        }
-
-        return ticket
-      })
-    })
-
-    queryClient.setQueryData(['ticket', createdTicket.key], createdTicket)
+    queryClient.setQueryData(ticketQueryKey(createdTicket.key), createdTicket)
   }
 
   function connectSSE() {

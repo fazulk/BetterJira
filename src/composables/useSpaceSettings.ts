@@ -7,20 +7,18 @@ import {
   updateAppSettings as persistAppSettings,
   updateJiraConnection as persistJiraConnection,
 } from '@/api/settings'
+import { TICKETS_QUERY_KEY } from '@/composables/queryKeys'
 import { jiraSpaceDirectoryQueryKey, resetAvailableSpacesBootstrap } from '@/composables/useAvailableSpaces'
 import { jiraCurrentUserQueryKey } from '@/composables/useJiraCurrentUser'
 import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
 import {
-
   getDefaultAppSettings,
   hasConfiguredJiraCredentials,
-
   reconcileAppSettings,
-
 } from '~/shared/settings'
 
 export const APP_SETTINGS_QUERY_KEY = ['app-settings'] as const
-const TICKETS_QUERY_KEY = ['tickets'] as const
+
 let appSettingsMutationRevision = 0
 
 function beginAppSettingsMutation(): number {

@@ -6,8 +6,6 @@ import { useAssignableUsers } from '@/composables/useAssignableUsers'
 import { useJiraTeams } from '@/composables/useJiraTeams'
 import { getCachedTickets } from '@/composables/useJiraTickets'
 import { usePriorities } from '@/composables/usePriorities'
-import { useUpdateLocalTicketAssignee } from '@/composables/useUpdateLocalTicketAssignee'
-import { useUpdateLocalTicketPriority } from '@/composables/useUpdateLocalTicketPriority'
 import { useUpdateTicketAssignee } from '@/composables/useUpdateTicketAssignee'
 import { useUpdateTicketPriority } from '@/composables/useUpdateTicketPriority'
 import { useUpdateTicketTeam } from '@/composables/useUpdateTicketTeam'
@@ -60,9 +58,7 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
   const assignableUsersQuery = useAssignableUsers(input.ticketKey, { queryEnabled: input.jiraDataEnabled })
   const prioritiesQuery = usePriorities(input.jiraDataEnabled)
   const updateAssigneeMutation = useUpdateTicketAssignee()
-  const updateLocalAssigneeMutation = useUpdateLocalTicketAssignee()
   const updatePriorityMutation = useUpdateTicketPriority()
-  const updateLocalPriorityMutation = useUpdateLocalTicketPriority()
   const teamsQuery = useJiraTeams(input.jiraDataEnabled)
   const updateTeamMutation = useUpdateTicketTeam()
 
@@ -178,8 +174,8 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
   })
 
   const localAssigneeDatalistId = computed(() => `local-assignee-dl-${input.ticketKey.value ?? 'none'}`)
-  const anyPriorityPending = computed(() => updatePriorityMutation.isPending.value || updateLocalPriorityMutation.isPending.value)
-  const anyAssigneePending = computed(() => updateAssigneeMutation.isPending.value || updateLocalAssigneeMutation.isPending.value)
+  const anyPriorityPending = computed(() => updatePriorityMutation.isPending.value)
+  const anyAssigneePending = computed(() => updateAssigneeMutation.isPending.value)
   const avatarColor = computed(() => getAssigneeAvatarColor(input.ticket.value?.assignee))
   const initials = computed(() => getAssigneeInitials(input.ticket.value?.assignee))
 
@@ -243,7 +239,7 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
       }
 
       try {
-        await updateLocalAssigneeMutation.mutateAsync({ key: input.ticket.value.key, assigneeName: nextName })
+        await updateAssigneeMutation.mutateAsync({ key: input.ticket.value.key, assigneeName: nextName })
         isEditingAssignee.value = false
         assigneeError.value = null
       }
@@ -325,7 +321,7 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
       }
 
       try {
-        await updateLocalPriorityMutation.mutateAsync({ key: input.ticket.value.key, priorityName: priorityDraftLocal.value })
+        await updatePriorityMutation.mutateAsync({ key: input.ticket.value.key, priorityName: priorityDraftLocal.value })
         isEditingPriority.value = false
         priorityError.value = null
       }

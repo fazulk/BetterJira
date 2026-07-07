@@ -2,8 +2,8 @@ import type { CreateLocalTicketInput } from '@/api/localTickets'
 import type { JiraTicket } from '@/types/jira'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { createLocalTicket } from '@/api/localTickets'
+import { localTicketQueryKey } from '@/composables/queryKeys'
 import { getCachedTickets, getCachedTicketsQueryKey } from '@/composables/useJiraTickets'
-import { localTicketQueryKey } from '@/composables/useLocalTicket'
 
 export function useCreateLocalTicket() {
   const queryClient = useQueryClient()

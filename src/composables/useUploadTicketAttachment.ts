@@ -1,7 +1,7 @@
 import type { JiraAttachment, JiraTicket } from '@/types/jira'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { uploadTicketAttachment } from '@/api/jira'
-import { ticketQueryKey } from '@/composables/useJiraTicket'
+import { ticketQueryKey } from '@/composables/queryKeys'
 
 function mergeAttachment(attachments: JiraAttachment[] | undefined, attachment: JiraAttachment): JiraAttachment[] {
   const existingAttachments = attachments ?? []

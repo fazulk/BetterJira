@@ -2,7 +2,6 @@ import type { Ref } from 'vue'
 import type { JiraTicket } from '@/types/jira'
 import { computed, ref, watch } from 'vue'
 import { useTransitions } from '@/composables/useTransitions'
-import { useUpdateLocalTicketStatus } from '@/composables/useUpdateLocalTicketStatus'
 import { useUpdateTicketStatus } from '@/composables/useUpdateTicketStatus'
 import { getLocalStatusIdFromDisplayName, getLocalTransitions } from '~/shared/localTickets'
 
@@ -16,7 +15,6 @@ interface TicketDetailStatusEditorInput {
 export function useTicketDetailStatusEditor(input: TicketDetailStatusEditorInput) {
   const transitionsQuery = useTransitions(input.ticketKey, { queryEnabled: input.jiraDataEnabled })
   const updateStatusMutation = useUpdateTicketStatus()
-  const updateLocalStatusMutation = useUpdateLocalTicketStatus()
   const isEditingStatus = ref(false)
   const statusDraft = ref('')
   const statusError = ref<string | null>(null)
@@ -28,9 +26,7 @@ export function useTicketDetailStatusEditor(input: TicketDetailStatusEditorInput
     return getLocalTransitions(currentId)
   })
 
-  const anyStatusPending = computed(() => (
-    updateStatusMutation.isPending.value || updateLocalStatusMutation.isPending.value
-  ))
+  const anyStatusPending = computed(() => updateStatusMutation.isPending.value)
 
   async function startEditingStatus() {
     if (!input.ticket.value || anyStatusPending.value)
@@ -67,28 +63,9 @@ export function useTicketDetailStatusEditor(input: TicketDetailStatusEditorInput
       return
     }
 
-    if (input.isLocalTicket.value) {
-      const selectedTransition = localTransitionsList.value.find(transition => transition.id === statusDraft.value)
-      if (!selectedTransition) {
-        statusError.value = 'Invalid transition.'
-        return
-      }
-
-      try {
-        await updateLocalStatusMutation.mutateAsync({
-          key: input.ticket.value.key,
-          transitionId: selectedTransition.id,
-        })
-        isEditingStatus.value = false
-        statusError.value = null
-      }
-      catch (err) {
-        statusError.value = err instanceof Error ? err.message : 'Failed to update status.'
-      }
-      return
-    }
-
-    const selectedTransition = transitionsQuery.data.value?.find(transition => transition.id === statusDraft.value)
+    const selectedTransition = input.isLocalTicket.value
+      ? localTransitionsList.value.find(transition => transition.id === statusDraft.value)
+      : transitionsQuery.data.value?.find(transition => transition.id === statusDraft.value)
     if (!selectedTransition) {
       statusError.value = 'Invalid transition.'
       return

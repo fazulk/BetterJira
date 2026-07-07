@@ -2,7 +2,6 @@
 import type { JiraAdfDocument, JiraAdfNode, JiraAttachment, JiraTicket } from '@/types/jira'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import JiraDescriptionEditor from '@/components/JiraDescriptionEditor.vue'
-import { useUpdateLocalTicketDescription } from '@/composables/useUpdateLocalTicketDescription'
 import { useUpdateTicketDescription } from '@/composables/useUpdateTicketDescription'
 import { useUploadTicketAttachment } from '@/composables/useUploadTicketAttachment'
 import { coerceDescriptionToAdf, isSupportedEditorAdf } from '~/shared/jiraAdf'
@@ -35,7 +34,6 @@ const descriptionSaveInFlight = ref(false)
 const isSyncingDescriptionDraft = ref(false)
 
 const updateDescriptionMutation = useUpdateTicketDescription()
-const updateLocalDescriptionMutation = useUpdateLocalTicketDescription()
 const uploadTicketAttachmentMutation = useUploadTicketAttachment()
 
 const descriptionHasUnsupportedContent = computed(() => {
@@ -154,10 +152,6 @@ async function uploadDescriptionImage(file: File): Promise<JiraAttachment> {
 }
 
 async function persistDescriptionDraft(key: string, descriptionAdf: JiraAdfDocument | null): Promise<void> {
-  if (isLocalTicketKey(key)) {
-    await updateLocalDescriptionMutation.mutateAsync({ key, descriptionAdf })
-    return
-  }
   await updateDescriptionMutation.mutateAsync({ key, descriptionAdf })
 }
 

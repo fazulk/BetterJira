@@ -2,9 +2,8 @@ import type { Ref } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { fetchTicket } from '@/api/jira'
+import { ticketQueryKey } from '@/composables/queryKeys'
 import { getCachedTickets } from '@/composables/useJiraTickets'
-
-export const ticketQueryKey = (ticketKey: string | null) => ['ticket', ticketKey] as const
 
 export function useJiraTicket(
   ticketKey: Ref<string | null>,

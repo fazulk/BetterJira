@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import type { JiraTicket } from '@/types/jira'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
-import { useUpdateLocalTicketTitle } from '@/composables/useUpdateLocalTicketTitle'
 import { useUpdateTicketTitle } from '@/composables/useUpdateTicketTitle'
 import { getStatusGroup } from '@/types/jira'
-import { isLocalTicketKey } from '~/shared/localTickets'
 
 type ProjectDetailHealth = 'On track' | 'At risk' | 'Completed'
 
@@ -31,7 +29,6 @@ const titleSaveInFlight = ref(false)
 const isSyncingTitleDraft = ref(false)
 
 const updateTitleMutation = useUpdateTicketTitle()
-const updateLocalTitleMutation = useUpdateLocalTicketTitle()
 
 const detailIssueParent = computed(() => {
   const parent = props.ticket.parent
@@ -177,10 +174,6 @@ function handleTitleFocusOut(): void {
 }
 
 async function persistTitleDraft(key: string, title: string): Promise<void> {
-  if (isLocalTicketKey(key)) {
-    await updateLocalTitleMutation.mutateAsync({ key, title })
-    return
-  }
   await updateTitleMutation.mutateAsync({ key, title })
 }
 

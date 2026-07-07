@@ -2,10 +2,9 @@ import type { Ref } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { fetchLocalTicket } from '@/api/localTickets'
+import { localTicketQueryKey } from '@/composables/queryKeys'
 import { getCachedTickets } from '@/composables/useJiraTickets'
 import { isLocalTicketKey } from '~/shared/localTickets'
-
-export const localTicketQueryKey = (ticketKey: string | null) => ['local-ticket', ticketKey] as const
 
 export function useLocalTicket(ticketKey: Ref<string | null>) {
   const queryClient = useQueryClient()

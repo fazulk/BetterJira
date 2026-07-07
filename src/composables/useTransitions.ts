@@ -2,8 +2,7 @@ import type { Ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { fetchTransitions } from '@/api/jira'
-
-export const transitionsQueryKey = (ticketKey: string | null) => ['ticket-transitions', ticketKey] as const
+import { transitionsQueryKey } from '@/composables/queryKeys'
 
 export function useTransitions(
   ticketKey: Ref<string | null>,

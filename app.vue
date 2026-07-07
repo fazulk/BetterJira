@@ -4,12 +4,12 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { refreshCache } from '@/api/jira'
 import AskAssistantPanel from '@/components/AskAssistantPanel.vue'
+import { ticketsQueryKey } from '@/composables/queryKeys'
 import { useAssistantPanel } from '@/composables/useAssistantPanel'
 import { useAvailableSpaces } from '@/composables/useAvailableSpaces'
 import {
   applyTicketsPayloadToQueryCache,
   getLatestRemoteUpdatedAt,
-  ticketsQueryKey,
 } from '@/composables/useJiraTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
