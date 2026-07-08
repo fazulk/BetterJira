@@ -11,12 +11,15 @@ import type {
 import { useQueryClient } from '@tanstack/vue-query'
 import { useLocalStorage } from '@vueuse/core'
 import { computed, ref, watch, watchEffect } from 'vue'
+import { ticketQueryKey, transitionsQueryKey } from '@/composables/queryKeys'
 import { useCustomViews } from '@/composables/useCustomViews'
 import { useFavoriteViews as usePersistedFavoriteViews } from '@/composables/useFavoriteViews'
 import { useJiraCurrentUser } from '@/composables/useJiraCurrentUser'
+import { ticketActivityQueryKey, ticketMessagesQueryKey } from '@/composables/useJiraMessages'
 import { useJiraTickets } from '@/composables/useJiraTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { useStatusPreferences } from '@/composables/useStatusPreferences'
+import { ticketDevStatusQueryKey } from '@/composables/useTicketDevStatus'
 import { useViewOverrides } from '@/composables/useViewOverrides'
 import { useCommandMenu } from '@/features/ticket-list/useCommandMenu'
 import { useCustomViewDirectory } from '@/features/ticket-list/useCustomViewDirectory'
@@ -804,10 +807,18 @@ export function useTicketListController() {
   })
   async function handleRefresh() {
     await refresh()
-    if (selectedKey.value) {
-      queryClient.invalidateQueries({
-        queryKey: ticketQueryKey(selectedKey.value),
-      })
+    const key = selectedKey.value
+    if (key) {
+      const ticketQueryKeys = [
+        ticketQueryKey(key),
+        ticketMessagesQueryKey(key),
+        ticketActivityQueryKey(key),
+        ticketDevStatusQueryKey(key),
+        transitionsQueryKey(key),
+      ]
+      for (const queryKey of ticketQueryKeys) {
+        void queryClient.invalidateQueries({ queryKey })
+      }
     }
   }
   return {
