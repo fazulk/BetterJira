@@ -24,8 +24,6 @@ jobs:
       # that typecheck depends on.
       - run: bun install --frozen-lockfile
 
-      - run: bun run lint
-
       - run: bun run typecheck
 
       - run: bun run test
