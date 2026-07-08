@@ -11,6 +11,13 @@ files:
   - .output/**/*
   - env.local
   - package.json
+# Publish config makes electron-builder emit latest*.yml update metadata and
+# embed app-update.yml into resources for electron-updater, even though the
+# build scripts pass --publish never (CI uploads release/ assets itself).
+publish:
+  provider: github
+  owner: fazulk
+  repo: better-jira
 npmRebuild: false
 buildDependenciesFromSource: false
 nodeGypRebuild: false

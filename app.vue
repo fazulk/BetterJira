@@ -5,6 +5,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { refreshCache } from '@/api/jira'
 import AskAssistantPanel from '@/components/AskAssistantPanel.vue'
 import { ticketsQueryKey } from '@/composables/queryKeys'
+import { initAppUpdateListener } from '@/composables/useAppUpdate'
 import { useAssistantPanel } from '@/composables/useAssistantPanel'
 import { useAvailableSpaces } from '@/composables/useAvailableSpaces'
 import {
@@ -99,6 +100,7 @@ function handleVisibilityChange() {
 onMounted(() => {
   window.addEventListener('focus', handleWindowFocus)
   document.addEventListener('visibilitychange', handleVisibilityChange)
+  initAppUpdateListener()
 })
 
 onUnmounted(() => {
@@ -113,4 +115,5 @@ onUnmounted(() => {
   <JiraSetupModal :open="showJiraSetupModal" />
   <LabelColorMenu />
   <AppToastContainer />
+  <AppUpdateBanner />
 </template>

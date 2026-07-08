@@ -10,6 +10,7 @@ import process from 'node:process'
 import { app, BrowserWindow, shell } from 'electron'
 
 import { findFreePort } from './freePort'
+import { initUpdates } from './updater'
 import { waitForHttpReady } from './waitForHttpReady'
 
 // File-based logging so we can diagnose packaged-app issues where stdout is
@@ -204,6 +205,7 @@ function createWindow(url: string): BrowserWindow {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: join(__dirname, 'preload.cjs'),
     },
   })
 
@@ -241,6 +243,7 @@ async function bootstrap(): Promise<void> {
   const devUrl = process.env.NUXT_DEV_URL?.trim()
   const url = devUrl || await startBackend()
   mainWindow = createWindow(url)
+  initUpdates(() => mainWindow, logLine)
 }
 
 function descendantPids(pid: number): number[] {

@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            script: dist:desktop:dmg:arm64
+          - os: ubuntu-latest
+            script: dist:desktop:linux
+          - os: windows-latest
+            script: dist:desktop:win:x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Check tag matches package.json version
+        shell: bash
+        run: |
+          pkg_version="$(node -p "require('./package.json').version")"
+          if [ "${GITHUB_REF_NAME}" != "v${pkg_version}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match package.json version ${pkg_version}" >&2
+            exit 1
+          fi
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build desktop artifact
+        run: bun run ${{ matrix.script }}
+        env:
+          BETTER_JIRA_DESKTOP_VERBOSE: '1'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            release/**
+            !release/builder-debug.yml
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+
+      # Version-less copies give stable per-OS URLs via
+      # releases/latest/download/<name>; the versioned originals must stay
+      # because latest*.yml references them for electron-updater.
+      - name: Add stable-named download aliases
+        run: |
+          cd release
+          cp BetterJira-*-arm64.dmg BetterJira-mac-arm64.dmg
+          cp BetterJira-*-x86_64.AppImage BetterJira-linux-x86_64.AppImage
+          cp BetterJira-*-x64.exe BetterJira-win-x64.exe
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/**
+          generate_release_notes: true

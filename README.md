@@ -4,6 +4,16 @@
 
 This is a wrapper for Jira that behaves better than JIRA and looks like.. another ... app.. with better designers. 
 
+## Download
+
+Latest release, straight to the installer for your system:
+
+- [macOS (Apple Silicon)](https://github.com/fazulk/better-jira/releases/latest/download/BetterJira-mac-arm64.dmg)
+- [Linux (x86_64 AppImage)](https://github.com/fazulk/better-jira/releases/latest/download/BetterJira-linux-x86_64.AppImage)
+- [Windows (x64 installer)](https://github.com/fazulk/better-jira/releases/latest/download/BetterJira-win-x64.exe)
+
+All releases: [github.com/fazulk/better-jira/releases](https://github.com/fazulk/better-jira/releases)
+
 ## Requirements
 
 - [Bun](https://bun.sh/docs/installation)
