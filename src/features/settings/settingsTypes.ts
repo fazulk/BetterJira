@@ -11,6 +11,7 @@ export type SettingsSectionId
     | 'team-triage'
     | 'team-cycles'
     | 'team-ai'
+    | 'about'
 
 export interface SettingsSummaryRow {
   label: string

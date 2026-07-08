@@ -32,6 +32,12 @@ const settingsNavigationGroups: SettingsNavigationGroup[] = [
       { id: 'assistant', label: 'Assistant', description: 'Ask Claude / Ask Codex' },
     ],
   },
+  {
+    label: 'Project',
+    items: [
+      { id: 'about', label: 'About', description: 'GitHub and contributing' },
+    ],
+  },
 ]
 
 export function useSettingsPageState() {

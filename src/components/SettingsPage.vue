@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SettingsAboutSection from '@/components/settings/SettingsAboutSection.vue'
 import SettingsAssistantSection from '@/components/settings/SettingsAssistantSection.vue'
 import SettingsTeamSections from '@/components/settings/SettingsTeamSections.vue'
 import SettingsWorkspaceSection from '@/components/settings/SettingsWorkspaceSection.vue'
@@ -93,6 +94,7 @@ const {
       <main class="min-w-0 overflow-y-auto px-5 py-8 lg:px-10">
         <SettingsAssistantSection v-show="activeSettingsSection === 'assistant'" />
         <SettingsWorkspaceSection v-show="activeSettingsSection === 'workspace'" />
+        <SettingsAboutSection v-show="activeSettingsSection === 'about'" />
         <SettingsTeamSections />
       </main>
     </div>

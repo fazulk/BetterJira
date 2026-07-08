@@ -15,6 +15,10 @@ export function matchesIssueType(value: string | undefined, expected: JiraCreate
 function getAllowedChildIssueTypesForParent(parentIssueType: string): string[] {
   const normalizedParentIssueType = normalizeIssueType(parentIssueType)
 
+  if (normalizedParentIssueType.includes('sub')) {
+    return []
+  }
+
   if (normalizedParentIssueType.includes('initiative')) {
     return ['Epic']
   }
@@ -27,12 +31,15 @@ function getAllowedChildIssueTypesForParent(parentIssueType: string): string[] {
     return ['Task', 'Bug', 'Story']
   }
 
-  if (normalizedParentIssueType.includes('story')) {
-    return ['Task', 'Bug', 'Story']
-  }
-
-  if (normalizedParentIssueType.includes('task') || normalizedParentIssueType.includes('bug')) {
-    return ['Task']
+  // Standard-level parents (story/task/bug sit at hierarchy level 0) can only
+  // have subtask children — Jira rejects anything else with
+  // "Given parent work item does not belong to appropriate hierarchy".
+  if (
+    normalizedParentIssueType.includes('story')
+    || normalizedParentIssueType.includes('task')
+    || normalizedParentIssueType.includes('bug')
+  ) {
+    return ['Subtask', 'Sub-task']
   }
 
   return []
