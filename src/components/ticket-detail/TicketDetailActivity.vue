@@ -272,7 +272,13 @@ defineExpose({
     <div v-if="activityQuery.isError.value" class="rounded-lg border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-300">
       Failed to load activity.
     </div>
-    <div v-else-if="activityTimelineItems.length" class="space-y-1.5 pl-4">
+    <div v-else-if="activityQuery.isLoading.value" class="space-y-3 pl-4" aria-hidden="true">
+      <div v-for="skeletonIndex in 4" :key="skeletonIndex" class="flex animate-pulse items-center gap-3 py-0.5">
+        <span class="h-4 w-4 shrink-0 rounded-full border border-white/[0.1] bg-white/[0.04]" />
+        <span class="h-3 rounded bg-white/[0.05]" :class="skeletonIndex % 2 ? 'w-2/3' : 'w-1/2'" />
+      </div>
+    </div>
+    <div v-else-if="activityTimelineItems.length" class="animate-fade-in space-y-1.5 pl-4">
       <template v-for="(activityItem, activityIndex) in activityTimelineItems" :key="`${activityItem.kind}:${activityItem.id}`">
         <article v-if="activityItem.kind === 'history'" class="relative flex gap-3 py-0.5">
           <span
@@ -317,7 +323,7 @@ defineExpose({
         </article>
       </template>
     </div>
-    <div v-else class="rounded-lg border border-dashed border-white/[0.08] px-4 py-3 text-sm text-slate-600">
+    <div v-else class="animate-fade-in rounded-lg border border-dashed border-white/[0.08] px-4 py-3 text-sm text-slate-600">
       No activity yet.
     </div>
 
