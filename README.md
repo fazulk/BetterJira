@@ -1,4 +1,4 @@
-# BetterJira! (alpha)
+# BetterJira! (beta)
 
 <img width="1294" height="894" alt="image" src="https://github.com/user-attachments/assets/76781ca7-ea70-4170-8109-a0e5b858e077" />
 
