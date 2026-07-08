@@ -47,13 +47,17 @@ jobs:
         run: bun run ${{ matrix.script }}
         env:
           BETTER_JIRA_DESKTOP_VERBOSE: '1'
-          # macOS Developer ID signing + notarization (ignored on other runners;
-          # empty values are stripped by the build script).
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # macOS Developer ID signing + notarization. Scope these to the macOS
+          # runner only: CSC_LINK is a cross-platform electron-builder signing
+          # trigger, so leaking the Apple p12 to the Windows job makes
+          # signtool.exe try to Authenticode-sign the NSIS uninstaller with it
+          # and fail. Empty values on other runners are stripped by the build
+          # script (scripts/desktop-artifact/command.mjs).
+          CSC_LINK: ${{ startsWith(matrix.os, 'macos') && secrets.CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ startsWith(matrix.os, 'macos') && secrets.CSC_KEY_PASSWORD || '' }}
+          APPLE_ID: ${{ startsWith(matrix.os, 'macos') && secrets.APPLE_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ startsWith(matrix.os, 'macos') && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ startsWith(matrix.os, 'macos') && secrets.APPLE_TEAM_ID || '' }}
 
       - uses: actions/upload-artifact@v4
         with:
