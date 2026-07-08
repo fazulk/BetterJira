@@ -53,8 +53,8 @@ async function listFinalArtifactFiles(distDir) {
   })
 }
 
-export async function buildPlatformArtifact(stageAppDir, options) {
-  log(`[desktop-artifact] Packaging ${options.platform}/${options.target} (arch=${options.arch})...`)
+export async function buildPlatformArtifact(stageAppDir, options, targets = [options.target]) {
+  log(`[desktop-artifact] Packaging ${options.platform}/${targets.join('+')} (arch=${options.arch})...`)
   await runCommand(
     'bun',
     [
@@ -63,7 +63,7 @@ export async function buildPlatformArtifact(stageAppDir, options) {
       '--config',
       'electron-builder.yml',
       PLATFORM_CONFIG[options.platform].cliFlag,
-      options.target,
+      ...targets,
       `--${options.arch}`,
       '--publish',
       'never',

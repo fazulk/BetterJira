@@ -25,16 +25,8 @@ export function useAppUpdate() {
   const visibleUpdate = computed(() => (dismissed.value ? null : update.value))
 
   function applyUpdate(): void {
-    const current = update.value
-    if (!current) {
-      return
-    }
-
-    if (current.kind === 'ready') {
+    if (update.value) {
       window.desktop?.installUpdate()
-    }
-    else if (current.url) {
-      window.desktop?.openReleasePage(current.url)
     }
   }
 

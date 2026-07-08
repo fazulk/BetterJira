@@ -21,16 +21,22 @@ publish:
 npmRebuild: false
 buildDependenciesFromSource: false
 nodeGypRebuild: false
-# asar is disabled deliberately: electron-builder 25.1.8 + identity:null writes an
-# ElectronAsarIntegrity hash to Info.plist that doesn't match the packaged asar,
-# which makes Electron 40 reject the bundle and exit silently (no log, no crash).
-# Turning asar off skips the integrity check entirely. Single-user personal tool,
+# asar stays disabled: it previously triggered an ElectronAsarIntegrity mismatch
+# (electron-builder 25.1.8 + unsigned builds) that made Electron 40 exit silently,
+# and re-enabling it now would only re-open that risk. Single-user personal tool,
 # so unpacked JS in the .app is fine.
 asar: false
 mac:
   category: public.app-category.developer-tools
-  identity: null
   icon: icon.icns
+  # Developer ID signing + notarization. The identity is auto-discovered from the
+  # keychain (or CSC_LINK in CI); notarization runs when APPLE_ID /
+  # APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID are set and is skipped otherwise.
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  notarize: true
+  entitlements: electron/resources/entitlements.mac.plist
+  entitlementsInherit: electron/resources/entitlements.mac.plist
 linux:
   category: Development
   icon: icon-1024.png

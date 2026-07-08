@@ -2,19 +2,27 @@ import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { repoDir } from './config.mjs'
 
-export function buildEnv() {
+// Release builds (`signing: true`) let electron-builder discover the Developer ID
+// identity and pick up APPLE_* notarization credentials from the environment.
+// Local `dir` builds pass `signing: false` to skip both and stay fast.
+export function buildEnv({ signing = true } = {}) {
   const env = { ...process.env }
   for (const [key, value] of Object.entries(env)) {
     if (value === '') {
       delete env[key]
     }
   }
-  env.CSC_IDENTITY_AUTO_DISCOVERY = 'false'
-  delete env.CSC_LINK
-  delete env.CSC_KEY_PASSWORD
-  delete env.APPLE_API_KEY
-  delete env.APPLE_API_KEY_ID
-  delete env.APPLE_API_ISSUER
+  if (!signing) {
+    env.CSC_IDENTITY_AUTO_DISCOVERY = 'false'
+    delete env.CSC_LINK
+    delete env.CSC_KEY_PASSWORD
+    delete env.APPLE_ID
+    delete env.APPLE_APP_SPECIFIC_PASSWORD
+    delete env.APPLE_TEAM_ID
+    delete env.APPLE_API_KEY
+    delete env.APPLE_API_KEY_ID
+    delete env.APPLE_API_ISSUER
+  }
   return env
 }
 

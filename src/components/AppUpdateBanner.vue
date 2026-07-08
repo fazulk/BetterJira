@@ -1,12 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useAppUpdate } from '@/composables/useAppUpdate'
 
 const { applyUpdate, dismiss, update } = useAppUpdate()
-
-const actionLabel = computed(() =>
-  update.value?.kind === 'ready' ? 'Restart to update' : 'Download from GitHub',
-)
 </script>
 
 <template>
@@ -26,7 +21,7 @@ const actionLabel = computed(() =>
             class="h-6 rounded-md px-2 text-[12px] text-sky-300/90 transition hover:bg-white/[0.05] hover:text-sky-200"
             @click="applyUpdate"
           >
-            {{ actionLabel }}
+            Restart to update
           </button>
           <button
             type="button"

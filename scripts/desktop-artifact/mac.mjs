@@ -1,9 +1,9 @@
-import { cp, mkdir, mkdtemp, readdir, readlink, rm, symlink, unlink } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { basename, dirname, join, relative } from 'node:path'
+import { cp, mkdir, readdir, readlink, rm, symlink, unlink } from 'node:fs/promises'
+import { dirname, join, relative } from 'node:path'
 import process from 'node:process'
+import { buildPlatformArtifact } from './artifacts.mjs'
 import { buildEnv, runCommand } from './command.mjs'
-import { fail, log, OUTPUT_FILENAME } from './config.mjs'
+import { fail, log } from './config.mjs'
 
 async function findAppBundle(distDir) {
   const files = await readdir(distDir, { withFileTypes: true })
@@ -64,51 +64,6 @@ async function patchAndSignMacApp(appBundlePath, verbose) {
   })
 }
 
-function artifactBaseName(version, arch) {
-  return `${OUTPUT_FILENAME}-${version}-${arch}`
-}
-
-async function createMacDmg(appBundlePath, version, arch, outputDir, verbose) {
-  const dmgStageDir = await mkdtemp(join(tmpdir(), 'betterjira-dmg-stage-'))
-  const stagedAppPath = join(dmgStageDir, basename(appBundlePath))
-  const dmgPath = join(outputDir, `${artifactBaseName(version, arch)}.dmg`)
-  await rm(dmgPath, { force: true })
-  await mkdir(outputDir, { recursive: true })
-  try {
-    await cp(appBundlePath, stagedAppPath, { recursive: true, verbatimSymlinks: true })
-    await runCommand('ln', ['-s', '/Applications', join(dmgStageDir, 'Applications')], {
-      cwd: dmgStageDir,
-      env: process.env,
-      verbose,
-      shell: false,
-    })
-
-    await runCommand(
-      'hdiutil',
-      [
-        'create',
-        '-volname',
-        OUTPUT_FILENAME,
-        '-srcfolder',
-        dmgStageDir,
-        '-ov',
-        '-format',
-        'UDZO',
-        dmgPath,
-      ],
-      {
-        cwd: dmgStageDir,
-        env: process.env,
-        verbose,
-      },
-    )
-    return [dmgPath]
-  }
-  finally {
-    await rm(dmgStageDir, { recursive: true, force: true })
-  }
-}
-
 async function copyMacDirArtifact(appBundlePath, distDir, outputDir) {
   const relativeBundlePath = relative(distDir, appBundlePath)
   const destination = join(outputDir, relativeBundlePath)
@@ -118,8 +73,17 @@ async function copyMacDirArtifact(appBundlePath, distDir, outputDir) {
   return [destination]
 }
 
-export async function buildMacArtifact(stageAppDir, options, version) {
-  log(`[desktop-artifact] Packaging mac/${options.target} (arch=${options.arch})...`)
+export async function buildMacArtifact(stageAppDir, options) {
+  // Release artifacts go through electron-builder directly so it Developer ID
+  // signs, notarizes (when APPLE_* credentials are set), and emits the zip +
+  // latest-mac.yml that electron-updater needs on macOS alongside the dmg.
+  if (options.target !== 'dir') {
+    return buildPlatformArtifact(stageAppDir, options, ['dmg', 'zip'])
+  }
+
+  // Local dev `dir` builds skip signing/notarization for speed; the ad-hoc
+  // re-sign below keeps the modified bundle launchable on Apple Silicon.
+  log(`[desktop-artifact] Packaging mac/dir (arch=${options.arch})...`)
   await runCommand(
     'bun',
     [
@@ -135,7 +99,7 @@ export async function buildMacArtifact(stageAppDir, options, version) {
     ],
     {
       cwd: stageAppDir,
-      env: buildEnv(),
+      env: buildEnv({ signing: false }),
       verbose: options.verbose,
     },
   )
@@ -147,10 +111,5 @@ export async function buildMacArtifact(stageAppDir, options, version) {
   }
 
   await patchAndSignMacApp(appBundlePath, options.verbose)
-
-  if (options.target === 'dir') {
-    return copyMacDirArtifact(appBundlePath, distDir, options.outputDir)
-  }
-
-  return createMacDmg(appBundlePath, version, options.arch, options.outputDir, options.verbose)
+  return copyMacDirArtifact(appBundlePath, distDir, options.outputDir)
 }

@@ -26,7 +26,7 @@ async function main() {
 
     const copiedArtifacts
       = options.platform === 'mac'
-        ? await buildMacArtifact(stageAppDir, options, rootPackageJson.version)
+        ? await buildMacArtifact(stageAppDir, options)
         : await buildPlatformArtifact(stageAppDir, options)
 
     log('[desktop-artifact] Done. Artifacts:')

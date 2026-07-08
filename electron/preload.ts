@@ -20,9 +20,6 @@ const desktop: DesktopBridge = {
   installUpdate: () => {
     ipcRenderer.send('desktop:install-update')
   },
-  openReleasePage: (url) => {
-    ipcRenderer.send('desktop:open-release', url)
-  },
 }
 
 contextBridge.exposeInMainWorld('desktop', desktop)
