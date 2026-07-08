@@ -7,6 +7,7 @@ import {
   formatJiraRequestTarget,
   getJiraConfig,
   isJiraAuthenticationFailure,
+  toJiraNetworkError,
 } from './jiraClient'
 import { mapAttachment } from './jiraIssueMapping'
 import { getTicket } from './jiraIssueQueries'
@@ -31,11 +32,11 @@ export async function getJiraAttachmentContent(attachmentId: string): Promise<Re
   }
   catch (error: unknown) {
     const durationMs = Date.now() - startedAt
-    const message = error instanceof Error ? error.message : 'Unknown Jira attachment fetch error'
+    const networkError = toJiraNetworkError(error, url)
     console.error(formatJiraLogLines('xx', 'GET', `${requestTarget} (${durationMs}ms)`, [
-      `error: ${message}`,
+      `error: ${networkError.message}`,
     ]))
-    throw error
+    throw networkError
   }
 
   const durationMs = Date.now() - startedAt
@@ -92,12 +93,12 @@ export async function uploadTicketAttachment(
   }
   catch (error: unknown) {
     const durationMs = Date.now() - startedAt
-    const message = error instanceof Error ? error.message : 'Unknown Jira attachment upload error'
+    const networkError = toJiraNetworkError(error, url)
     console.error(formatJiraLogLines('xx', 'POST', `${requestTarget} (${durationMs}ms)`, [
-      `error: ${message}`,
+      `error: ${networkError.message}`,
       `file: ${file.filename}`,
     ]))
-    throw error
+    throw networkError
   }
 
   const durationMs = Date.now() - startedAt

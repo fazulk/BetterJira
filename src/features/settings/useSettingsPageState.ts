@@ -2,6 +2,7 @@ import type { SettingsSectionId } from './settingsTypes'
 import type { AiProviderAvailability } from '~/shared/ai'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useAiSettings } from '@/composables/useAiSettings'
+import { useJiraCurrentUser } from '@/composables/useJiraCurrentUser'
 import { useJiraTickets } from '@/composables/useJiraTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { getProviderLabel, isAiProvider } from '~/shared/ai'
@@ -165,6 +166,34 @@ export function useSettingsPageState() {
     }
     return `${jiraConnection.value.baseUrl || 'Jira URL missing'} · ${jiraConnection.value.email || 'Email missing'}`
   })
+
+  // Live connection probe: /jira-me succeeds only when the URL, email, and token
+  // together authenticate. Reused query (shared cache) so this adds no extra
+  // network cost when the ticket list already loaded it.
+  const jiraMeQuery = useJiraCurrentUser(hasJiraCredentialsConfigured)
+  const jiraHasApiToken = computed(() => jiraConnection.value.hasApiToken)
+  const jiraSavedBaseUrl = computed(() => jiraConnection.value.baseUrl)
+  const jiraSavedEmail = computed(() => jiraConnection.value.email)
+
+  type JiraConnectionStatus = 'unconfigured' | 'checking' | 'connected' | 'error'
+  const jiraConnectionStatus = computed<JiraConnectionStatus>(() => {
+    if (!hasJiraCredentialsConfigured.value)
+      return 'unconfigured'
+    if (jiraMeQuery.isError.value)
+      return 'error'
+    if (jiraMeQuery.data.value)
+      return 'connected'
+    return 'checking'
+  })
+  const jiraConnectedUserName = computed(() => jiraMeQuery.data.value?.displayName.trim() ?? '')
+  const jiraConnectionErrorMessage = computed(() => {
+    const error = jiraMeQuery.error.value
+    return error instanceof Error ? error.message : ''
+  })
+  const isRecheckingJiraConnection = computed(() => jiraMeQuery.isFetching.value)
+  async function recheckJiraConnection(): Promise<void> {
+    await jiraMeQuery.refetch()
+  }
   const {
     constrainedSettingsRows,
     constrainedSettingsSectionDescription,
@@ -267,12 +296,20 @@ export function useSettingsPageState() {
     handleModelChange,
     handleProviderChange,
     isLoadingProviders,
+    isRecheckingJiraConnection,
     isSavingSpaceSettings,
     jiraApiToken,
     jiraBaseUrlDraft,
+    jiraConnectedUserName,
+    jiraConnectionErrorMessage,
+    jiraConnectionStatus,
     jiraConnectionSummary,
     jiraEmailDraft,
     jiraFeedback,
+    jiraHasApiToken,
+    jiraSavedBaseUrl,
+    jiraSavedEmail,
+    recheckJiraConnection,
     providerAvailability,
     providerAvailabilityError,
     providers,

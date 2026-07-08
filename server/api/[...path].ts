@@ -6,7 +6,7 @@ import { handleGeneralApiRoute } from '../apiGeneralHandlers'
 import { handleLocalTicketApiRoute } from '../apiLocalTicketHandlers'
 import { handleRemoteTicketApiRoute } from '../apiRemoteTicketHandlers'
 import { API_HEADERS, notFoundResponse, parseRefreshUpdatedSince } from '../apiRouteUtils'
-import { JiraApiError, ValidationError } from '../errors'
+import { JiraApiError, JiraNetworkError, ValidationError } from '../errors'
 import { addClient, removeClient } from '../events'
 import { forceRefreshTickets } from '../jira'
 import { MissingJiraCredentialsError } from '../jiraCredentials'
@@ -102,6 +102,16 @@ export default defineEventHandler(async (event) => {
       const status = error.status === 404 ? 404 : 502
       console.error('Jira API error:', error.message)
       return Response.json({ error: error.message }, { status, headers: API_HEADERS })
+    }
+
+    if (error instanceof JiraNetworkError) {
+      // Couldn't reach Jira at all — a bad gateway from our proxy's perspective.
+      console.error('Jira network error:', error.message)
+      return Response.json({
+        error: error.message,
+        code: 'JIRA_NETWORK_ERROR',
+        networkCode: error.code,
+      }, { status: 502, headers: API_HEADERS })
     }
 
     const message = error instanceof Error ? error.message : 'Unknown request error'

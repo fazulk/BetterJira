@@ -1,5 +1,5 @@
 import { env } from './config'
-import { JiraApiError } from './errors'
+import { JiraApiError, JiraNetworkError } from './errors'
 import { getJiraCredentials } from './jiraCredentials'
 
 export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
@@ -52,6 +52,63 @@ export function serializeJiraLogPayload(value: unknown): string | undefined {
 
 export function formatJiraRequestTarget(url: URL): string {
   return url.pathname.replace(/^\/rest\/(?:api\/3|dev-status\/latest)/, '') || '/'
+}
+
+interface SystemErrorLike {
+  code?: unknown
+  message?: unknown
+  errors?: unknown
+  cause?: unknown
+}
+
+function isSystemErrorLike(value: unknown): value is SystemErrorLike {
+  return typeof value === 'object' && value !== null
+}
+
+// Plain-English hints keyed by the Node/undici system error code. The code is
+// still appended so a user can search/report it exactly.
+const NETWORK_ERROR_HINTS: Record<string, string> = {
+  ENOTFOUND: 'the address could not be resolved — check the Jira URL',
+  EAI_AGAIN: 'a temporary DNS failure — check your network connection',
+  ECONNREFUSED: 'the connection was refused',
+  ECONNRESET: 'the connection was reset',
+  ETIMEDOUT: 'the connection timed out',
+  UND_ERR_CONNECT_TIMEOUT: 'the connection timed out',
+  UND_ERR_HEADERS_TIMEOUT: 'the server took too long to respond',
+  UND_ERR_SOCKET: 'the connection was closed unexpectedly',
+  CERT_HAS_EXPIRED: 'the server TLS certificate has expired',
+  DEPTH_ZERO_SELF_SIGNED_CERT: 'the server uses a self-signed TLS certificate',
+  SELF_SIGNED_CERT_IN_CHAIN: 'a self-signed certificate is in the TLS chain',
+  UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'the server TLS certificate could not be verified',
+}
+
+/**
+ * Turn a failed `fetch()` into a JiraNetworkError whose message names the host
+ * and the real underlying reason. undici throws a generic `TypeError: fetch
+ * failed` and nests the real system error under `.cause` (an AggregateError
+ * when several DNS results all fail), so a bare rethrow loses everything the
+ * user needs. Callers wrap only the `fetch()` call, so anything caught there is
+ * a connection-level failure.
+ */
+export function toJiraNetworkError(error: unknown, url: URL): JiraNetworkError {
+  let cause: unknown = isSystemErrorLike(error) ? error.cause : undefined
+  if (isSystemErrorLike(cause) && Array.isArray(cause.errors) && cause.errors.length > 0) {
+    cause = cause.errors[0]
+  }
+
+  const code = isSystemErrorLike(cause) && typeof cause.code === 'string'
+    ? cause.code
+    : (isSystemErrorLike(error) && typeof error.code === 'string' ? error.code : undefined)
+  const rawMessage = isSystemErrorLike(cause) && typeof cause.message === 'string'
+    ? cause.message
+    : (error instanceof Error ? error.message : 'unknown network error')
+
+  const hint = code ? NETWORK_ERROR_HINTS[code] : undefined
+  const detail = hint
+    ? `${hint}${code ? ` (${code})` : ''}`
+    : (code ? `${rawMessage} (${code})` : rawMessage)
+
+  return new JiraNetworkError(`Could not reach Jira at ${url.host} — ${detail}.`, code, { cause: error })
 }
 
 export function formatJiraLogLines(
@@ -115,12 +172,13 @@ export async function jiraFetch(path: string, options?: JiraFetchOptions): Promi
   }
   catch (error: unknown) {
     const durationMs = Date.now() - startedAt
-    const message = error instanceof Error ? error.message : 'Unknown Jira fetch error'
+    const networkError = toJiraNetworkError(error, url)
     console.error(formatJiraLogLines('xx', method, `${requestTarget} (${durationMs}ms)`, [
-      `error: ${message}`,
+      `error: ${networkError.message}`,
+      ...(networkError.code ? [`code: ${networkError.code}`] : []),
       ...requestDetails,
     ]))
-    throw error
+    throw networkError
   }
 
   const durationMs = Date.now() - startedAt
