@@ -398,7 +398,7 @@ defineExpose({
 
       <section
         v-if="devStatusPullRequests.length > 0 || devStatusUnavailable"
-        class="rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 transition-[padding]"
+        class="animate-fade-in rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 transition-[padding]"
         :class="collapsedSections.development ? 'py-3' : 'py-4'"
       >
         <button
