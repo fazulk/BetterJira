@@ -67,6 +67,19 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+
+      # Creates the GitHub release with a changelog generated from
+      # conventional commits; action-gh-release then attaches the files.
+      - name: Generate release notes
+        run: bunx changelogithub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: actions/download-artifact@v4
         with:
           path: release
@@ -85,4 +98,3 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: release/**
-          generate_release_notes: true
