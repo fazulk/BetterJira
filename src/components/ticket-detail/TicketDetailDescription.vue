@@ -8,6 +8,7 @@ import { coerceDescriptionToAdf, isSupportedEditorAdf } from '~/shared/jiraAdf'
 import { isLocalTicketKey } from '~/shared/localTickets'
 
 const props = defineProps<{
+  detailLoaded: boolean
   isLocalTicket: boolean
   ticket: JiraTicket
 }>()
@@ -160,6 +161,13 @@ async function flushDescriptionAutosave(): Promise<void> {
   if (!key || descriptionSaveInFlight.value)
     return
 
+  // Never persist a draft seeded from a partial ticket — it would replace the
+  // real description with an empty one.
+  if (!props.detailLoaded) {
+    clearDescriptionSaveTimer()
+    return
+  }
+
   const descriptionAdf = descriptionDraft.value
   if (descriptionHasPendingImageUpload.value || descriptionHasFailedImageUpload.value) {
     clearDescriptionSaveTimer()
@@ -304,6 +312,7 @@ defineExpose({
           ref="descriptionEditorRef"
           v-model="descriptionDraft"
           :attachments="ticket.attachments"
+          :disabled="!detailLoaded"
           :ticket-key="ticket.key"
           :upload-image="isLocalTicket ? undefined : uploadDescriptionImage"
           :show-toolbar="descriptionEditorActive"

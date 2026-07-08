@@ -27,7 +27,10 @@ export function useJiraTicket(
         return false
       return true
     }),
-    initialData: () => {
+    // placeholderData (not initialData): the list entry lacks detail-only
+    // fields like description/attachments, so it must never count as fresh
+    // data or be persisted — only bridge the gap while the real fetch runs.
+    placeholderData: () => {
       const key = ticketKey.value
       if (!key)
         return undefined

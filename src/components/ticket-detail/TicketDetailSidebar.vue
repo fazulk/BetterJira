@@ -36,8 +36,11 @@ const collapsedSections = ref({
 const devStatusTicketKey = computed(() => (
   !props.isLocalTicket && props.jiraDataEnabled ? props.ticket.key : null
 ))
-const { data: devStatus } = useTicketDevStatus(devStatusTicketKey)
+const { data: devStatus, isError: devStatusFailed, refetch: refetchDevStatus } = useTicketDevStatus(devStatusTicketKey)
 const devStatusPullRequests = computed(() => devStatus.value?.pullRequests ?? [])
+// A failed fetch with nothing cached would otherwise silently hide the
+// Development section — indistinguishable from "no PRs".
+const devStatusUnavailable = computed(() => devStatusFailed.value && devStatusPullRequests.value.length === 0)
 
 const PULL_REQUEST_STATUS_CLASSES: Record<TicketDevStatusPullRequestStatus, string> = {
   OPEN: 'border-sky-400/30 bg-sky-400/10 text-sky-300',
@@ -394,7 +397,7 @@ defineExpose({
       </section>
 
       <section
-        v-if="devStatusPullRequests.length > 0"
+        v-if="devStatusPullRequests.length > 0 || devStatusUnavailable"
         class="rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 transition-[padding]"
         :class="collapsedSections.development ? 'py-3' : 'py-4'"
       >
@@ -410,6 +413,16 @@ defineExpose({
         </button>
 
         <div v-show="!collapsedSections.development" class="space-y-2">
+          <div v-if="devStatusUnavailable" class="flex items-center gap-2 px-1 py-1.5 text-xs text-slate-500">
+            <span>Couldn't load development activity.</span>
+            <button
+              type="button"
+              class="font-medium text-slate-300 underline-offset-2 transition hover:underline"
+              @click="refetchDevStatus()"
+            >
+              Retry
+            </button>
+          </div>
           <a
             v-for="pullRequest in devStatusPullRequests"
             :key="pullRequest.url"

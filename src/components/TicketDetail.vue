@@ -98,6 +98,15 @@ const ticketIsPinned = computed(() => (
   ticket.value ? isPinned(ticket.value.key) : false
 ))
 
+// The description editor must never open against a partial ticket (list-cache
+// placeholder or error fallback) — those lack `description`, so autosaving a
+// draft seeded from them would overwrite the real Jira description.
+const detailLoaded = computed(() => {
+  if (isLocalTicket.value)
+    return true
+  return ticketQuery.data.value !== undefined && !ticketQuery.isPlaceholderData.value
+})
+
 const detailQueryError = computed(() => (
   isLocalTicket.value ? localTicketQuery.isError.value : ticketQuery.isError.value
 ))
@@ -355,6 +364,7 @@ onMounted(() => {
 
             <TicketDetailDescription
               ref="ticketDescriptionRef"
+              :detail-loaded="detailLoaded"
               :is-local-ticket="isLocalTicket"
               :ticket="ticket"
               @preview-image="openImagePreview"

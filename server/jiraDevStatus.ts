@@ -103,7 +103,7 @@ export async function getTicketDevStatus(ticketKey: string): Promise<TicketDevSt
   })
 
   const instanceTypes = extractPullRequestInstanceTypes(summary)
-  const details = await Promise.all(instanceTypes.map(applicationType => jiraFetch('/issue/detail', {
+  const results = await Promise.allSettled(instanceTypes.map(applicationType => jiraFetch('/issue/detail', {
     basePath: DEV_STATUS_BASE_PATH,
     params: {
       issueId,
@@ -111,6 +111,16 @@ export async function getTicketDevStatus(ticketKey: string): Promise<TicketDevSt
       dataType: 'pullrequest',
     },
   })))
+
+  // One flaky instance type must not wipe out the PRs from the others;
+  // only fail outright when every detail call failed.
+  const details = results
+    .filter((result): result is PromiseFulfilledResult<unknown> => result.status === 'fulfilled')
+    .map(result => result.value)
+  const failure = results.find(result => result.status === 'rejected')
+  if (failure && details.length === 0) {
+    throw failure.reason
+  }
 
   return {
     ticketKey,
