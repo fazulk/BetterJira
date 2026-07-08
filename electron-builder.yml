@@ -1,3 +1,4 @@
+# Electron builder configuration for BetterJira
 appId: com.jefff.betterjira
 productName: BetterJira
 artifactName: BetterJira-${version}-${arch}.${ext}
