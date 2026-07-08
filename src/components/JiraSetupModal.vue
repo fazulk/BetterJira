@@ -12,12 +12,11 @@ const props = defineProps<{
 type JiraSetupStep = 'form' | 'connecting' | 'success'
 
 const queryClient = useQueryClient()
-const { aiConnection, jiraConnection, isSaving, updateAiCredentials, updateJiraCredentials } = useSpaceSettings()
+const { jiraConnection, isSaving, updateJiraCredentials } = useSpaceSettings()
 
 const baseUrl = ref('')
 const email = ref('')
 const apiToken = ref('')
-const cerebrasApiKey = ref('')
 const errorMessage = ref<string | null>(null)
 const connectedDisplayName = ref('')
 const setupStep = ref<JiraSetupStep>('form')
@@ -27,7 +26,6 @@ function resetSetupForm(): void {
   baseUrl.value = jiraConnection.value.baseUrl
   email.value = jiraConnection.value.email
   apiToken.value = ''
-  cerebrasApiKey.value = ''
   errorMessage.value = null
   connectedDisplayName.value = ''
   setupStep.value = 'form'
@@ -69,12 +67,6 @@ async function saveCredentials(): Promise<void> {
       apiToken: apiToken.value.trim(),
     })
 
-    if (cerebrasApiKey.value.trim()) {
-      await updateAiCredentials({
-        cerebrasApiKey: cerebrasApiKey.value.trim(),
-      })
-    }
-
     const currentUser = await queryClient.fetchQuery({
       queryKey: jiraCurrentUserQueryKey,
       queryFn: fetchJiraCurrentUser,
@@ -82,7 +74,6 @@ async function saveCredentials(): Promise<void> {
 
     connectedDisplayName.value = currentUser.displayName.trim()
     apiToken.value = ''
-    cerebrasApiKey.value = ''
     setupStep.value = 'success'
   }
   catch (error) {
@@ -150,7 +141,7 @@ async function continueToSettings(): Promise<void> {
               >
             </label>
 
-            <label class="grid gap-2 border-b border-white/[0.05] px-3 py-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
+            <label class="grid gap-2 px-3 py-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
               <span class="pt-2 text-[12px] text-slate-500">API token</span>
               <div class="min-w-0 space-y-2">
                 <input
@@ -171,30 +162,6 @@ async function continueToSettings(): Promise<void> {
               </div>
             </label>
 
-            <label class="grid gap-2 px-3 py-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
-              <span class="pt-2 text-[12px] text-slate-500">Cerebras key</span>
-              <div class="min-w-0 space-y-2">
-                <input
-                  v-model="cerebrasApiKey"
-                  type="password"
-                  autocomplete="new-password"
-                  placeholder="Optional. Leave blank to keep the current local key."
-                  class="w-full rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[13px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.04]"
-                >
-                <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-slate-500">
-                  <span>Optional description generation provider.</span>
-                  <span v-if="aiConnection.hasCerebrasApiKey" class="text-slate-400">A local key is already saved.</span>
-                  <a
-                    href="https://cloud.cerebras.ai/"
-                    target="_blank"
-                    rel="noreferrer"
-                    class="text-slate-400 transition hover:text-slate-200"
-                  >
-                    Open Cerebras
-                  </a>
-                </div>
-              </div>
-            </label>
           </div>
 
           <p v-if="errorMessage" class="mt-4 rounded-md border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-[13px] leading-5 text-rose-200">
