@@ -17,8 +17,7 @@ import { getJiraConfig, jiraFetch } from './jiraClient'
 import { resolveTeamFieldId } from './jiraIssueMapping'
 import { getTicket } from './jiraIssueQueries'
 import {
-  isAllowedChildIssueTypeForParent,
-  isAvailableChildIssueTypeForParent,
+  getAvailableChildIssueTypeOptions,
   isCreateIssueType,
   matchesIssueType,
   normalizeIssueType,
@@ -100,38 +99,16 @@ async function getParentValidatedCreateIssueTypeOptions(parentKey: string): Prom
     throw new Error(`Invalid parent key: ${parentKey}`)
   }
 
-  const parent = await getTicket(parentKey)
-  const projects = await getCandidateProjects()
-  const seenIssueTypes = new Set<string>()
-  const childIssueTypes: JiraCreateIssueTypeOption[] = []
+  // Children are created in the parent's project, so only its hierarchy
+  // matters. Scanning every candidate project here made this both slow
+  // (50 × per-issue-type createmeta calls) and wrong: foreign projects
+  // contributed issue types Jira rejects for this parent.
+  const [parent, issueTypeOptions] = await Promise.all([
+    getTicket(parentKey),
+    getCreateIssueTypeOptions(parentProjectKey),
+  ])
 
-  for (const project of projects) {
-    if (!project.key) {
-      continue
-    }
-
-    const issueTypeOptions = await getCreateIssueTypeOptions(project.key)
-    for (const issueType of issueTypeOptions) {
-      const normalizedIssueTypeName = normalizeIssueType(issueType.name)
-      if (seenIssueTypes.has(normalizedIssueTypeName)) {
-        continue
-      }
-      if (
-        !issueType.parentSupported
-        || !isAvailableChildIssueTypeForParent(parent.issueType, issueType, issueTypeOptions)
-      ) {
-        continue
-      }
-
-      seenIssueTypes.add(normalizedIssueTypeName)
-      childIssueTypes.push(issueType)
-    }
-  }
-
-  return childIssueTypes.sort((left, right) => (
-    right.hierarchyLevel - left.hierarchyLevel
-    || left.name.localeCompare(right.name)
-  ))
+  return getAvailableChildIssueTypeOptions(parent.issueType, issueTypeOptions)
 }
 
 export async function getCreateIssueTypes(parentKey?: string | null): Promise<JiraCreateIssueTypeOption[]> {
@@ -309,11 +286,7 @@ async function validateParent(
   }
 
   const parent = await getTicket(parentKey)
-  if (!isAllowedChildIssueTypeForParent(parent.issueType, issueType)) {
-    throw new Error(`${issueType} cannot be added under ${parent.issueType}`)
-  }
-
-  throw new Error(`${issueType} is not allowed by Jira for parent ${parentKey}`)
+  throw new Error(`${issueType} cannot be added under ${parent.issueType} ${parentKey}`)
 }
 
 /** Pre-fills the Jira Team field when the issue is created from a team-filtered space. */

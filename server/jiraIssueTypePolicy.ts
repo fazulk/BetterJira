@@ -70,3 +70,19 @@ export function isAvailableChildIssueTypeForParent(
 
   return !childIssueType.subtask && childIssueType.hierarchyLevel === parentIssueTypeOption.hierarchyLevel - 1
 }
+
+/**
+ * Filters a single project's creatable issue types down to those Jira accepts
+ * as children of the given parent issue type. `issueTypeOptions` must be the
+ * options of the parent's own project — that is the hierarchy Jira validates
+ * against.
+ */
+export function getAvailableChildIssueTypeOptions(
+  parentIssueType: string,
+  issueTypeOptions: JiraCreateIssueTypeOption[],
+): JiraCreateIssueTypeOption[] {
+  return issueTypeOptions.filter(issueType => (
+    issueType.parentSupported
+    && isAvailableChildIssueTypeForParent(parentIssueType, issueType, issueTypeOptions)
+  ))
+}

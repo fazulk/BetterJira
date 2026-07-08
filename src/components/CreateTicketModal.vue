@@ -76,9 +76,7 @@ const lastCreatedSpaceKey = ref<string | null>(readLocalStorageString(LAST_CREAT
 
 const {
   activeIssueType,
-  createObjectTypeLabel,
   createSpaceOptions,
-  createSubtypeLabel,
   effectiveParentKey,
   effectiveSpaceKey,
   getSelectedSpaceName,
@@ -284,8 +282,6 @@ onUnmounted(() => {
           @keydown="handleComposerKeydown"
         >
           <CreateTicketModalHeader
-            :create-object-type-label="createObjectTypeLabel"
-            :create-subtype-label="createSubtypeLabel"
             :is-create-pending="isCreatePending"
             :selected-space-name="getSelectedSpaceName()"
             @close="closeModal"

@@ -1,7 +1,5 @@
 <script setup lang="ts">
 defineProps<{
-  createObjectTypeLabel: string
-  createSubtypeLabel: string | null
   isCreatePending: boolean
   selectedSpaceName: string
 }>()
@@ -16,18 +14,6 @@ const emit = defineEmits<{
     <div class="flex min-w-0 items-center gap-2">
       <span class="truncate rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-xs text-slate-300">
         {{ selectedSpaceName }}
-      </span>
-      <span
-        class="rounded-md px-2 py-1 text-xs font-medium"
-        :class="createObjectTypeLabel === 'Project' ? 'issue-badge-epic' : 'issue-badge-issue'"
-      >
-        {{ createObjectTypeLabel }}
-      </span>
-      <span
-        v-if="createSubtypeLabel"
-        class="rounded-md border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-xs font-medium text-slate-500"
-      >
-        {{ createSubtypeLabel }}
       </span>
     </div>
     <button

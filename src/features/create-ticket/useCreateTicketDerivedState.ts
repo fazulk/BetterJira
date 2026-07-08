@@ -1,11 +1,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { JiraCreateIssueType, JiraTicket } from '@/types/jira'
 import { computed } from 'vue'
-import {
-  getLinearIssueSubtype,
-
-} from '@/types/jira'
-import { isLocalTicketKey, LOCAL_ISSUE_TYPE, LOCAL_SPACE_KEY } from '~/shared/localTickets'
+import { isLocalTicketKey, LOCAL_SPACE_KEY } from '~/shared/localTickets'
 import { canIssueTypeUseParent } from './issueTypePolicy'
 
 interface EnabledSpace {
@@ -58,16 +54,6 @@ export function useCreateTicketDerivedState(input: CreateTicketDerivedStateInput
   ))
 
   const isLocalSpace = computed(() => effectiveSpaceKey.value === LOCAL_SPACE_KEY)
-  const createObjectTypeLabel = computed(() => (
-    activeIssueType.value?.toLowerCase().includes('epic') ? 'Project' : 'Issue'
-  ))
-  const createSubtypeLabel = computed(() => {
-    if (isLocalSpace.value)
-      return getLinearIssueSubtype(LOCAL_ISSUE_TYPE)
-    if (!input.selectedIssueType.value || createObjectTypeLabel.value === 'Project')
-      return null
-    return getLinearIssueSubtype(input.selectedIssueType.value)
-  })
 
   const jiraFieldQueriesEnabled = computed(() => (
     input.open.value && !isLocalSpace.value && input.hasJiraCredentialsConfigured.value
@@ -113,9 +99,7 @@ export function useCreateTicketDerivedState(input: CreateTicketDerivedStateInput
 
   return {
     activeIssueType,
-    createObjectTypeLabel,
     createSpaceOptions,
-    createSubtypeLabel,
     effectiveParentKey,
     effectiveSpaceKey,
     getSelectedSpaceName,
