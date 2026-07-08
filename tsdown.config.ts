@@ -14,7 +14,12 @@ const shared = {
   sourcemap: true,
   platform: 'node' as const,
   target: 'node20',
-  deps: { neverBundle: ['electron'] },
+  // electron stays external (its APIs only exist inside the running binary);
+  // posthog-node must be force-bundled — the packaged app only installs the
+  // Nitro server's dependencies into node_modules, so a runtime `require`
+  // ("Cannot find module 'posthog-node'") crashes main on launch. alwaysBundle
+  // overrides the default externalization of `dependencies`.
+  deps: { neverBundle: ['electron'], alwaysBundle: ['posthog-node'] },
   // Bake the PostHog credentials in at build time (see electron/analytics.ts).
   // Empty key → analytics no-ops, so local/dev builds need no env at all.
   define: {
