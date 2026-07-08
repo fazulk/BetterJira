@@ -72,7 +72,9 @@ const rowIssueKey = computed(() => props.ticket.key)
 const rowPrimarySummary = computed(() => props.ticket.summary)
 
 const rowGridTemplate = computed(() => {
-  const columns = ['18px']
+  // Checkbox column hidden for now (selection still works via keyboard);
+  // revisit whether row-level bulk selection earns its place.
+  const columns: string[] = []
   if (props.showStatus !== false)
     columns.push('18px')
   if (props.showId !== false)
@@ -119,17 +121,6 @@ function formatDate(value: string | undefined): string {
     @keydown.enter.prevent="$emit('select', rowIssueKey)"
     @keydown.space.prevent="$emit('select', rowIssueKey)"
   >
-    <span
-      class="flex h-4 w-4 items-center justify-center rounded border transition"
-      :class="checked ? 'border-white/[0.18] bg-white/[0.08] text-slate-100' : 'border-white/[0.1] bg-white/[0.03] text-transparent group-hover:text-[#8f9198]'"
-      role="checkbox"
-      :aria-checked="checked"
-      :aria-label="checked ? `Deselect ${rowIssueKey}` : `Select ${rowIssueKey}`"
-      @click.stop="$emit('toggleCheck', rowIssueKey)"
-    >
-      <span v-if="checked" class="text-[10px] leading-none">✓</span>
-    </span>
-
     <span v-if="showStatus !== false" class="flex h-4 w-4 items-center justify-center">
       <StatusIcon :status="ticket.status" :status-category="ticket.statusCategory" :size="16" />
     </span>
