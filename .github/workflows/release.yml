@@ -47,6 +47,11 @@ jobs:
         run: bun run ${{ matrix.script }}
         env:
           BETTER_JIRA_DESKTOP_VERBOSE: '1'
+          # PostHog analytics baked into the main bundle at build time (tsdown
+          # define). Absent key → analytics no-ops. POSTHOG_HOST is optional and
+          # defaults to US cloud.
+          POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
           # macOS Developer ID signing + notarization. Scope these to the macOS
           # runner only: CSC_LINK is a cross-platform electron-builder signing
           # trigger, so leaking the Apple p12 to the Windows job makes

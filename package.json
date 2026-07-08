@@ -47,6 +47,7 @@
     "markdown-it": "^14.3.0",
     "nuxt": "^4.4.2",
     "openai": "^6.33.0",
+    "posthog-node": "^5.40.0",
     "vue": "^3.5.0"
   },
   "devDependencies": {

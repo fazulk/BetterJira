@@ -9,6 +9,7 @@ import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { app, BrowserWindow, shell } from 'electron'
 
+import { captureError, initAnalytics, shutdownAnalytics } from './analytics'
 import { findFreePort } from './freePort'
 import { initUpdates } from './updater'
 import { waitForHttpReady } from './waitForHttpReady'
@@ -56,9 +57,11 @@ catch (err) {
 }
 process.on('uncaughtException', (err) => {
   logLine(`uncaughtException: ${err.message}\n${err.stack ?? ''}`)
+  captureError('uncaughtException', err)
 })
 process.on('unhandledRejection', (reason) => {
   logLine(`unhandledRejection: ${String(reason)}`)
+  captureError('unhandledRejection', reason)
 })
 
 const BACKEND_READY_TIMEOUT_MS = 30_000
@@ -142,6 +145,7 @@ async function startBackend(): Promise<string> {
     backendProcess = null
     if (!isQuitting) {
       // Backend died unexpectedly — bail out so the user notices.
+      captureError('backend_crash', new Error(`nitro exited code=${code} signal=${signal}`), { code, signal })
       app.quit()
     }
   })
@@ -150,6 +154,7 @@ async function startBackend(): Promise<string> {
     logLine(`[nitro] spawn error: ${err.message}`)
     backendProcess = null
     if (!isQuitting) {
+      captureError('backend_crash', err)
       app.quit()
     }
   })
@@ -240,6 +245,8 @@ function createWindow(url: string): BrowserWindow {
 }
 
 async function bootstrap(): Promise<void> {
+  // Before startBackend so an install is still recorded if the backend fails to boot.
+  initAnalytics(logLine)
   const devUrl = process.env.NUXT_DEV_URL?.trim()
   const url = devUrl || await startBackend()
   mainWindow = createWindow(url)
@@ -365,6 +372,9 @@ app.on('window-all-closed', () => {
 app.on('before-quit', (event) => {
   if (isQuitting)
     return
+  // Best-effort flush of any pending analytics (events are sent eagerly, so this
+  // is belt-and-braces). Fire-and-forget — the quit sequence below still runs.
+  void shutdownAnalytics()
   if (!backendProcess || backendProcess.exitCode !== null) {
     isQuitting = true
     return

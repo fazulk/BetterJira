@@ -2,6 +2,7 @@ import type { BrowserWindow } from 'electron'
 import type { AppUpdateInfo } from '../shared/appUpdate'
 import { app, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
+import { captureError, captureEvent } from './analytics'
 
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
 
@@ -45,11 +46,13 @@ export function initUpdates(getWindow: () => BrowserWindow | null, logLine: Logg
   autoUpdater.setFeedURL({ provider: 'github', owner: 'fazulk', repo: 'better-jira' })
 
   autoUpdater.on('update-downloaded', (info) => {
+    captureEvent('update_downloaded', { version: info.version })
     publish({ version: info.version })
   })
 
   autoUpdater.on('error', (err) => {
     logLine(`[updater] error: ${err.message}`)
+    captureError('updater_error', err)
   })
 
   const check = async (): Promise<void> => {

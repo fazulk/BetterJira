@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { defineConfig } from 'tsdown'
 
 // `electron` must stay external — its APIs (app, BrowserWindow, …) only exist
@@ -14,6 +15,12 @@ const shared = {
   platform: 'node' as const,
   target: 'node20',
   deps: { neverBundle: ['electron'] },
+  // Bake the PostHog credentials in at build time (see electron/analytics.ts).
+  // Empty key → analytics no-ops, so local/dev builds need no env at all.
+  define: {
+    __POSTHOG_KEY__: JSON.stringify(process.env.POSTHOG_KEY ?? ''),
+    __POSTHOG_HOST__: JSON.stringify(process.env.POSTHOG_HOST ?? 'https://us.i.posthog.com'),
+  },
 }
 
 // main and preload are separate builds (not two entries of one build): rolldown
