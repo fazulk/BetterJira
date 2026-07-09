@@ -1,4 +1,4 @@
-import type { AppUpdateInfo, DesktopBridge } from '../shared/appUpdate'
+import type { AppUpdateCheckResult, AppUpdateInfo, DesktopBridge } from '../shared/appUpdate'
 import { contextBridge, ipcRenderer } from 'electron'
 
 // Sandboxed preloads can only require `electron` and a few node builtins —
@@ -20,6 +20,7 @@ const desktop: DesktopBridge = {
   installUpdate: () => {
     ipcRenderer.send('desktop:install-update')
   },
+  checkForUpdates: () => ipcRenderer.invoke('desktop:check-for-updates') as Promise<AppUpdateCheckResult>,
 }
 
 contextBridge.exposeInMainWorld('desktop', desktop)

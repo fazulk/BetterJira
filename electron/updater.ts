@@ -1,5 +1,5 @@
 import type { BrowserWindow } from 'electron'
-import type { AppUpdateInfo } from '../shared/appUpdate'
+import type { AppUpdateCheckResult, AppUpdateInfo } from '../shared/appUpdate'
 import { app, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { captureError, captureEvent } from './analytics'
@@ -33,6 +33,24 @@ export function initUpdates(getWindow: () => BrowserWindow | null, logLine: Logg
   ipcMain.on('desktop:install-update', () => {
     logLine('[updater] quitAndInstall requested')
     autoUpdater.quitAndInstall()
+  })
+
+  ipcMain.handle('desktop:check-for-updates', async (): Promise<AppUpdateCheckResult> => {
+    if (!app.isPackaged) {
+      return { status: 'up-to-date' }
+    }
+    try {
+      const result = await autoUpdater.checkForUpdates()
+      if (result?.isUpdateAvailable) {
+        return { status: 'update-available', version: result.updateInfo.version }
+      }
+      return { status: 'up-to-date' }
+    }
+    catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      logLine(`[updater] manual check failed: ${message}`)
+      return { status: 'error', message }
+    }
   })
 
   if (!app.isPackaged) {

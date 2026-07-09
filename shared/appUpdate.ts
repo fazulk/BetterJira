@@ -3,9 +3,15 @@ export interface AppUpdateInfo {
   version: string
 }
 
+export type AppUpdateCheckResult
+  = | { status: 'update-available', version: string }
+    | { status: 'up-to-date' }
+    | { status: 'error', message: string }
+
 export interface DesktopBridge {
   platform: NodeJS.Platform
   getVersion: () => Promise<string>
   onUpdate: (callback: (update: AppUpdateInfo) => void) => void
   installUpdate: () => void
+  checkForUpdates: () => Promise<AppUpdateCheckResult>
 }
