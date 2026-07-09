@@ -159,7 +159,7 @@ export async function getCreateIssueTypes(parentKey?: string | null): Promise<Ji
   ))
 }
 
-async function getIssueTypeId(issueType: JiraCreateIssueType, projectKey: string): Promise<string> {
+async function getMatchedIssueType(issueType: JiraCreateIssueType, projectKey: string): Promise<{ id: string, subtask: boolean }> {
   const issueTypes = await getProjectIssueTypes(projectKey)
   const matchedIssueType = issueTypes.find(candidate => matchesIssueType(candidate.name, issueType))
 
@@ -167,7 +167,7 @@ async function getIssueTypeId(issueType: JiraCreateIssueType, projectKey: string
     throw new Error(`Issue type ${issueType} is not available for project ${projectKey}`)
   }
 
-  return matchedIssueType.id
+  return { id: matchedIssueType.id, subtask: matchedIssueType.subtask ?? false }
 }
 
 async function getIssueTypeOption(issueType: JiraCreateIssueType, projectKey: string): Promise<JiraCreateIssueTypeOption> {
@@ -319,14 +319,14 @@ export async function createIssue(input: CreateIssueInput): Promise<JiraTicket> 
   await validateParent(input.issueType, input.parentKey, input.spaceKey)
 
   const projectKey = await resolveProjectKey(input.issueType, input.parentKey, input.spaceKey)
-  const issueTypeId = await getIssueTypeId(input.issueType, projectKey)
+  const matchedIssueType = await getMatchedIssueType(input.issueType, projectKey)
 
   validateRequiredFields(SUPPORTED_CREATE_FIELDS, input.fields)
 
   const fields = buildCreateFieldsPayload(SUPPORTED_CREATE_FIELDS, input.fields)
   const createPayload: Record<string, unknown> = {
     project: { key: projectKey },
-    issuetype: { id: issueTypeId },
+    issuetype: { id: matchedIssueType.id },
     ...fields,
   }
 
@@ -334,7 +334,10 @@ export async function createIssue(input: CreateIssueInput): Promise<JiraTicket> 
     createPayload.parent = { key: input.parentKey }
   }
 
-  await applyTeamSpacePrefill(createPayload, input.spaceKey, projectKey)
+  // Subtasks inherit the team from their parent; Jira rejects an explicit value.
+  if (!matchedIssueType.subtask) {
+    await applyTeamSpacePrefill(createPayload, input.spaceKey, projectKey)
+  }
 
   const data = await jiraFetch('/issue', {
     method: 'POST',
