@@ -14,7 +14,7 @@ import process from 'node:process'
 import { resolveAssistantSystemPrompt } from '../../shared/assistant'
 import { isRecord } from '../../shared/typeGuards'
 import { getAppSettings } from '../settings'
-import { getLocalAiCommandPathEnv, resolveLocalAiCommand } from './localProviders'
+import { getLocalAiCommandPathEnv, requiresWindowsCommandShell, resolveLocalAiCommand } from './localProviders'
 import { ACLI_JIRA_SKILL } from './skills/acliJiraSkill'
 
 const ASSISTANT_TIMEOUT_MS = 300_000
@@ -276,6 +276,7 @@ export function streamAssistantChat(
       const child = spawn(commandPath, args, {
         cwd: workingDir,
         env,
+        shell: requiresWindowsCommandShell(commandPath),
         stdio: ['pipe', 'pipe', 'pipe'],
       })
 

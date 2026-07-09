@@ -28,9 +28,18 @@ function isLocalAiProvider(provider: AiProvider): provider is LocalAiProvider {
   return provider === 'codex' || provider === 'claude'
 }
 
+function getEnvironmentValue(name: string): string | undefined {
+  const directValue = process.env[name]
+  if (directValue !== undefined || process.platform !== 'win32') {
+    return directValue
+  }
+
+  return Object.entries(process.env).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1]
+}
+
 function getPathEntries(): string[] {
   const entries = new Set<string>()
-  const envPath = process.env.PATH ?? ''
+  const envPath = getEnvironmentValue('PATH') ?? ''
 
   for (const entry of envPath.split(delimiter)) {
     if (entry.trim()) {
@@ -40,14 +49,24 @@ function getPathEntries(): string[] {
 
   const home = homedir()
   const fnmMultishellsPath = join(home, '.local', 'state', 'fnm_multishells')
-  const staticEntries = [
-    '/opt/homebrew/bin',
-    '/usr/local/bin',
-    join(home, '.local', 'bin'),
-    join(home, '.npm-global', 'bin'),
-    join(home, '.bun', 'bin'),
-    join(home, '.fnm', 'aliases', 'default', 'bin'),
-  ]
+  const appData = getEnvironmentValue('APPDATA')
+  const localAppData = getEnvironmentValue('LOCALAPPDATA')
+  const staticEntries = process.platform === 'win32'
+    ? [
+        appData ? join(appData, 'npm') : join(home, 'AppData', 'Roaming', 'npm'),
+        join(home, '.local', 'bin'),
+        join(home, '.bun', 'bin'),
+        join(home, 'scoop', 'shims'),
+        ...(localAppData ? [join(localAppData, 'Programs', 'Atlassian', 'acli')] : []),
+      ]
+    : [
+        '/opt/homebrew/bin',
+        '/usr/local/bin',
+        join(home, '.local', 'bin'),
+        join(home, '.npm-global', 'bin'),
+        join(home, '.bun', 'bin'),
+        join(home, '.fnm', 'aliases', 'default', 'bin'),
+      ]
 
   for (const entry of staticEntries) {
     entries.add(entry)
@@ -69,15 +88,51 @@ function getPathEntries(): string[] {
   return [...entries]
 }
 
-function resolveFromCandidatePaths(command: string): string | null {
-  for (const entry of getPathEntries()) {
-    const candidatePath = join(entry, command)
-    if (existsSync(candidatePath)) {
-      return candidatePath
+export function commandPathCandidates(
+  command: string,
+  platform: NodeJS.Platform = process.platform,
+  pathExt = getEnvironmentValue('PATHEXT'),
+): string[] {
+  if (platform !== 'win32' || /\.[^./\\]+$/.test(command)) {
+    return [command]
+  }
+
+  const extensions = (pathExt ?? '.COM;.EXE;.BAT;.CMD')
+    .split(';')
+    .map(extension => extension.trim())
+    .filter(Boolean)
+    .map(extension => extension.startsWith('.') ? extension : `.${extension}`)
+
+  return extensions.map(extension => `${command}${extension.toLowerCase()}`)
+}
+
+export function requiresWindowsCommandShell(
+  commandPath: string,
+  platform: NodeJS.Platform = process.platform,
+): boolean {
+  return platform === 'win32' && /\.(?:bat|cmd)$/i.test(commandPath)
+}
+
+export function resolveCommandFromPaths(
+  command: string,
+  pathEntries: string[],
+  platform: NodeJS.Platform = process.platform,
+  pathExt = getEnvironmentValue('PATHEXT'),
+): string | null {
+  for (const entry of pathEntries) {
+    for (const candidate of commandPathCandidates(command, platform, pathExt)) {
+      const candidatePath = join(entry, candidate)
+      if (existsSync(candidatePath)) {
+        return candidatePath
+      }
     }
   }
 
   return null
+}
+
+function resolveFromCandidatePaths(command: string): string | null {
+  return resolveCommandFromPaths(command, getPathEntries())
 }
 
 function resolveFromUserShell(command: string): string | null {
@@ -133,6 +188,31 @@ function createAvailability(config: LocalProviderCommandConfig): AiProviderAvail
   }
 }
 
+export function acliInstallInstructions(platform: NodeJS.Platform = process.platform): string[] {
+  if (platform === 'win32') {
+    return [
+      'In PowerShell, download ACLI: Invoke-WebRequest -Uri https://acli.atlassian.com/windows/latest/acli_windows_amd64/acli.exe -OutFile acli.exe',
+      'Move acli.exe to a directory on your PATH, then restart BetterJira.',
+      'acli jira auth login --web',
+      'https://developer.atlassian.com/cloud/acli/guides/install-windows/',
+    ]
+  }
+
+  if (platform === 'darwin') {
+    return [
+      'brew tap atlassian/homebrew-acli && brew install acli',
+      'acli jira auth login --web',
+      'https://developer.atlassian.com/cloud/acli/guides/install-macos/',
+    ]
+  }
+
+  return [
+    'Install ACLI using your Linux distribution package manager, then ensure the acli command is on PATH.',
+    'acli jira auth login --web',
+    'https://developer.atlassian.com/cloud/acli/guides/install-linux/',
+  ]
+}
+
 function createAcliAvailability(): CliToolAvailability {
   const commandPath = resolveCommandPath('acli')
 
@@ -142,11 +222,7 @@ function createAcliAvailability(): CliToolAvailability {
       label: 'Atlassian CLI',
       available: false,
       detail: 'Atlassian CLI was not found on this computer. Jira actions will not work until it is installed and authenticated.',
-      installInstructions: [
-        'brew tap atlassian/homebrew-acli && brew install acli',
-        'acli jira auth login --web',
-        'https://developer.atlassian.com/cloud/acli/guides/install-acli/',
-      ],
+      installInstructions: acliInstallInstructions(),
     }
   }
 

@@ -6,7 +6,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
-import { getLocalAiCommandPathEnv, resolveLocalAiCommand } from '../localProviders'
+import { getLocalAiCommandPathEnv, requiresWindowsCommandShell, resolveLocalAiCommand } from '../localProviders'
 
 const LOCAL_GENERATION_TIMEOUT_MS = 120_000
 
@@ -44,6 +44,7 @@ function runCommand(commandPath: string, args: string[], stdin: string): Promise
         NO_COLOR: '1',
         TERM: 'dumb',
       },
+      shell: requiresWindowsCommandShell(commandPath),
       stdio: ['pipe', 'pipe', 'pipe'],
     })
 
