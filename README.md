@@ -14,22 +14,17 @@ Latest release, straight to the installer for your system:
 
 All releases: [github.com/fazulk/better-jira/releases](https://github.com/fazulk/better-jira/releases)
 
-## Requirements
 
-- [Bun](https://bun.sh/docs/installation)
+### Development
 
-## Install
-
-Install Bun first: [bun.sh/docs/installation](https://bun.sh/docs/installation)
+Install Bun (if you don't have it): [bun.sh/docs/installation](https://bun.sh/docs/installation)
 
 ```bash
 bun install
 ```
 
-### Development
-
 ```bash
-bun run dev
+bun dev
 ```
 
 ## Build for your OS
