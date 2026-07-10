@@ -15,7 +15,7 @@ Latest release, straight to the installer for your system:
 All releases: [github.com/fazulk/better-jira/releases](https://github.com/fazulk/better-jira/releases)
 
 
-### Development
+## Development
 
 Install Bun (if you don't have it): [bun.sh/docs/installation](https://bun.sh/docs/installation)
 
@@ -27,7 +27,7 @@ bun install
 bun dev
 ```
 
-## Build for your OS
+### Build for your OS
 
 Install for your system below. Packaged artifacts are written to `release/` unless noted otherwise.
 
