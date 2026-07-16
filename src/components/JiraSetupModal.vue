@@ -161,7 +161,6 @@ async function continueToSettings(): Promise<void> {
                 </a>
               </div>
             </label>
-
           </div>
 
           <p v-if="errorMessage" class="mt-4 rounded-md border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-[13px] leading-5 text-rose-200">

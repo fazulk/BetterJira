@@ -16,8 +16,8 @@ import {
   createIssue,
   getAccessibleSpaces,
   getAccessibleTeams,
+  getAllAssignableUsers,
   getAllPriorities,
-  getCreateAssignableUsers,
   getCreateIssueTypes,
   getCreatePriorities,
   getJiraAttachmentContent,
@@ -106,9 +106,7 @@ export async function handleGeneralApiRoute(
       return badRequestResponse('issueType query param must be a non-empty string')
     }
 
-    const parentKey = getStringQueryValue(query.parentKey) ?? null
-    const spaceKey = getStringQueryValue(query.spaceKey) ?? null
-    const users = await getCreateAssignableUsers(issueType, parentKey, spaceKey)
+    const users = await getAllAssignableUsers()
     return Response.json(users, { headers: API_HEADERS })
   }
 

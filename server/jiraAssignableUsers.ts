@@ -1,12 +1,9 @@
-import type { JiraAssignableUser, JiraCreateIssueType } from './jiraTypes'
+import type { JiraAssignableUser } from './jiraTypes'
 import { jiraFetch } from './jiraClient'
 import { isJiraApiUser } from './jiraIssueMapping'
-import { resolveProjectKey } from './jiraProjects'
+import { getCandidateProjects } from './jiraProjects'
 
-async function fetchAssignableUsersPageWindow(
-  path: '/user/assignable/multiProjectSearch' | '/user/assignable/search',
-  params: Record<string, string>,
-): Promise<JiraAssignableUser[]> {
+async function fetchAssignableUsersPageWindow(projectKeys: string): Promise<JiraAssignableUser[]> {
   const pageSize = 100
   const maxSearchableUsers = 1000
   const usersByAccountId = new Map<string, JiraAssignableUser>()
@@ -14,9 +11,9 @@ async function fetchAssignableUsersPageWindow(
   // Jira slices the global user list before checking assignability, so a single
   // page can miss valid assignees even when more exist later in the first 1000 users.
   for (let startAt = 0; startAt < maxSearchableUsers; startAt += pageSize) {
-    const data = await jiraFetch(path, {
+    const data = await jiraFetch('/user/assignable/multiProjectSearch', {
       params: {
-        ...params,
+        projectKeys,
         startAt: String(startAt),
         maxResults: String(pageSize),
       },
@@ -41,19 +38,11 @@ async function fetchAssignableUsersPageWindow(
   return [...usersByAccountId.values()].sort((left, right) => left.displayName.localeCompare(right.displayName))
 }
 
-export async function getAssignableUsers(key: string): Promise<JiraAssignableUser[]> {
-  return fetchAssignableUsersPageWindow('/user/assignable/search', {
-    issueKey: key,
-  })
-}
+export async function getAllAssignableUsers(): Promise<JiraAssignableUser[]> {
+  const projects = await getCandidateProjects()
+  const projectKeys = [...new Set(projects
+    .map(project => typeof project.key === 'string' ? project.key.trim() : '')
+    .filter(Boolean))]
 
-export async function getCreateAssignableUsers(
-  issueType: JiraCreateIssueType,
-  parentKey?: string | null,
-  spaceKey?: string | null,
-): Promise<JiraAssignableUser[]> {
-  const projectKey = await resolveProjectKey(issueType, parentKey, spaceKey)
-  return fetchAssignableUsersPageWindow('/user/assignable/multiProjectSearch', {
-    projectKeys: projectKey,
-  })
+  return fetchAssignableUsersPageWindow(projectKeys.join(','))
 }

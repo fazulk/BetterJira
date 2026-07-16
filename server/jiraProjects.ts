@@ -33,17 +33,40 @@ export function getProjectKeyForSpaceKey(spaceKey: string | null | undefined): s
 }
 
 export async function getCandidateProjects(): Promise<JiraApiProject[]> {
-  const data = await jiraFetch('/project/search', {
-    params: {
-      maxResults: '50',
-    },
-  })
+  const pageSize = 50
+  const projects: JiraApiProject[] = []
+  let startAt = 0
 
-  if (!isRecord(data) || !Array.isArray(data.values)) {
-    throw new Error('Unable to resolve a Jira project for issue creation')
+  while (true) {
+    const data = await jiraFetch('/project/search', {
+      params: {
+        startAt: String(startAt),
+        maxResults: String(pageSize),
+      },
+    })
+
+    if (!isRecord(data) || !Array.isArray(data.values)) {
+      throw new Error('Unable to resolve a Jira project for issue creation')
+    }
+
+    projects.push(...data.values.filter(isJiraApiProject))
+
+    const total = typeof data.total === 'number' ? data.total : null
+    const pageStartAt = typeof data.startAt === 'number' ? data.startAt : startAt
+    const pageMaxResults = typeof data.maxResults === 'number' && data.maxResults > 0
+      ? data.maxResults
+      : data.values.length
+    const nextStartAt = pageStartAt + pageMaxResults
+
+    if (data.isLast === true || data.values.length === 0 || (total !== null && nextStartAt >= total)) {
+      break
+    }
+    if (nextStartAt <= startAt) {
+      throw new Error('Jira project pagination did not advance')
+    }
+    startAt = nextStartAt
   }
 
-  const projects = data.values.filter(isJiraApiProject)
   if (!projects.length) {
     throw new Error('No Jira project is available for issue creation')
   }

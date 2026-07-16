@@ -17,7 +17,7 @@ import {
 import { JiraApiError } from './errors'
 import {
   addTicketMessage,
-  getAssignableUsers,
+  getAllAssignableUsers,
   getJiraAttachmentContentByFilename,
   getPriorities,
   getTicket,
@@ -96,7 +96,7 @@ export async function handleRemoteTicketApiRoute(
   }
 
   if (segments.length === 3 && segments[2] === 'assignees' && method === 'GET') {
-    const assignees = await getAssignableUsers(ticketKey)
+    const assignees = await getAllAssignableUsers()
     return Response.json(assignees, { headers: API_HEADERS })
   }
 

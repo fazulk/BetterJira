@@ -1,5 +1,5 @@
 export { addTicketMessage, getTicketActivity, getTicketMessages } from './jiraActivity'
-export { getAssignableUsers, getCreateAssignableUsers } from './jiraAssignableUsers'
+export { getAllAssignableUsers } from './jiraAssignableUsers'
 export { getJiraAttachmentContent, getJiraAttachmentContentByFilename, uploadTicketAttachment } from './jiraAttachments'
 export { createIssue, getCreateIssueTypes } from './jiraCreateIssue'
 export {
