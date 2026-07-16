@@ -215,9 +215,9 @@ defineExpose({
 </script>
 
 <template>
-  <aside class="border-t border-white/[0.06] bg-issue-detail-bg px-4 py-4 lg:border-t-0">
+  <aside class="scrollbar-gutter-stable min-h-0 border-t border-white/[0.06] bg-issue-detail-bg px-4 py-4 lg:overflow-y-auto lg:border-t-0">
     <div class="space-y-3">
-      <div v-if="!isLocalTicket" class="flex justify-end gap-1.5">
+      <div v-if="!isLocalTicket" class="flex items-center justify-end gap-1.5">
         <button
           type="button"
           class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.035] text-slate-500 transition hover:bg-white/[0.06] hover:text-slate-200"
@@ -250,6 +250,7 @@ defineExpose({
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </button>
+        <span class="ml-1 text-xs font-medium text-slate-500">{{ ticket.key }}</span>
       </div>
 
       <TicketDetailPropertiesSection
