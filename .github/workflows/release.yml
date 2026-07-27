@@ -43,8 +43,20 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # Apple's notary service intermittently times out while notarytool polls
+      # submission status (NSURLErrorDomain -1001), which fails the whole build
+      # even though the upload succeeded. @electron/notarize has no retry, so
+      # retry the macOS build; other runners get a single deterministic attempt.
       - name: Build desktop artifact
-        run: bun run ${{ matrix.script }}
+        shell: bash
+        run: |
+          if [ "${RUNNER_OS}" = "macOS" ]; then attempts=3; else attempts=1; fi
+          for i in $(seq 1 "$attempts"); do
+            if bun run ${{ matrix.script }}; then exit 0; fi
+            echo "::warning::Build attempt $i/$attempts failed"
+            if [ "$i" -lt "$attempts" ]; then sleep 30; fi
+          done
+          exit 1
         env:
           BETTER_JIRA_DESKTOP_VERBOSE: '1'
           # PostHog analytics baked into the main bundle at build time (tsdown
