@@ -34,6 +34,7 @@ interface StoredAppSettings {
   assistant: AppSettings['assistant']
   assistantSkills: AppSettings['assistantSkills']
   labelColors: AppSettings['labelColors']
+  projectAppearances: AppSettings['projectAppearances']
   statusPreferences: AppSettings['statusPreferences']
 }
 
@@ -105,6 +106,7 @@ function normalizeStoredSettings(value: unknown): StoredAppSettings {
     assistant: normalizedAppSettings.assistant,
     assistantSkills: normalizedAppSettings.assistantSkills,
     labelColors: normalizedAppSettings.labelColors,
+    projectAppearances: normalizedAppSettings.projectAppearances,
     statusPreferences: normalizedAppSettings.statusPreferences,
   }
 }
@@ -127,6 +129,7 @@ function toPublicAppSettings(settings: StoredAppSettings): AppSettings {
     assistant: settings.assistant,
     assistantSkills: settings.assistantSkills,
     labelColors: settings.labelColors,
+    projectAppearances: settings.projectAppearances,
     statusPreferences: settings.statusPreferences,
   })
 }
@@ -190,6 +193,7 @@ export function updateAppSettings(input: UpdateAppSettingsInput): AppSettings {
     },
     assistantSkills: input.assistantSkills ?? currentSettings.assistantSkills,
     labelColors: input.labelColors ?? currentSettings.labelColors,
+    projectAppearances: input.projectAppearances ?? currentSettings.projectAppearances,
     statusPreferences: {
       colors: input.statusPreferences?.colors ?? currentSettings.statusPreferences.colors,
       order: input.statusPreferences?.order ?? currentSettings.statusPreferences.order,
@@ -212,6 +216,7 @@ export function updateAppSettings(input: UpdateAppSettingsInput): AppSettings {
     assistant: nextSettings.assistant,
     assistantSkills: nextSettings.assistantSkills,
     labelColors: nextSettings.labelColors,
+    projectAppearances: nextSettings.projectAppearances,
     statusPreferences: nextSettings.statusPreferences,
   }
 

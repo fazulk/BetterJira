@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { useProjectAppearances } from '@/composables/useProjectAppearances'
 import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 import IssueRow from '../IssueRow.vue'
+
+const { getProjectAppearance, getTicketProjectAppearance } = useProjectAppearances()
 
 const {
   currentView,
@@ -80,6 +83,7 @@ const {
             :ticket="ticket"
             :selected="focusedIssueKey === getDisplayedIssueRowKey(ticket)"
             :checked="checkedIssueKeySet.has(getDisplayedIssueRowKey(ticket))"
+            :project-appearance="getTicketProjectAppearance(ticket)"
             v-bind="issueRowDisplayProps"
             @select="openTicket"
             @prefetch="prefetchTicket"
@@ -105,8 +109,9 @@ const {
             <span class="min-w-0 pr-4">
               <span class="flex min-w-0 items-center gap-2 text-[13px] font-medium text-[#e6e7ea]">
                 <Icon
-                  name="lucide:rocket"
-                  class="h-3.5 w-3.5 shrink-0 text-[#9aa8c7]"
+                  :name="`lucide:${getProjectAppearance(project.key).icon}`"
+                  class="h-3.5 w-3.5 shrink-0"
+                  :style="{ color: getProjectAppearance(project.key).color }"
                   aria-hidden="true"
                 />
                 <span class="truncate">{{ project.name }}</span>
@@ -185,6 +190,7 @@ const {
             :ticket="ticket"
             :selected="focusedIssueKey === getDisplayedIssueRowKey(ticket)"
             :checked="checkedIssueKeySet.has(getDisplayedIssueRowKey(ticket))"
+            :project-appearance="getTicketProjectAppearance(ticket)"
             v-bind="issueRowDisplayProps"
             @select="openTicket"
             @prefetch="prefetchTicket"
@@ -206,8 +212,9 @@ const {
             <span class="min-w-0 pr-4">
               <span class="flex min-w-0 items-center gap-2 text-[13px] font-medium text-[#e6e7ea]">
                 <Icon
-                  name="lucide:rocket"
-                  class="h-3.5 w-3.5 shrink-0 text-[#9aa8c7]"
+                  :name="`lucide:${getProjectAppearance(project.key).icon}`"
+                  class="h-3.5 w-3.5 shrink-0"
+                  :style="{ color: getProjectAppearance(project.key).color }"
                   aria-hidden="true"
                 />
                 <span class="truncate">{{ project.name }}</span>

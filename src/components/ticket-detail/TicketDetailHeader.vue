@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { JiraTicket } from '@/types/jira'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import ProjectIconPickerButton from '@/components/ProjectIconPickerButton.vue'
 import { useUpdateTicketTitle } from '@/composables/useUpdateTicketTitle'
 import { getStatusGroup } from '@/types/jira'
 
@@ -269,6 +270,7 @@ defineExpose({
     <div :class="isProjectDetail ? 'mb-5' : 'mb-0'">
       <div class="space-y-2">
         <div class="group/title flex items-start gap-3">
+          <ProjectIconPickerButton v-if="isProjectDetail" :project-key="ticket.key" class="mt-0.5" />
           <textarea
             id="detail-title"
             ref="titleInputRef"

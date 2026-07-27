@@ -6,6 +6,7 @@ import { fetchTicket } from '@/api/jira'
 import { fetchLocalTicket } from '@/api/localTickets'
 import { localTicketQueryKey, ticketQueryKey } from '@/composables/queryKeys'
 import { usePinnedTickets } from '@/composables/usePinnedTickets'
+import { useProjectAppearances } from '@/composables/useProjectAppearances'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import {
   getTeamViewId,
@@ -27,6 +28,16 @@ export interface FavoriteViewNavItem {
   color?: string
   count?: number
   showIssueCount: boolean
+}
+
+export interface PinnedTicketNavItem {
+  key: string
+  summary: string
+  status: string
+  statusCategory: string
+  /** Set only for projects (epics), which render their custom icon instead of a status icon. */
+  projectIcon: string | null
+  projectColor: string | null
 }
 
 interface SidebarNavigationProps {
@@ -84,6 +95,7 @@ export function useSidebarNavigation(
 ) {
   const { pinnedKeys } = usePinnedTickets()
   const { enabledSpaces } = useSpaceSettings()
+  const { getProjectAppearance } = useProjectAppearances()
   const queryClient = useQueryClient()
   const fetchedPinnedTickets = ref<Record<string, JiraTicket>>({})
 
@@ -168,6 +180,20 @@ export function useSidebarNavigation(
     .map(key => ticketByKey.value.get(key) ?? fetchedPinnedTickets.value[key])
     .filter((ticket): ticket is JiraTicket => ticket !== undefined)
     .slice(0, 6))
+  // A pinned epic is a favorited project, so it wears its custom project icon
+  // rather than the status icon every other pinned issue gets.
+  const pinnedTicketItems = computed<PinnedTicketNavItem[]>(() => pinnedTickets.value.map((ticket) => {
+    const appearance = isEpicIssue(ticket) ? getProjectAppearance(ticket.key) : null
+
+    return {
+      key: ticket.key,
+      summary: ticket.summary,
+      status: ticket.status,
+      statusCategory: ticket.statusCategory,
+      projectIcon: appearance?.icon ?? null,
+      projectColor: appearance?.color ?? null,
+    }
+  }))
 
   function getCachedPinnedTicket(key: string): JiraTicket | null {
     return isLocalTicketKey(key)
@@ -175,20 +201,42 @@ export function useSidebarNavigation(
       : queryClient.getQueryData<JiraTicket>(ticketQueryKey(key)) ?? null
   }
 
-  function storeFetchedPinnedTicket(ticket: JiraTicket): void {
+  function storeFetchedPinnedTicket(pinnedKey: string, ticket: JiraTicket): void {
     fetchedPinnedTickets.value = {
       ...fetchedPinnedTickets.value,
-      [ticket.key]: ticket,
+      [pinnedKey]: ticket,
     }
+  }
+
+  // Jira keeps serving an issue under its old key after a project move, so a pinned key
+  // can resolve to a ticket that now lives under a different key. Rewrite the stored key
+  // so the sidebar row and the ticket detail's star agree on what is pinned — otherwise
+  // the detail star stays unlit and the pin can never be removed.
+  function renamePinnedKeys(renames: Map<string, string>): void {
+    if (renames.size === 0) {
+      return
+    }
+
+    pinnedKeys.value = [...new Set(pinnedKeys.value.map(key => renames.get(key) ?? key))]
   }
 
   function syncFetchedPinnedTicketsFromCache(keys = pinnedKeys.value): void {
     const nextFetchedPinnedTickets = { ...fetchedPinnedTickets.value }
+    const renames = new Map<string, string>()
     let changed = false
 
     for (const key of keys) {
       const cachedTicket = getCachedPinnedTicket(key)
-      if (!cachedTicket || nextFetchedPinnedTickets[key] === cachedTicket) {
+      if (!cachedTicket) {
+        continue
+      }
+
+      if (cachedTicket.key !== key) {
+        renames.set(key, cachedTicket.key)
+        continue
+      }
+
+      if (nextFetchedPinnedTickets[key] === cachedTicket) {
         continue
       }
 
@@ -199,6 +247,17 @@ export function useSidebarNavigation(
     if (changed) {
       fetchedPinnedTickets.value = nextFetchedPinnedTickets
     }
+
+    renamePinnedKeys(renames)
+  }
+
+  function acceptFetchedPinnedTicket(pinnedKey: string, ticket: JiraTicket): void {
+    if (ticket.key === pinnedKey) {
+      storeFetchedPinnedTicket(pinnedKey, ticket)
+      return
+    }
+
+    renamePinnedKeys(new Map([[pinnedKey, ticket.key]]))
   }
 
   function loadMissingPinnedTickets(keys: string[]): void {
@@ -209,13 +268,15 @@ export function useSidebarNavigation(
 
       const cachedTicket = getCachedPinnedTicket(key)
       if (cachedTicket) {
-        storeFetchedPinnedTicket(cachedTicket)
+        acceptFetchedPinnedTicket(key, cachedTicket)
         continue
       }
 
       const queryKey = isLocalTicketKey(key) ? localTicketQueryKey(key) : ticketQueryKey(key)
       const queryFn = () => isLocalTicketKey(key) ? fetchLocalTicket(key) : fetchTicket(key)
-      void queryClient.fetchQuery({ queryKey, queryFn }).then(storeFetchedPinnedTicket).catch(() => {})
+      void queryClient.fetchQuery({ queryKey, queryFn })
+        .then(ticket => acceptFetchedPinnedTicket(key, ticket))
+        .catch(() => {})
     }
   }
 
@@ -423,7 +484,7 @@ export function useSidebarNavigation(
     leaveCurrentTeam,
     openFavoriteMenu,
     openTeamMenu,
-    pinnedTickets,
+    pinnedTicketItems,
     primaryItems,
     selectView,
     teamItems,

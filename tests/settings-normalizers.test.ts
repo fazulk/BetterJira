@@ -10,6 +10,8 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_CUSTOM_VIEW_COLOR,
   DEFAULT_CUSTOM_VIEW_ICON,
+  DEFAULT_PROJECT_COLOR,
+  DEFAULT_PROJECT_ICON,
   getDefaultAppSettings,
   normalizeAppSettings,
 } from '~/shared/settings'
@@ -72,6 +74,7 @@ function expectedDefaults(): AppSettings {
     },
     assistantSkills: [],
     labelColors: {},
+    projectAppearances: {},
     statusPreferences: {
       colors: {},
       order: [],
@@ -162,6 +165,7 @@ describe('normalizeAppSettings garbage input', () => {
       'filterSpaceKeys',
       'jira',
       'labelColors',
+      'projectAppearances',
       'sidebar',
       'spaces',
       'statusPreferences',
@@ -355,6 +359,30 @@ describe('normalizeAppSettings label/status colors', () => {
       colors: { done: '#aabbcc' },
       order: ['done', 'to do'],
     })
+  })
+})
+
+describe('normalizeAppSettings project appearances', () => {
+  it('uppercases issue keys and falls back per-field for invalid icon/color values', () => {
+    const result = normalizeAppSettings({
+      projectAppearances: {
+        ' abc-12 ': { icon: ' Flame ', color: ' #AABBCC ' },
+        'DEF-3': { icon: 'not a lucide name', color: 'red' },
+        'GHI-4': {},
+        '': { icon: 'flame' },
+        'JKL-5': 'nope',
+      },
+    })
+
+    expect(result.projectAppearances).toEqual({
+      'ABC-12': { icon: 'flame', color: '#aabbcc' },
+      'DEF-3': { icon: DEFAULT_PROJECT_ICON, color: DEFAULT_PROJECT_COLOR },
+      'GHI-4': { icon: DEFAULT_PROJECT_ICON, color: DEFAULT_PROJECT_COLOR },
+    })
+  })
+
+  it('drops non-record project appearance maps', () => {
+    expect(normalizeAppSettings({ projectAppearances: 'nope' }).projectAppearances).toEqual({})
   })
 })
 

@@ -6,6 +6,13 @@ export {
   reconcileAppSettings,
 } from './settingsApp'
 export { hasConfiguredJiraCredentials } from './settingsConnections'
+export {
+  DEFAULT_PROJECT_COLOR,
+  DEFAULT_PROJECT_ICON,
+  normalizeProjectAppearance,
+  normalizeProjectAppearanceKey,
+  normalizeProjectAppearances,
+} from './settingsProjects'
 export { buildTeamSpaceKey, getSpaceProjectKey } from './settingsSpaces'
 export type {
   AiConnectionSettings,
@@ -21,6 +28,8 @@ export type {
   JiraConnectionSettings,
   JiraSpaceDirectoryEntry,
   LabelColors,
+  ProjectAppearance,
+  ProjectAppearances,
   SidebarGroupBy,
   SidebarSettings,
   SidebarSortBy,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ProjectRow, ProjectRowFieldId, ProjectSection } from '@/features/ticket-list/types'
+import { useProjectAppearances } from '@/composables/useProjectAppearances'
 
 defineProps<{
   sections: ProjectSection[]
@@ -17,6 +18,8 @@ const emit = defineEmits<{
   prefetch: [key: string]
   open: [key: string]
 }>()
+
+const { getProjectAppearance } = useProjectAppearances()
 </script>
 
 <template>
@@ -70,8 +73,9 @@ const emit = defineEmits<{
             <span class="min-w-0 pr-4">
               <span class="flex min-w-0 items-center gap-2 text-[13px] font-medium text-[#e6e7ea]">
                 <Icon
-                  name="lucide:rocket"
-                  class="h-3.5 w-3.5 shrink-0 text-[#9aa8c7]"
+                  :name="`lucide:${getProjectAppearance(project.key).icon}`"
+                  class="h-3.5 w-3.5 shrink-0"
+                  :style="{ color: getProjectAppearance(project.key).color }"
                   aria-hidden="true"
                 />
                 <span class="truncate">{{ project.name }}</span>

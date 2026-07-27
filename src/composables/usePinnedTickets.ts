@@ -27,9 +27,8 @@ export function usePinnedTickets() {
   }
 
   function togglePinnedTicket(key: string) {
-    pinnedKeys.value = isPinned(key)
-      ? pinnedKeys.value.filter(current => current !== key)
-      : [key, ...pinnedKeys.value]
+    const withoutKey = pinnedKeys.value.filter(current => current !== key)
+    pinnedKeys.value = isPinned(key) ? withoutKey : [key, ...withoutKey]
   }
 
   return {

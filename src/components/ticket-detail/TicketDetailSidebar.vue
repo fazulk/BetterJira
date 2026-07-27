@@ -3,6 +3,7 @@ import type { JiraTicket } from '@/types/jira'
 import type { TicketDevStatusPullRequestStatus } from '~/shared/devStatus'
 import { computed, nextTick, ref, watch } from 'vue'
 import TicketDetailPropertiesSection from '@/components/ticket-detail/TicketDetailPropertiesSection.vue'
+import { useProjectAppearances } from '@/composables/useProjectAppearances'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { useTicketDevStatus } from '@/composables/useTicketDevStatus'
 import { useUpdateTicketLabels } from '@/composables/useUpdateTicketLabels'
@@ -21,6 +22,7 @@ const emit = defineEmits<{
 }>()
 
 const { jiraConnection } = useSpaceSettings()
+const { getProjectAppearance } = useProjectAppearances()
 
 const copiedKey = ref(false)
 const copiedUrl = ref(false)
@@ -372,8 +374,15 @@ defineExpose({
             @click="emit('select', detailProjectParent.key)"
             @mouseenter="emit('prefetch', detailProjectParent.key)"
           >
-            <span class="flex h-5 w-5 shrink-0 items-center justify-center text-[#9aa8c7]">
-              <Icon name="lucide:rocket" class="h-4 w-4" aria-hidden="true" />
+            <span
+              class="flex h-5 w-5 shrink-0 items-center justify-center"
+              :style="{ color: getProjectAppearance(detailProjectParent.key).color }"
+            >
+              <Icon
+                :name="`lucide:${getProjectAppearance(detailProjectParent.key).icon}`"
+                class="h-4 w-4"
+                aria-hidden="true"
+              />
             </span>
             <span class="min-w-0 flex-1">
               <span class="block truncate text-sm font-medium text-slate-200">{{ detailProjectParentLabel }}</span>

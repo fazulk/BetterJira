@@ -107,6 +107,16 @@ export interface CustomView {
   display: CustomViewDisplay
 }
 
+export interface ProjectAppearance {
+  /** Lucide icon name (without the `lucide:` prefix). */
+  icon: string
+  /** Hex color (e.g. `#9aa8c7`) the icon is tinted with. */
+  color: string
+}
+
+/** Custom project (epic) appearances, keyed by uppercase issue key. */
+export type ProjectAppearances = Record<string, ProjectAppearance>
+
 export type LabelColors = Record<string, string>
 export type StatusColors = Record<string, string>
 
@@ -175,6 +185,7 @@ export interface AppSettings {
   assistant: AssistantSettings
   assistantSkills: AssistantSkillSetting[]
   labelColors: LabelColors
+  projectAppearances: ProjectAppearances
   statusPreferences: StatusPreferences
 }
 
@@ -187,6 +198,7 @@ export interface UpdateAppSettingsInput {
   assistant?: UpdateAssistantSettingsInput
   assistantSkills?: AssistantSkillSetting[]
   labelColors?: LabelColors
+  projectAppearances?: ProjectAppearances
   statusPreferences?: UpdateStatusPreferencesInput
 }
 

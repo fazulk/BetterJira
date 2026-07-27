@@ -22,6 +22,7 @@ import {
   normalizeStatusColors,
   normalizeStatusOrder,
 } from './settingsNormalizers'
+import { normalizeProjectAppearances } from './settingsProjects'
 import {
   getDefaultSidebarSettings,
   normalizeSidebarSettings,
@@ -69,6 +70,7 @@ export function getDefaultAppSettings(): AppSettings {
     assistant: getDefaultAssistantSettings(),
     assistantSkills: [],
     labelColors: {},
+    projectAppearances: {},
     statusPreferences: {
       colors: {},
       order: [],
@@ -92,6 +94,7 @@ export function normalizeAppSettings(value: unknown): AppSettings {
     assistant: normalizeAssistantConnectionSettings(recordValue.assistant),
     assistantSkills: normalizeAssistantSkillSettings(recordValue.assistantSkills),
     labelColors: normalizeLabelColors(recordValue.labelColors),
+    projectAppearances: normalizeProjectAppearances(recordValue.projectAppearances),
     statusPreferences: normalizeStatusPreferences(recordValue.statusPreferences),
   })
 }
@@ -141,6 +144,10 @@ export function normalizeAppSettingsUpdate(value: unknown): UpdateAppSettingsInp
     nextSettings.labelColors = normalizeLabelColors(recordValue.labelColors)
   }
 
+  if ('projectAppearances' in recordValue) {
+    nextSettings.projectAppearances = normalizeProjectAppearances(recordValue.projectAppearances)
+  }
+
   if ('statusPreferences' in recordValue) {
     const statusPreferencesRecord = getRecordValue(recordValue.statusPreferences)
     nextSettings.statusPreferences = {}
@@ -180,6 +187,7 @@ export function reconcileAppSettings(settings: AppSettings): AppSettings {
     assistant: normalizeAssistantConnectionSettings(settings.assistant),
     assistantSkills: reconcileAssistantSkills(settings.assistantSkills),
     labelColors: normalizeLabelColors(settings.labelColors),
+    projectAppearances: normalizeProjectAppearances(settings.projectAppearances),
     statusPreferences: {
       colors: normalizeStatusColors(settings.statusPreferences.colors),
       order: normalizeStatusOrder(settings.statusPreferences.order),

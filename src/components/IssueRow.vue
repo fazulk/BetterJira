@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { JiraTicket } from '@/types/jira'
+import type { ProjectAppearance } from '~/shared/settings'
 import { computed } from 'vue'
 import StatusIcon from '@/components/StatusIcon.vue'
+import { isEpicIssueType } from '@/features/ticket-list/helpers'
+import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON } from '~/shared/settings'
 
 const props = defineProps<{
   ticket: JiraTicket
@@ -16,6 +19,8 @@ const props = defineProps<{
   showUpdated?: boolean
   showDue?: boolean
   showParent?: boolean
+  /** Resolved appearance for `ticket.parent` when that parent is an epic. */
+  projectAppearance?: ProjectAppearance | null
 }>()
 
 defineEmits<{
@@ -70,6 +75,20 @@ const hiddenLabelCount = computed(() => Math.max(0, visibleLabels.value.length -
 const hiddenLabelSummary = computed(() => visibleLabels.value.slice(MAX_VISIBLE_LABELS).join(', '))
 const rowIssueKey = computed(() => props.ticket.key)
 const rowPrimarySummary = computed(() => props.ticket.summary)
+// Only an epic parent counts as the issue's project, matching how the detail
+// sidebar and the projects table resolve one.
+const projectChip = computed(() => {
+  const parent = props.ticket.parent
+  if (props.showParent === false || !parent || !isEpicIssueType(parent.issueType)) {
+    return null
+  }
+
+  return {
+    name: parent.summary,
+    icon: props.projectAppearance?.icon ?? DEFAULT_PROJECT_ICON,
+    color: props.projectAppearance?.color ?? DEFAULT_PROJECT_COLOR,
+  }
+})
 
 const rowGridTemplate = computed(() => {
   // Checkbox column hidden for now (selection still works via keyboard);
@@ -80,6 +99,8 @@ const rowGridTemplate = computed(() => {
   if (props.showId !== false)
     columns.push('82px')
   columns.push('minmax(0,1fr)')
+  if (projectChip.value)
+    columns.push('auto')
   if (props.showLabels !== false && visibleLabels.value.length > 0)
     columns.push('auto')
   if (props.showPriority !== false)
@@ -129,6 +150,20 @@ function formatDate(value: string | undefined): string {
 
     <span class="min-w-0 truncate">
       <span class="font-medium">{{ rowPrimarySummary }}</span>
+    </span>
+
+    <span
+      v-if="projectChip"
+      class="hidden min-w-0 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.025] px-1.5 py-0.5 text-[11px] text-[#aeb0b7] lg:flex"
+      :title="projectChip.name"
+    >
+      <Icon
+        :name="`lucide:${projectChip.icon}`"
+        class="h-3 w-3 shrink-0"
+        :style="{ color: projectChip.color }"
+        aria-hidden="true"
+      />
+      <span class="max-w-40 truncate">{{ projectChip.name }}</span>
     </span>
 
     <span v-if="showLabels !== false && visibleLabels.length > 0" class="hidden max-w-[28rem] flex-wrap items-center justify-end gap-1 md:flex">

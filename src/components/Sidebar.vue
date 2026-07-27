@@ -47,7 +47,7 @@ const {
   leaveCurrentTeam,
   openFavoriteMenu,
   openTeamMenu,
-  pinnedTickets,
+  pinnedTicketItems,
   primaryItems,
   selectView,
   teamItems,
@@ -215,7 +215,7 @@ const {
               <span v-if="favoriteView.showIssueCount && favoriteView.count !== undefined" class="text-[11px] text-[#6f727b]">{{ favoriteView.count }}</span>
             </button>
             <button
-              v-for="ticket in pinnedTickets"
+              v-for="ticket in pinnedTicketItems"
               :key="ticket.key"
               type="button"
               class="flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition"
@@ -225,7 +225,14 @@ const {
               @click="emit('select', ticket.key)"
             >
               <span class="flex h-4 w-4 shrink-0 items-center justify-center">
-                <StatusIcon :status="ticket.status" :status-category="ticket.statusCategory" :size="16" />
+                <Icon
+                  v-if="ticket.projectIcon"
+                  :name="`lucide:${ticket.projectIcon}`"
+                  class="h-3.5 w-3.5"
+                  :style="ticket.projectColor ? { color: ticket.projectColor } : undefined"
+                  aria-hidden="true"
+                />
+                <StatusIcon v-else :status="ticket.status" :status-category="ticket.statusCategory" :size="16" />
               </span>
               <span class="min-w-0 flex-1 truncate">{{ ticket.summary }}</span>
             </button>

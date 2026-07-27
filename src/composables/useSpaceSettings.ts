@@ -1,4 +1,4 @@
-import type { AppSettings, AppSpaceSetting, AppSpaceTeamFilter, AssistantSkillSetting, LabelColors, StatusPreferences, UpdateAiConnectionInput, UpdateJiraConnectionInput, UpdateSidebarSettingsInput, UpdateStatusPreferencesInput } from '~/shared/settings'
+import type { AppSettings, AppSpaceSetting, AppSpaceTeamFilter, AssistantSkillSetting, LabelColors, ProjectAppearances, StatusPreferences, UpdateAiConnectionInput, UpdateJiraConnectionInput, UpdateSidebarSettingsInput, UpdateStatusPreferencesInput } from '~/shared/settings'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import {
@@ -133,6 +133,12 @@ export function useSpaceSettings() {
   async function setLabelColors(labelColors: LabelColors): Promise<void> {
     await updateSettings({
       labelColors,
+    }, false)
+  }
+
+  async function setProjectAppearances(projectAppearances: ProjectAppearances): Promise<void> {
+    await updateSettings({
+      projectAppearances,
     }, false)
   }
 
@@ -337,6 +343,7 @@ export function useSpaceSettings() {
     setSidebarSettings,
     setAssistantSkills,
     setLabelColors,
+    setProjectAppearances,
     setStatusPreferences,
     addOrEnableSpace,
     updateSpaceAppearance,
