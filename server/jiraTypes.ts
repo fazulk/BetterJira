@@ -13,12 +13,19 @@ export interface JiraTeamRef {
   name: string
 }
 
+export interface JiraSprintRef {
+  id: string
+  name: string
+}
+
 export interface JiraTicket {
   key: string
   summary: string
   status: string
   statusCategory: string
   inCurrentSprint: boolean
+  sprints?: JiraSprintRef[]
+  storyPoints?: number
   createdAt?: string
   updatedAt?: string
   dueDate?: string
@@ -260,5 +267,7 @@ export interface JiraApiCreateIssueResponse {
 }
 
 export interface JiraApiSprint {
+  id?: string | number
+  name?: string
   state?: string
 }

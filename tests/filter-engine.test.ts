@@ -178,6 +178,18 @@ describe('ticketMatchesFilter', () => {
     expect(ticketMatchesFilter(makeTicket({ key: 'T-2' }), makeClause('team', 'no-team'), ctx)).toBe(true)
   })
 
+  it('matches named and current sprint filters', () => {
+    const ctx = makeTicketContext()
+    const ticket = makeTicket({
+      key: 'T-1',
+      inCurrentSprint: true,
+      sprints: [{ id: '42', name: 'Sprint 42' }],
+    })
+    expect(ticketMatchesFilter(ticket, makeClause('sprint', '42'), ctx)).toBe(true)
+    expect(ticketMatchesFilter(ticket, makeClause('sprint', 'current-sprint'), ctx)).toBe(true)
+    expect(ticketMatchesFilter(ticket, makeClause('sprint', '99'), ctx)).toBe(false)
+  })
+
   it('matches project via the injected project-key resolver, defaulting to "no-project"', () => {
     const ctx = makeTicketContext({ getProjectKey: ticket => (ticket.key === 'T-1' ? 'EPIC-1' : null) })
     expect(ticketMatchesFilter(makeTicket({ key: 'T-1' }), makeClause('project', 'EPIC-1'), ctx)).toBe(true)
@@ -319,6 +331,37 @@ describe('option builders', () => {
     expect(anonymousAssignees.map(option => option.value)).toEqual(['jane doe', 'john roe'])
     const namedAssignees = buildIssueFilterOptions(tickets, 'assignee', { ...ctx, currentUserName: 'Jane Doe' })
     expect(namedAssignees).toContainEqual({ value: 'current-user', label: 'Current user', icon: '♙', count: 2 })
+  })
+
+  it('buildIssueFilterOptions lists named sprints and current sprint together', () => {
+    const tickets = [
+      makeTicket({
+        key: 'T-1',
+        inCurrentSprint: true,
+        storyPoints: 2.5,
+        sprints: [{ id: '42', name: 'Sprint 42' }, { id: '41', name: 'Sprint 41' }],
+      }),
+      makeTicket({
+        key: 'T-2',
+        inCurrentSprint: true,
+        storyPoints: 3,
+        sprints: [{ id: '42', name: 'Sprint 42' }, { id: '41', name: 'Sprint 41' }],
+      }),
+      makeTicket({ key: 'T-3', inCurrentSprint: true, sprints: [{ id: '42', name: 'Sprint 42' }] }),
+    ]
+    const ctx = {
+      currentUserName: '',
+      projectRows: [],
+      displayedProjectRows: [],
+      initiativeRows: [],
+      getProjectKey: () => null,
+    }
+
+    expect(buildIssueFilterOptions(tickets, 'sprint', ctx)).toEqual([
+      { value: 'current-sprint', label: 'Current sprint', icon: '◷', count: 3, storyPoints: 5.5 },
+      { value: '42', label: 'Sprint 42', icon: '◷', count: 3, storyPoints: 5.5 },
+      { value: '41', label: 'Sprint 41', icon: '◷', count: 2, storyPoints: 5.5 },
+    ])
   })
 
   it('buildProjectFilterOptions counts project statuses', () => {

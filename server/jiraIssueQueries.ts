@@ -3,7 +3,7 @@ import { buildUpdatedSinceSearchQuery } from '../shared/settings'
 import { isRecord } from '../shared/typeGuards'
 import { broadcast } from './events'
 import { jiraFetch } from './jiraClient'
-import { isJiraApiIssue, mapIssue, resolveSprintFieldId, resolveTeamFieldId } from './jiraIssueMapping'
+import { isJiraApiIssue, mapIssue, resolveSprintFieldId, resolveStoryPointFieldIds, resolveTeamFieldId } from './jiraIssueMapping'
 import { buildDefaultSearchQuery } from './jiraProjects'
 import { getAppSettings } from './settings'
 
@@ -75,9 +75,10 @@ export async function searchTickets(jql?: string): Promise<JiraTicket[]> {
   if (!query) {
     return []
   }
-  const [sprintFieldId, teamFieldId] = await Promise.all([
+  const [sprintFieldId, teamFieldId, storyPointFieldIds] = await Promise.all([
     resolveSprintFieldId(),
     resolveTeamFieldId(),
+    resolveStoryPointFieldIds(),
   ])
   const issues: unknown[] = []
   let startAt = 0
@@ -91,6 +92,7 @@ export async function searchTickets(jql?: string): Promise<JiraTicket[]> {
   if (teamFieldId) {
     fields.push(teamFieldId)
   }
+  fields.push(...[storyPointFieldIds.estimate, storyPointFieldIds.points].filter((fieldId): fieldId is string => fieldId !== null))
 
   while (true) {
     const params: Record<string, string> = {
@@ -132,7 +134,7 @@ export async function searchTickets(jql?: string): Promise<JiraTicket[]> {
     startAt += batch.length
   }
 
-  return issues.filter(isJiraApiIssue).map(issue => applyTeamSpaceBucketing(mapIssue(issue, false, sprintFieldId, teamFieldId)))
+  return issues.filter(isJiraApiIssue).map(issue => applyTeamSpaceBucketing(mapIssue(issue, false, sprintFieldId, teamFieldId, storyPointFieldIds)))
 }
 
 function getIncrementalRefreshQuery(updatedSince?: Date): string | null {
@@ -149,9 +151,10 @@ function getIncrementalRefreshQuery(updatedSince?: Date): string | null {
 }
 
 export async function getTicket(key: string): Promise<JiraTicket> {
-  const [sprintFieldId, teamFieldId] = await Promise.all([
+  const [sprintFieldId, teamFieldId, storyPointFieldIds] = await Promise.all([
     resolveSprintFieldId(),
     resolveTeamFieldId(),
+    resolveStoryPointFieldIds(),
   ])
   const fields = [...detailIssueFields]
 
@@ -161,13 +164,14 @@ export async function getTicket(key: string): Promise<JiraTicket> {
   if (teamFieldId) {
     fields.push(teamFieldId)
   }
+  fields.push(...[storyPointFieldIds.estimate, storyPointFieldIds.points].filter((fieldId): fieldId is string => fieldId !== null))
 
   const data = await jiraFetch(`/issue/${key}`, {
     params: {
       fields: fields.join(','),
     },
   })
-  return applyTeamSpaceBucketing(mapIssue(isJiraApiIssue(data) ? data : {}, true, sprintFieldId, teamFieldId))
+  return applyTeamSpaceBucketing(mapIssue(isJiraApiIssue(data) ? data : {}, true, sprintFieldId, teamFieldId, storyPointFieldIds))
 }
 
 export async function forceRefreshTickets(updatedSince?: Date): Promise<RefreshTicketsResult> {

@@ -14,6 +14,7 @@ const props = defineProps<{
   showStatus?: boolean
   showLabels?: boolean
   showPriority?: boolean
+  showStoryPoints?: boolean
   showAssignee?: boolean
   showCreated?: boolean
   showUpdated?: boolean
@@ -105,6 +106,8 @@ const rowGridTemplate = computed(() => {
     columns.push('auto')
   if (props.showPriority !== false)
     columns.push('auto')
+  if (props.showStoryPoints === true)
+    columns.push('auto')
   if (
     props.showAssignee !== false
     || props.showCreated !== false
@@ -180,6 +183,10 @@ function formatDate(value: string | undefined): string {
     <span v-if="showPriority !== false" class="hidden min-w-0 items-center gap-1 text-[12px] text-[#8f9198] lg:flex">
       <span class="text-[13px]" :class="priorityClass">▮</span>
       <span class="max-w-24 truncate">{{ ticket.priority || 'No priority' }}</span>
+    </span>
+
+    <span v-if="showStoryPoints === true" class="hidden min-w-[34px] justify-end text-[12px] text-[#8f9198] lg:flex">
+      {{ ticket.storyPoints !== undefined ? `${ticket.storyPoints} pts` : '–' }}
     </span>
 
     <span

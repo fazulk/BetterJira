@@ -96,6 +96,8 @@ export interface JiraTicketLike {
   status: string
   statusCategory: string
   inCurrentSprint: boolean
+  sprints?: Array<{ id: string, name: string }>
+  storyPoints?: number
   createdAt?: string
   updatedAt?: string
   dueDate?: string

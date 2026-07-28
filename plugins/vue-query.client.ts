@@ -24,7 +24,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       queryClient,
       persister: queryPersister,
       maxAge: TWO_DAYS_MS,
-      buster: 'jira2-v1',
+      buster: 'jira2-v2',
     })
 
     await restorePromise

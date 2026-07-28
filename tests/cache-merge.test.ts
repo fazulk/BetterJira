@@ -218,8 +218,8 @@ describe('getCachedTicketsQueryKey / getCachedTickets', () => {
   })
 
   it('ticketsQueryKey prefixes with TICKETS_QUERY_KEY and a schema version segment', () => {
-    expect(ticketsQueryKey(['A', 'B'])).toEqual(['tickets', 'labels-v1', 'A', 'B'])
-    expect(ticketsQueryKey([])).toEqual(['tickets', 'labels-v1'])
+    expect(ticketsQueryKey(['A', 'B'])).toEqual(['tickets', 'story-points-v2', 'A', 'B'])
+    expect(ticketsQueryKey([])).toEqual(['tickets', 'story-points-v2'])
   })
 
   it('returns the single cached tickets query key and its data', () => {

@@ -1,7 +1,7 @@
 import type { QueryKey } from '@tanstack/vue-query'
 
 export const TICKETS_QUERY_KEY = ['tickets'] as const
-export const TICKETS_QUERY_SCHEMA_VERSION = 'labels-v1'
+export const TICKETS_QUERY_SCHEMA_VERSION = 'story-points-v2'
 
 export function ticketsQueryKey(spaceKeys: readonly string[]): QueryKey {
   return [...TICKETS_QUERY_KEY, TICKETS_QUERY_SCHEMA_VERSION, ...spaceKeys]

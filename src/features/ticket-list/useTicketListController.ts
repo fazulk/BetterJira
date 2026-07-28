@@ -296,6 +296,7 @@ export function useTicketListController() {
     showStatus: isIssueRowFieldVisible('status'),
     showLabels: isIssueRowFieldVisible('labels'),
     showPriority: isIssueRowFieldVisible('priority'),
+    showStoryPoints: isIssueRowFieldVisible('storyPoints'),
     showAssignee: isIssueRowFieldVisible('assignee'),
     showCreated: isIssueRowFieldVisible('created'),
     showUpdated: isIssueRowFieldVisible('updated'),

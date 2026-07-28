@@ -161,10 +161,11 @@ describe('field id / enum normalizers', () => {
 
 describe('row field list normalizers', () => {
   it('normalizeIssueRowFields keeps order, drops unknowns, dedupes, defaults when empty', () => {
-    expect(normalizeIssueRowFields(['status', 'id', 'status', 'bogus', 'labels'])).toEqual([
+    expect(normalizeIssueRowFields(['status', 'id', 'status', 'bogus', 'labels', 'storyPoints'])).toEqual([
       'status',
       'id',
       'labels',
+      'storyPoints',
     ])
     const defaults = ['id', 'status', 'assignee', 'priority', 'project', 'due', 'labels', 'created']
     expect(normalizeIssueRowFields([])).toEqual(defaults)

@@ -42,6 +42,9 @@ const emit = defineEmits<{
         <StatusIcon :status="child.status" :status-category="child.statusCategory" :size="16" />
         <span class="w-20 shrink-0 text-xs text-slate-500">{{ child.key }}</span>
         <span class="min-w-0 flex-1 truncate text-sm text-slate-300 group-hover:text-slate-100">{{ child.summary }}</span>
+        <span class="w-14 shrink-0 text-right text-xs text-slate-500">
+          {{ child.storyPoints !== undefined ? `${child.storyPoints} pts` : '–' }}
+        </span>
         <span class="hidden shrink-0 text-xs text-slate-600 md:inline">{{ child.status }}</span>
       </button>
     </div>

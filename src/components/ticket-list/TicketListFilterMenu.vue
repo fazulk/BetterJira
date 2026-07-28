@@ -325,7 +325,9 @@ const {
             >✓</span>
             <span class="w-4 shrink-0 text-center text-[#8f9198]">{{ option.icon }}</span>
             <span class="min-w-0 flex-1 truncate">{{ option.label }}</span>
-            <span class="text-[11px] text-[#6f727b]">{{ option.count }}</span>
+            <span class="text-[11px] text-[#6f727b]">
+              {{ activeValueFilterFieldId === 'sprint' ? `${option.count} issues · ${option.storyPoints ?? 0} pts` : option.count }}
+            </span>
           </button>
           <div
             v-if="activeFilterOptions.length === 0"

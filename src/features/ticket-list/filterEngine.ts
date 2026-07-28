@@ -178,6 +178,33 @@ export function buildIssueFilterOptions(
       })),
     )
   }
+  if (fieldId === 'sprint') {
+    const currentSprintTickets = baseTickets.filter(ticket => ticket.inCurrentSprint)
+    const sprintOptions = baseTickets.flatMap(ticket => (ticket.sprints ?? []).map(sprint => ({
+      value: sprint.id,
+      label: sprint.name,
+      icon: '◷',
+    })))
+    return [
+      ...(currentSprintTickets.length > 0
+        ? [{
+            value: 'current-sprint',
+            label: 'Current sprint',
+            icon: '◷',
+            count: currentSprintTickets.length,
+            storyPoints: currentSprintTickets.reduce((total, ticket) => total + (ticket.storyPoints ?? 0), 0),
+          }]
+        : []),
+      ...countFilterOptions(sprintOptions).map(option => ({
+        ...option,
+        storyPoints: baseTickets.reduce((total, ticket) => (
+          (ticket.sprints ?? []).some(sprint => sprint.id === option.value)
+            ? total + (ticket.storyPoints ?? 0)
+            : total
+        ), 0),
+      })),
+    ]
+  }
   if (fieldId === 'projectStatus') {
     return countFilterOptions(
       ctx.displayedProjectRows.map(project => ({
@@ -546,6 +573,11 @@ export function ticketMatchesFilter(
     return (ctx.getProjectKey(ticket) ?? 'no-project') === filter.value
   if (filter.fieldId === 'team')
     return (ticket.team?.id ?? 'no-team') === filter.value
+  if (filter.fieldId === 'sprint') {
+    return filter.value === 'current-sprint'
+      ? ticket.inCurrentSprint
+      : (ticket.sprints ?? []).some(sprint => sprint.id === filter.value)
+  }
   if (
     filter.fieldId === 'projectStatus'
     || filter.fieldId === 'projectPriority'

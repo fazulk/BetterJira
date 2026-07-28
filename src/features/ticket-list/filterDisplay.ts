@@ -15,6 +15,7 @@ export function normalizeFilterFieldId(value: string): FilterFieldId | null {
     case 'completedDate':
     case 'project':
     case 'team':
+    case 'sprint':
     case 'projectStatus':
     case 'projectPriority':
     case 'projectLead':
@@ -58,6 +59,8 @@ export function getFilterFieldLabel(fieldId: FilterFieldId): string {
     return 'Project'
   if (fieldId === 'team')
     return 'Team'
+  if (fieldId === 'sprint')
+    return 'Sprint'
   if (fieldId === 'projectStatus')
     return 'Project status'
   if (fieldId === 'projectPriority')

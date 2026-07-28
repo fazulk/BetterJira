@@ -19,6 +19,7 @@ export const issueRowFieldOptions: IssueRowFieldOption[] = [
   { id: 'status', label: 'Status' },
   { id: 'assignee', label: 'Assignee' },
   { id: 'priority', label: 'Priority' },
+  { id: 'storyPoints', label: 'Story points' },
   { id: 'project', label: 'Project' },
   { id: 'due', label: 'Due date' },
   { id: 'milestone', label: 'Milestone' },
@@ -146,6 +147,7 @@ export const filterMenuEntries: FilterMenuEntry[] = [
   { id: 'dates', label: 'Dates', icon: '□', hasSubmenu: true },
   { id: 'project', label: 'Project', icon: '◇', hasSubmenu: true },
   { id: 'team', label: 'Team', icon: '◴', hasSubmenu: true },
+  { id: 'sprint', label: 'Sprint', icon: '◷', hasSubmenu: true },
   {
     id: 'projectProperties',
     label: 'Project properties',

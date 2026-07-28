@@ -164,6 +164,7 @@ export function normalizeIssueRowFields(values: readonly string[]): IssueRowFiel
       case 'status':
       case 'assignee':
       case 'priority':
+      case 'storyPoints':
       case 'project':
       case 'due':
       case 'milestone':

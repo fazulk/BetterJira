@@ -203,6 +203,7 @@ describe('filterDisplay', () => {
     'completedDate',
     'project',
     'team',
+    'sprint',
     'projectStatus',
     'projectPriority',
     'projectLead',

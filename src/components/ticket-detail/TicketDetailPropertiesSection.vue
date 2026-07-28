@@ -330,6 +330,14 @@ defineExpose({
           <span class="truncate text-sm text-slate-300">{{ ticket.priority }}</span>
         </button>
       </div>
+
+      <div v-if="ticket.storyPoints !== undefined" class="flex items-center gap-2 rounded-md px-1 py-2">
+        <svg class="h-4 w-4 shrink-0 text-slate-500" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 11.5l3-3 2 2 5-6" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 4.5h3v3" />
+        </svg>
+        <span class="text-sm text-slate-300">{{ ticket.storyPoints }} {{ ticket.storyPoints === 1 ? 'story point' : 'story points' }}</span>
+      </div>
     </div>
   </section>
 </template>

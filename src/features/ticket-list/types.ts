@@ -40,6 +40,7 @@ export type IssueRowFieldId
     | 'status'
     | 'assignee'
     | 'priority'
+    | 'storyPoints'
     | 'project'
     | 'due'
     | 'milestone'
@@ -69,6 +70,7 @@ export type FilterFieldId
     | DateFilterFieldId
     | 'project'
     | 'team'
+    | 'sprint'
     | ProjectPropertyFilterFieldId
     | 'initiative'
     | 'subscribers'
@@ -85,6 +87,7 @@ export type FilterEntryId
     | 'dates'
     | 'project'
     | 'team'
+    | 'sprint'
     | 'projectProperties'
     | 'initiative'
     | 'subscribers'
@@ -221,6 +224,7 @@ export interface IssueRowDisplayProps {
   showStatus: boolean
   showLabels: boolean
   showPriority: boolean
+  showStoryPoints: boolean
   showAssignee: boolean
   showCreated: boolean
   showUpdated: boolean
@@ -254,6 +258,7 @@ export interface FilterOption {
   value: string
   label: string
   count: number
+  storyPoints?: number
   icon: string
 }
 

@@ -6,6 +6,7 @@ import type {
   JiraApiSprint,
   JiraApiUser,
   JiraAttachment,
+  JiraSprintRef,
   JiraTeamRef,
   JiraTicket,
 } from './jiraTypes'
@@ -15,6 +16,12 @@ import { extractDescription, extractDescriptionAdf } from './jiraDescription'
 
 let sprintFieldIdPromise: Promise<string | null> | null = null
 let teamFieldIdPromise: Promise<string | null> | null = null
+let storyPointFieldIdsPromise: Promise<StoryPointFieldIds> | null = null
+
+export interface StoryPointFieldIds {
+  estimate: string | null
+  points: string | null
+}
 
 export function isJiraApiUser(value: unknown): value is Required<JiraApiUser> {
   if (!isRecord(value))
@@ -132,6 +139,50 @@ export async function resolveTeamFieldId(): Promise<string | null> {
   }
 }
 
+async function getStoryPointFieldIds(): Promise<StoryPointFieldIds> {
+  if (!storyPointFieldIdsPromise) {
+    storyPointFieldIdsPromise = (async () => {
+      const data = await jiraFetch('/field/search', {
+        params: {
+          query: 'Story',
+          maxResults: '50',
+        },
+      })
+      const result: StoryPointFieldIds = { estimate: null, points: null }
+
+      if (!isRecord(data) || !Array.isArray(data.values))
+        return result
+
+      for (const field of data.values) {
+        if (!isRecord(field) || typeof field.id !== 'string')
+          continue
+        if (field.name === 'Story point estimate')
+          result.estimate = field.id
+        else if (field.name === 'Story Points')
+          result.points = field.id
+      }
+
+      return result
+    })().catch((error: unknown) => {
+      storyPointFieldIdsPromise = null
+      throw error
+    })
+  }
+
+  return storyPointFieldIdsPromise
+}
+
+export async function resolveStoryPointFieldIds(): Promise<StoryPointFieldIds> {
+  try {
+    return await getStoryPointFieldIds()
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown error'
+    console.warn('Unable to resolve Jira story point fields:', message)
+    return { estimate: null, points: null }
+  }
+}
+
 function mapTeam(fields: JiraApiIssueFields | undefined, teamFieldId: string | null): JiraTeamRef | undefined {
   if (!fields || !teamFieldId || !isRecord(fields)) {
     return undefined
@@ -155,17 +206,34 @@ function mapTeam(fields: JiraApiIssueFields | undefined, teamFieldId: string | n
   return { id: value.id, name }
 }
 
-function isTicketInCurrentSprint(fields: JiraApiIssueFields | undefined, sprintFieldId: string | null): boolean {
+function getTicketSprints(fields: JiraApiIssueFields | undefined, sprintFieldId: string | null): JiraSprintRef[] {
   if (!fields || !sprintFieldId || !isRecord(fields)) {
-    return false
+    return []
   }
 
   const sprintValue = fields[sprintFieldId]
   if (!Array.isArray(sprintValue)) {
-    return false
+    return []
   }
 
-  return sprintValue.some(sprint => isJiraApiSprint(sprint) && sprint.state === 'active')
+  return sprintValue.flatMap((sprint) => {
+    if (!isJiraApiSprint(sprint) || (typeof sprint.id !== 'string' && typeof sprint.id !== 'number'))
+      return []
+    const id = String(sprint.id)
+    return [{ id, name: typeof sprint.name === 'string' && sprint.name ? sprint.name : id }]
+  })
+}
+
+function mapStoryPoints(fields: JiraApiIssueFields | undefined, fieldIds: StoryPointFieldIds): number | undefined {
+  if (!fields || !isRecord(fields))
+    return undefined
+
+  const estimate = fieldIds.estimate ? fields[fieldIds.estimate] : undefined
+  if (typeof estimate === 'number' && Number.isFinite(estimate))
+    return estimate
+
+  const points = fieldIds.points ? fields[fieldIds.points] : undefined
+  return typeof points === 'number' && Number.isFinite(points) ? points : undefined
 }
 
 export function mapAttachment(attachment: JiraApiAttachment): JiraAttachment | null {
@@ -205,15 +273,25 @@ function mapAttachments(attachments: JiraApiAttachment[] | undefined): JiraAttac
   return mappedAttachments.length ? mappedAttachments : undefined
 }
 
-export function mapIssue(issue: JiraApiIssue, includeDescription = false, sprintFieldId: string | null = null, teamFieldId: string | null = null): JiraTicket {
+export function mapIssue(
+  issue: JiraApiIssue,
+  includeDescription = false,
+  sprintFieldId: string | null = null,
+  teamFieldId: string | null = null,
+  storyPointFieldIds: StoryPointFieldIds = { estimate: null, points: null },
+): JiraTicket {
   const fields = issue.fields
+  const sprints = getTicketSprints(fields, sprintFieldId)
   const descriptionAdf = includeDescription ? extractDescriptionAdf(fields?.description) : undefined
   const ticket: JiraTicket = {
     key: issue.key ?? '',
     summary: fields?.summary ?? '',
     status: fields?.status?.name ?? '',
     statusCategory: fields?.status?.statusCategory?.key ?? '',
-    inCurrentSprint: isTicketInCurrentSprint(fields, sprintFieldId),
+    inCurrentSprint: Boolean(fields && sprintFieldId && isRecord(fields) && Array.isArray(fields[sprintFieldId])
+      && fields[sprintFieldId].some(sprint => isJiraApiSprint(sprint) && sprint.state === 'active')),
+    sprints: sprints.length ? sprints : undefined,
+    storyPoints: mapStoryPoints(fields, storyPointFieldIds),
     createdAt: fields?.created ?? undefined,
     updatedAt: fields?.updated ?? undefined,
     dueDate: fields?.duedate ?? undefined,
