@@ -31,6 +31,9 @@ import {
   getRelativeTimeLabel,
   getStatusRank,
   getTeamSectionLabel,
+  getTeamCycleViewId,
+  getCycleViewKind,
+  getCycleSprintIdFromSection,
   getTicketDateValue,
   getTimeValue,
   getViewsDirectoryTabFromViewId,
@@ -622,11 +625,37 @@ describe('misc pure helpers', () => {
       expect(getTeamSectionLabel('ready-qa')).toBe('Ready for QA')
     })
 
+    it('maps cycle sections', () => {
+      expect(getTeamSectionLabel('cycles')).toBe('Cycles')
+      expect(getTeamSectionLabel('cycle-current')).toBe('Current')
+      expect(getTeamSectionLabel('cycle-upcoming')).toBe('Upcoming')
+      expect(getTeamSectionLabel('cycle-previous')).toBe('Previous')
+      expect(getTeamSectionLabel('cycle-42')).toBe('Cycle')
+    })
+
     it('defaults to "Active" for anything else, including missing values', () => {
       expect(getTeamSectionLabel('active')).toBe('Active')
       expect(getTeamSectionLabel('garbage')).toBe('Active')
       expect(getTeamSectionLabel(undefined)).toBe('Active')
       expect(getTeamSectionLabel(null)).toBe('Active')
+    })
+  })
+
+  describe('cycle view ids', () => {
+    it('builds and parses current, upcoming, previous, directory, and sprint views', () => {
+      expect(getTeamCycleViewId('ENG', 'directory')).toBe('team:ENG:cycles')
+      expect(getTeamCycleViewId('ENG', 'current')).toBe('team:ENG:cycle-current')
+      expect(getTeamCycleViewId('ENG', 'upcoming')).toBe('team:ENG:cycle-upcoming')
+      expect(getTeamCycleViewId('ENG', 'previous')).toBe('team:ENG:cycle-previous')
+      expect(getTeamCycleViewId('ENG', { sprintId: '42' })).toBe('team:ENG:cycle-42')
+      expect(getCycleViewKind('cycles')).toBe('directory')
+      expect(getCycleViewKind('cycle-current')).toBe('current')
+      expect(getCycleViewKind('cycle-upcoming')).toBe('upcoming')
+      expect(getCycleViewKind('cycle-previous')).toBe('previous')
+      expect(getCycleViewKind('cycle-42')).toBe('sprint')
+      expect(getCycleSprintIdFromSection('cycle-42')).toBe('42')
+      expect(getCycleSprintIdFromSection('cycle-current')).toBeNull()
+      expect(getCycleSprintIdFromSection('cycle-previous')).toBeNull()
     })
   })
 

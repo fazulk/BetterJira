@@ -16,6 +16,24 @@ function mapStoryPoints(estimate: unknown, points: unknown): number | undefined 
   return mapIssue({ key: 'TEST-1', fields }, false, null, null, storyPointFields).storyPoints
 }
 
+describe('mapIssue sprints', () => {
+  it('keeps sprint state so the ticket can show its assigned cycle', () => {
+    const fields = {
+      customfield_sprint: [
+        { id: 1, name: 'Sprint 1', state: 'closed' },
+        { id: 2, name: 'Sprint 2', state: 'active' },
+      ],
+    } as JiraApiIssueFields
+
+    const ticket = mapIssue({ key: 'TEST-1', fields }, false, 'customfield_sprint', null, storyPointFields)
+    expect(ticket.inCurrentSprint).toBe(true)
+    expect(ticket.sprints).toEqual([
+      { id: '1', name: 'Sprint 1', state: 'closed' },
+      { id: '2', name: 'Sprint 2', state: 'active' },
+    ])
+  })
+})
+
 describe('mapIssue story points', () => {
   it('maps integer and decimal values from both Jira project variants', () => {
     expect(mapStoryPoints(5, undefined)).toBe(5)

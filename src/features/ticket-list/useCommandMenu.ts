@@ -3,7 +3,8 @@ import type { CommandMenuItem, ProjectRow } from './types'
 import type { JiraTicket } from '@/types/jira'
 import type { AppSpaceSetting } from '~/shared/settings'
 import { computed, nextTick, ref, watch } from 'vue'
-import { getIssueTypeIcon, getTeamViewId } from './helpers'
+import { getIssueTypeIcon, getTeamCycleViewId, getTeamViewId } from './helpers'
+import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
 
 interface CommandMenuDeps {
   enabledSpaces: ComputedRef<AppSpaceSetting[]>
@@ -44,40 +45,55 @@ export function useCommandMenu(deps: CommandMenuDeps) {
   const commandInputRef = ref<HTMLInputElement | null>(null)
   const commandSearchQuery = computed(() => commandQuery.value.trim().toLowerCase())
   const navigationCommands = computed<CommandMenuItem[]>(() => {
-    const teamCommands = enabledSpaces.value.flatMap<CommandMenuItem>(space => [
-      {
-        id: getTeamViewId(space.key, 'active'),
-        label: `${space.name || space.key} issues`,
-        description: `Open active issues for ${space.key}`,
-        section: 'Teams',
-        icon: space.key.slice(0, 1).toUpperCase(),
-        execute: () => handleViewChange(getTeamViewId(space.key, 'active')),
-      },
-      {
-        id: getTeamViewId(space.key, 'backlog'),
-        label: `${space.name || space.key} backlog`,
-        description: `Open backlog for ${space.key}`,
-        section: 'Teams',
-        icon: space.key.slice(0, 1).toUpperCase(),
-        execute: () => handleViewChange(getTeamViewId(space.key, 'backlog')),
-      },
-      {
-        id: getTeamViewId(space.key, 'projects'),
-        label: `${space.name || space.key} projects`,
-        description: `Open projects for ${space.key}`,
-        section: 'Teams',
-        icon: '◈',
-        execute: () => handleViewChange(getTeamViewId(space.key, 'projects')),
-      },
-      {
-        id: getTeamViewId(space.key, 'views'),
-        label: `${space.name || space.key} views`,
-        description: `Open saved views for ${space.key}`,
-        section: 'Teams',
-        icon: '◌',
-        execute: () => handleViewChange(getTeamViewId(space.key, 'views')),
-      },
-    ])
+    const teamCommands = enabledSpaces.value.flatMap<CommandMenuItem>((space) => {
+      const commands: CommandMenuItem[] = [
+        {
+          id: getTeamViewId(space.key, 'active'),
+          label: `${space.name || space.key} issues`,
+          description: `Open active issues for ${space.key}`,
+          section: 'Teams',
+          icon: space.key.slice(0, 1).toUpperCase(),
+          execute: () => handleViewChange(getTeamViewId(space.key, 'active')),
+        },
+      ]
+      if (space.key !== LOCAL_SPACE_KEY) {
+        commands.push({
+          id: getTeamCycleViewId(space.key, 'directory'),
+          label: `${space.name || space.key} cycles`,
+          description: `Open cycles for ${space.key}`,
+          section: 'Teams',
+          icon: '◷',
+          execute: () => handleViewChange(getTeamCycleViewId(space.key, 'directory')),
+        })
+      }
+      commands.push(
+        {
+          id: getTeamViewId(space.key, 'backlog'),
+          label: `${space.name || space.key} backlog`,
+          description: `Open backlog for ${space.key}`,
+          section: 'Teams',
+          icon: space.key.slice(0, 1).toUpperCase(),
+          execute: () => handleViewChange(getTeamViewId(space.key, 'backlog')),
+        },
+        {
+          id: getTeamViewId(space.key, 'projects'),
+          label: `${space.name || space.key} projects`,
+          description: `Open projects for ${space.key}`,
+          section: 'Teams',
+          icon: '◈',
+          execute: () => handleViewChange(getTeamViewId(space.key, 'projects')),
+        },
+        {
+          id: getTeamViewId(space.key, 'views'),
+          label: `${space.name || space.key} views`,
+          description: `Open saved views for ${space.key}`,
+          section: 'Teams',
+          icon: '◌',
+          execute: () => handleViewChange(getTeamViewId(space.key, 'views')),
+        },
+      )
+      return commands
+    })
     return [
       {
         id: 'create',

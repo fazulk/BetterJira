@@ -6,6 +6,7 @@ import { computed } from 'vue'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
 import {
   getBaseViewIdForCustomContext,
+  getCycleViewKind,
   getTeamViewId,
   getViewsDirectoryTabFromViewId,
   parseTeamViewId,
@@ -69,12 +70,20 @@ export function useViewContext(deps: UseViewContextDeps) {
         return 'Views'
       case 'settings':
         return 'Settings'
+      case 'cycles':
+        return 'Cycles'
+      case 'cycle-current':
+        return 'Current'
+      case 'cycle-upcoming':
+        return 'Upcoming'
+      case 'cycle-previous':
+        return 'Previous'
       case 'all':
       case 'active':
       case 'backlog':
         return 'Issues'
       default:
-        return null
+        return getCycleViewKind(currentTeamSection.value) === 'sprint' ? 'Cycle' : null
     }
   })
   const isViewsDirectory = computed(
@@ -88,12 +97,18 @@ export function useViewContext(deps: UseViewContextDeps) {
   )
   const isInitiativeDisplayView = computed(() => deps.currentView.value === 'initiatives')
   const isTeamSettingsView = computed(() => currentTeamSection.value === 'settings')
+  const isCyclesDirectory = computed(() => currentTeamSection.value === 'cycles')
+  const isCycleWorkingView = computed(() => {
+    const kind = getCycleViewKind(currentTeamSection.value)
+    return kind === 'current' || kind === 'upcoming' || kind === 'previous' || kind === 'sprint'
+  })
   const isIssueDisplayView = computed(
     () =>
       !isProjectDisplayView.value
       && !isInitiativeDisplayView.value
       && !isViewsDirectory.value
-      && !isTeamSettingsView.value,
+      && !isTeamSettingsView.value
+      && !isCyclesDirectory.value,
   )
   const currentTeamTickets = computed(() => {
     const key = currentTeamKey.value
@@ -180,6 +195,8 @@ export function useViewContext(deps: UseViewContextDeps) {
     isProjectDisplayView,
     isInitiativeDisplayView,
     isTeamSettingsView,
+    isCyclesDirectory,
+    isCycleWorkingView,
     isIssueDisplayView,
     currentTeamTickets,
     viewTitle,

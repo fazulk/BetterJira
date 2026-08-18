@@ -18,6 +18,8 @@ export interface AppSpaceSetting {
   color?: string
   /** When present, this space is a slice of a Jira project scoped to one team. */
   teamFilter?: AppSpaceTeamFilter
+  /** Jira Agile board used for this team's cycles. */
+  boardId?: number
 }
 
 export interface JiraConnectionSettings {

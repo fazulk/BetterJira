@@ -29,6 +29,16 @@ export function getTeamSectionLabel(section?: string | null): string {
     return 'Views · Projects'
   if (section === 'ready-qa')
     return 'Ready for QA'
+  if (section === 'cycles')
+    return 'Cycles'
+  if (section === 'cycle-current')
+    return 'Current'
+  if (section === 'cycle-upcoming')
+    return 'Upcoming'
+  if (section === 'cycle-previous')
+    return 'Previous'
+  if (section?.startsWith('cycle-'))
+    return 'Cycle'
   return 'Active'
 }
 
@@ -368,11 +378,60 @@ export function parseTeamViewId(viewId: string): { teamKey: string | undefined, 
 
 export type TeamViewSection
   = 'triage' | 'all' | 'active' | 'backlog' | 'projects' | 'views' | 'project-views' | 'settings'
+    | 'cycles' | 'cycle-current' | 'cycle-upcoming' | 'cycle-previous'
     // 'issues' appears only in custom-view context keys, never as a navigable view id.
     | 'issues'
 
+export type CycleViewKind = 'directory' | 'current' | 'upcoming' | 'previous' | 'sprint'
+
 export function getTeamViewId(teamKey: string, section: TeamViewSection): string {
   return `team:${teamKey}:${section}`
+}
+
+export function getTeamCycleViewId(
+  teamKey: string,
+  target: 'directory' | 'current' | 'upcoming' | 'previous' | { sprintId: string },
+): string {
+  if (target === 'directory')
+    return getTeamViewId(teamKey, 'cycles')
+  if (target === 'current')
+    return getTeamViewId(teamKey, 'cycle-current')
+  if (target === 'upcoming')
+    return getTeamViewId(teamKey, 'cycle-upcoming')
+  if (target === 'previous')
+    return getTeamViewId(teamKey, 'cycle-previous')
+  return `team:${teamKey}:cycle-${target.sprintId}`
+}
+
+export function getCycleViewKind(section?: string | null): CycleViewKind | null {
+  if (section === 'cycles')
+    return 'directory'
+  if (section === 'cycle-current')
+    return 'current'
+  if (section === 'cycle-upcoming')
+    return 'upcoming'
+  if (section === 'cycle-previous')
+    return 'previous'
+  if (section?.startsWith('cycle-'))
+    return 'sprint'
+  return null
+}
+
+export function getCycleSprintIdFromSection(section?: string | null): string | null {
+  if (!section?.startsWith('cycle-') || section === 'cycle-current' || section === 'cycle-upcoming' || section === 'cycle-previous') {
+    return null
+  }
+  const sprintId = section.slice('cycle-'.length)
+  return sprintId || null
+}
+
+export function isCycleDirectorySection(section?: string | null): boolean {
+  return getCycleViewKind(section) === 'directory'
+}
+
+export function isCycleWorkingSection(section?: string | null): boolean {
+  const kind = getCycleViewKind(section)
+  return kind === 'current' || kind === 'upcoming' || kind === 'previous' || kind === 'sprint'
 }
 
 /** Whether viewId is any sectioned view of the given team (`team:<key>:*`). */

@@ -4,6 +4,7 @@ import type {
   SearchResultTab,
   ViewTab,
 } from './types'
+import type { CycleTicketFilter } from '@/features/ticket-list/useTicketVisibility'
 import type {
   CustomView,
   CustomViewDisplay,
@@ -17,9 +18,11 @@ import { useFavoriteViews as usePersistedFavoriteViews } from '@/composables/use
 import { useJiraCurrentUser } from '@/composables/useJiraCurrentUser'
 import { ticketActivityQueryKey, ticketMessagesQueryKey } from '@/composables/useJiraMessages'
 import { useJiraTickets } from '@/composables/useJiraTickets'
+import { useSpaceCycles } from '@/composables/useSpaceCycles'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { useStatusPreferences } from '@/composables/useStatusPreferences'
 import { ticketDevStatusQueryKey } from '@/composables/useTicketDevStatus'
+import { useUpdateTicketSprint } from '@/composables/useUpdateTicketSprint'
 import { useViewOverrides } from '@/composables/useViewOverrides'
 import { useCommandMenu } from '@/features/ticket-list/useCommandMenu'
 import { useCustomViewDirectory } from '@/features/ticket-list/useCustomViewDirectory'
@@ -53,9 +56,13 @@ import {
   getProjectHealthClass,
   getRelativeTimeLabel,
   getSavedViewGridTemplate,
+  getCycleSprintIdFromSection,
+  getCycleViewKind,
+  getTeamCycleViewId,
   getTeamViewId,
   isEpicIssue,
   isInitiativeIssue,
+  isSubIssueTicket,
   sortTicketsByActivity as sortTicketsByActivityHelper,
 } from './helpers'
 import {
@@ -72,6 +79,7 @@ import {
   projectRowFieldOptions,
   savedViewRowFieldOptions,
 } from './options'
+import { resolveClassifiedCycles, ticketBelongsToCycle } from '~/shared/cycles'
 
 export function useTicketListController() {
   const { tickets, fetching, refreshing, refresh } = useJiraTickets()
@@ -279,7 +287,10 @@ export function useTicketListController() {
     isProjectDisplayView,
     isInitiativeDisplayView,
     isTeamSettingsView,
+    isCyclesDirectory,
+    isCycleWorkingView,
     isIssueDisplayView,
+    currentTeamTickets,
     viewTitle,
     scopedTickets,
     isMyIssuesView,
@@ -291,6 +302,75 @@ export function useTicketListController() {
     enabledSpaces,
     issueTickets,
   })
+  const spaceCycles = useSpaceCycles(currentTeamKey)
+  const updateTicketSprintMutation = useUpdateTicketSprint()
+  const classifiedCycles = computed(() => (
+    resolveClassifiedCycles(spaceCycles.payload.value, currentTeamTickets.value)
+  ))
+  const cyclePayload = computed(() => ({
+    ...spaceCycles.payload.value,
+    ...classifiedCycles.value,
+  }))
+  const cycleFilter = computed<CycleTicketFilter | null>(() => {
+    const kind = getCycleViewKind(currentTeamSection.value)
+    if (!kind || kind === 'directory') {
+      return null
+    }
+    if (kind === 'current') {
+      const sprintId = classifiedCycles.value.current?.id
+      return sprintId ? { match: 'current', sprintId } : { match: 'none' }
+    }
+    if (kind === 'upcoming') {
+      const sprintId = classifiedCycles.value.upcoming?.id
+      return sprintId ? { match: 'id', sprintId } : { match: 'none' }
+    }
+    if (kind === 'previous') {
+      const sprintId = classifiedCycles.value.previous?.id
+      return sprintId ? { match: 'id', sprintId } : { match: 'none' }
+    }
+    const sprintId = getCycleSprintIdFromSection(currentTeamSection.value)
+    return sprintId ? { match: 'id', sprintId } : { match: 'none' }
+  })
+  const activeCycle = computed(() => {
+    const kind = getCycleViewKind(currentTeamSection.value)
+    if (kind === 'current') {
+      return classifiedCycles.value.current
+    }
+    if (kind === 'upcoming') {
+      return classifiedCycles.value.upcoming
+    }
+    if (kind === 'previous') {
+      return classifiedCycles.value.previous
+    }
+    if (kind === 'sprint') {
+      return classifiedCycles.value.cycles.find(cycle => (
+        cycle.id === getCycleSprintIdFromSection(currentTeamSection.value)
+      )) ?? null
+    }
+    return null
+  })
+  const activeCycleTickets = computed(() => {
+    const cycle = activeCycle.value
+    if (!cycle) {
+      return []
+    }
+    return currentTeamTickets.value.filter(ticket => ticketBelongsToCycle(ticket, cycle))
+  })
+  const addableCycleTickets = computed(() => {
+    const cycle = activeCycle.value
+    if (!cycle) {
+      return []
+    }
+    return currentTeamTickets.value.filter(ticket => !ticketBelongsToCycle(ticket, cycle) && !isSubIssueTicket(ticket))
+  })
+
+  async function addTicketToActiveCycle(ticketKey: string): Promise<void> {
+    const cycle = activeCycle.value
+    if (!cycle) {
+      return
+    }
+    await updateTicketSprintMutation.mutateAsync({ key: ticketKey, sprint: cycle, sprintId: cycle.id })
+  }
   const issueRowDisplayProps = computed<IssueRowDisplayProps>(() => ({
     showId: isIssueRowFieldVisible('id'),
     showStatus: isIssueRowFieldVisible('status'),
@@ -328,6 +408,7 @@ export function useTicketListController() {
     completedRange,
     showSubIssuesRange,
     showTriageIssuesRange,
+    cycleFilter,
   })
   const {
     applyViewFiltersToTickets,
@@ -415,6 +496,20 @@ export function useTicketListController() {
       return [
         { id: teamKey ? getTeamViewId(teamKey, 'views') : 'views', label: 'Issues' },
         { id: teamKey ? getTeamViewId(teamKey, 'project-views') : 'project-views', label: 'Projects' },
+      ]
+    }
+    if (
+      currentTeamKey.value
+      && (
+        currentTeamSection.value === 'cycle-current'
+        || currentTeamSection.value === 'cycle-upcoming'
+        || currentTeamSection.value === 'cycle-previous'
+      )
+    ) {
+      return [
+        { id: getTeamCycleViewId(currentTeamKey.value, 'current'), label: 'Current' },
+        { id: getTeamCycleViewId(currentTeamKey.value, 'upcoming'), label: 'Upcoming' },
+        { id: getTeamCycleViewId(currentTeamKey.value, 'previous'), label: 'Previous' },
       ]
     }
     return []
@@ -898,6 +993,8 @@ export function useTicketListController() {
     isProjectDisplayView,
     isInitiativeDisplayView,
     isTeamSettingsView,
+    isCyclesDirectory,
+    isCycleWorkingView,
     isIssueDisplayView,
     viewTitle,
     viewTabs,
@@ -1004,6 +1101,14 @@ export function useTicketListController() {
     toggleProjectSection,
     handleCommandMenuKeydown,
     handleRefresh,
+    spaceCycles,
+    cyclePayload,
+    activeCycle,
+    activeCycleTickets,
+    addableCycleTickets,
+    addTicketToActiveCycle,
+    currentTeamTickets,
+    cycleViewKind: computed(() => getCycleViewKind(currentTeamSection.value)),
   }
 }
 

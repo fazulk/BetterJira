@@ -9,6 +9,7 @@ import { usePinnedTickets } from '@/composables/usePinnedTickets'
 import { useProjectAppearances } from '@/composables/useProjectAppearances'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import {
+  getTeamCycleViewId,
   getTeamViewId,
   isActiveIssueTicket,
   isBacklogIssueTicket,
@@ -128,6 +129,7 @@ export function useSidebarNavigation(
   const workspaceExpanded = ref(true)
   const favoritesExpanded = ref(true)
   const expandedTeamKeys = useLocalStorage<string[]>('jira2.expandedTeams', [])
+  const expandedCycleTeamKeys = useLocalStorage<string[]>('jira2.expandedCycleTeams', [])
   const expandedTeamKeySet = computed(() => new Set(expandedTeamKeys.value))
   const teamMenuElement = ref<HTMLElement | null>(null)
   const teamMenuState = ref<TeamMenuState>({
@@ -315,6 +317,21 @@ export function useSidebarNavigation(
     return expandedTeamKeySet.value.has(teamKey)
   }
 
+  function isCycleSectionExpanded(teamKey: string): boolean {
+    if (isTeamCyclesView(teamKey)) {
+      return true
+    }
+    return expandedCycleTeamKeys.value.includes(teamKey)
+  }
+
+  function toggleCycleSection(teamKey: string): void {
+    if (expandedCycleTeamKeys.value.includes(teamKey)) {
+      expandedCycleTeamKeys.value = expandedCycleTeamKeys.value.filter(key => key !== teamKey)
+      return
+    }
+    expandedCycleTeamKeys.value = [...expandedCycleTeamKeys.value, teamKey]
+  }
+
   function expandTeam(teamKey: string): void {
     if (isTeamExpanded(teamKey)) {
       return
@@ -340,6 +357,12 @@ export function useSidebarNavigation(
     const teamKey = getTeamKeyFromViewId(viewId)
     if (teamKey !== null) {
       expandTeam(teamKey)
+      const section = parseTeamViewId(viewId)?.section
+      if (section === 'cycles' || section?.startsWith('cycle-')) {
+        if (!expandedCycleTeamKeys.value.includes(teamKey)) {
+          expandedCycleTeamKeys.value = [...expandedCycleTeamKeys.value, teamKey]
+        }
+      }
     }
 
     emit('view', viewId)
@@ -426,6 +449,29 @@ export function useSidebarNavigation(
     )
   }
 
+  function isTeamCyclesView(spaceKey: string): boolean {
+    if (!viewNavigationIsActive.value) {
+      return false
+    }
+    const parsed = parseTeamViewId(currentViewId.value)
+    return parsed?.teamKey === spaceKey && Boolean(parsed.section && (
+      parsed.section === 'cycles'
+      || parsed.section.startsWith('cycle-')
+    ))
+  }
+
+  function isCycleCurrentView(spaceKey: string): boolean {
+    return viewNavigationIsActive.value && currentViewId.value === getTeamCycleViewId(spaceKey, 'current')
+  }
+
+  function isCycleUpcomingView(spaceKey: string): boolean {
+    return viewNavigationIsActive.value && currentViewId.value === getTeamCycleViewId(spaceKey, 'upcoming')
+  }
+
+  function isCyclePreviousView(spaceKey: string): boolean {
+    return viewNavigationIsActive.value && currentViewId.value === getTeamCycleViewId(spaceKey, 'previous')
+  }
+
   function handlePointerDown(event: PointerEvent): void {
     if (!teamMenuState.value.open && !favoriteMenuState.value.open) {
       return
@@ -475,12 +521,18 @@ export function useSidebarNavigation(
     favoriteMenuState,
     favoriteMenuStyle,
     favoritesExpanded,
+    getTeamCycleViewId,
     getTeamViewId,
     isActiveView,
+    isCycleCurrentView,
+    isCycleUpcomingView,
+    isCyclePreviousView,
+    isCycleSectionExpanded,
     isTeamExpanded,
     isTeamViewForTeam,
     isTeamIssuesView,
     isTeamViewsView,
+    isTeamCyclesView,
     leaveCurrentTeam,
     openFavoriteMenu,
     openTeamMenu,
@@ -494,6 +546,7 @@ export function useSidebarNavigation(
     setFavoriteIssueCountVisibility,
     toggleFavorites,
     toggleTeam,
+    toggleCycleSection,
     toggleWorkspace,
     viewNavigationIsActive,
     workspaceExpanded,

@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { JiraTicket } from '@/types/jira'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import StatusIcon from '@/components/StatusIcon.vue'
+import { useSpaceCycles } from '@/composables/useSpaceCycles'
+import { useUpdateTicketSprint } from '@/composables/useUpdateTicketSprint'
 import {
   priorityConfig,
   useTicketDetailPropertyEditors,
 } from '@/features/ticket-detail/useTicketDetailPropertyEditors'
 import { useTicketDetailStatusEditor } from '@/features/ticket-detail/useTicketDetailStatusEditor'
+import { assignedCycleFromTicket } from '~/shared/cycles'
 import { LOCAL_PRIORITY_NAMES } from '~/shared/localTickets'
 
 const props = defineProps<{
@@ -92,6 +95,74 @@ const {
   statusError,
   transitionsQuery,
 } = statusEditor
+
+const cycleSpaceKey = computed(() => (props.isLocalTicket ? null : props.ticket.spaceKey))
+const spaceCycles = useSpaceCycles(cycleSpaceKey)
+const updateTicketSprintMutation = useUpdateTicketSprint()
+const isEditingCycle = ref(false)
+const cycleDraft = ref('')
+const cycleError = ref<string | null>(null)
+
+const cycleOptions = computed(() => {
+  const options: Array<{ id: string, name: string }> = [{ id: '', name: 'No cycle' }]
+  const seen = new Set<string>([''])
+  if (spaceCycles.current.value) {
+    options.push({ id: spaceCycles.current.value.id, name: `Current · ${spaceCycles.current.value.name}` })
+    seen.add(spaceCycles.current.value.id)
+  }
+  if (spaceCycles.upcoming.value) {
+    options.push({ id: spaceCycles.upcoming.value.id, name: `Upcoming · ${spaceCycles.upcoming.value.name}` })
+    seen.add(spaceCycles.upcoming.value.id)
+  }
+  if (spaceCycles.previous.value) {
+    options.push({ id: spaceCycles.previous.value.id, name: `Previous · ${spaceCycles.previous.value.name}` })
+    seen.add(spaceCycles.previous.value.id)
+  }
+  const assigned = assignedCycleFromTicket(props.ticket)
+  if (assigned && assigned.id !== 'current' && !seen.has(assigned.id)) {
+    options.push({ id: assigned.id, name: assigned.name })
+  }
+  return options
+})
+
+const assignedCycle = computed(() => assignedCycleFromTicket(props.ticket))
+const assignedCycleId = computed(() => {
+  const assigned = assignedCycle.value
+  if (!assigned || assigned.id === 'current') {
+    return spaceCycles.current.value?.id ?? ''
+  }
+  return assigned.id
+})
+const assignedCycleLabel = computed(() => assignedCycle.value?.name ?? 'No cycle')
+
+function startEditingCycle(): void {
+  cycleDraft.value = assignedCycleId.value
+  cycleError.value = null
+  isEditingCycle.value = true
+}
+
+function cancelEditingCycle(): void {
+  isEditingCycle.value = false
+  cycleError.value = null
+}
+
+async function saveCycle(): Promise<void> {
+  const sprint = cycleDraft.value
+    ? spaceCycles.cycleById(cycleDraft.value)
+    : null
+  try {
+    await updateTicketSprintMutation.mutateAsync({
+      key: props.ticket.key,
+      sprint,
+      sprintId: sprint?.id ?? null,
+    })
+    isEditingCycle.value = false
+    cycleError.value = null
+  }
+  catch (error) {
+    cycleError.value = error instanceof Error ? error.message : 'Failed to update cycle.'
+  }
+}
 
 defineExpose({
   startEditingAssignee,
@@ -283,6 +354,37 @@ defineExpose({
             <path stroke-linecap="round" d="M10.5 3.4a2.25 2.25 0 110 4.2M11.4 9.7c1.66.4 2.85 1.88 2.85 3.55" />
           </svg>
           <span class="truncate text-sm" :class="ticket.team ? 'text-slate-300' : 'text-slate-500'">{{ ticket.team?.name ?? 'No team' }}</span>
+        </button>
+      </div>
+
+      <div v-if="!isLocalTicket" class="flex items-start rounded-md px-1 py-2">
+        <div v-if="isEditingCycle" class="min-w-0 space-y-2">
+          <select
+            id="detail-cycle"
+            v-model="cycleDraft"
+            class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]"
+          >
+            <option v-for="option in cycleOptions" :key="option.id || 'none'" :value="option.id">
+              {{ option.name }}
+            </option>
+          </select>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button
+              class="rounded-md bg-accent-indigo px-2 py-1 text-[11px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="updateTicketSprintMutation.isPending.value"
+              @click="saveCycle"
+            >
+              {{ updateTicketSprintMutation.isPending.value ? '...' : 'Save' }}
+            </button>
+            <button class="rounded-md border border-white/[0.08] px-2 py-1 text-[11px] text-slate-400 hover:bg-white/[0.04]" @click="cancelEditingCycle">
+              Cancel
+            </button>
+            <span v-if="cycleError" class="text-[11px] text-rose-300">{{ cycleError }}</span>
+          </div>
+        </div>
+        <button v-else class="flex min-w-0 items-center gap-2 text-left" @click="startEditingCycle">
+          <Icon name="lucide:circle-play" class="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
+          <span class="truncate text-sm" :class="assignedCycle ? 'text-slate-300' : 'text-slate-500'">{{ assignedCycleLabel }}</span>
         </button>
       </div>
 

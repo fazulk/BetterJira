@@ -17,6 +17,7 @@ const {
   isViewsDirectory,
   displayedSavedViewRows,
   currentTeamKey,
+  isCycleWorkingView,
   visibleIssueCount,
   currentViewIsFavoritable,
   isFavoriteView,
@@ -184,7 +185,7 @@ function clearCurrentViewChanges(): void {
   </header>
 
   <div
-    v-if="!selectedTicket && (viewTabs.length || supportsCustomViews)"
+    v-if="!selectedTicket && (viewTabs.length || supportsCustomViews || isCycleWorkingView)"
     class="flex h-10 shrink-0 items-center justify-between gap-3 px-3"
   >
     <div class="flex min-w-0 items-center gap-1">

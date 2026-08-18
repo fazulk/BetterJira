@@ -3,6 +3,7 @@ import type { FavoriteViewNavItem } from '@/features/sidebar/useSidebarNavigatio
 import type { JiraTicket } from '@/types/jira'
 import StatusIcon from '@/components/StatusIcon.vue'
 import { useSidebarNavigation } from '@/features/sidebar/useSidebarNavigation'
+import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
 
 const props = defineProps<{
   tickets: JiraTicket[]
@@ -38,12 +39,18 @@ const {
   favoriteMenuState,
   favoriteMenuStyle,
   favoritesExpanded,
+  getTeamCycleViewId,
   getTeamViewId,
   isActiveView,
+  isCycleCurrentView,
+  isCycleUpcomingView,
+  isCyclePreviousView,
+  isCycleSectionExpanded,
   isTeamExpanded,
   isTeamViewForTeam,
   isTeamIssuesView,
   isTeamViewsView,
+  isTeamCyclesView,
   leaveCurrentTeam,
   openFavoriteMenu,
   openTeamMenu,
@@ -57,6 +64,7 @@ const {
   setFavoriteIssueCountVisibility,
   toggleFavorites,
   toggleTeam,
+  toggleCycleSection,
   toggleWorkspace,
   viewNavigationIsActive,
   workspaceExpanded,
@@ -310,6 +318,58 @@ const {
                 <Icon name="lucide:copy" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span class="flex-1 truncate">Issues</span>
               </button>
+              <div v-if="team.key !== LOCAL_SPACE_KEY" class="space-y-0.5">
+                <div class="flex h-6 w-full items-center rounded-md text-[12px] transition" :class="isTeamCyclesView(team.key) ? 'bg-white/[0.055] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'">
+                  <button
+                    type="button"
+                    class="flex h-full min-w-0 flex-1 items-center gap-2 rounded-l-md px-2 text-left"
+                    @click="selectView(getTeamCycleViewId(team.key, 'directory'))"
+                  >
+                    <Icon name="lucide:circle-play" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    <span class="flex-1 truncate">Cycles</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-[#6f727b] transition hover:bg-white/[0.06] hover:text-[#f0f1f4]"
+                    :aria-expanded="isCycleSectionExpanded(team.key)"
+                    :aria-label="`${isCycleSectionExpanded(team.key) ? 'Collapse' : 'Expand'} cycles`"
+                    @click.stop="toggleCycleSection(team.key)"
+                  >
+                    <Icon
+                      name="lucide:chevron-down"
+                      class="h-3 w-3 transition-transform"
+                      :class="isCycleSectionExpanded(team.key) ? '' : '-rotate-90'"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+                <div v-if="isCycleSectionExpanded(team.key)" class="ml-[1.125rem] border-l border-white/[0.08] pl-2">
+                  <button
+                    type="button"
+                    class="flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition"
+                    :class="isCycleCurrentView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
+                    @click="selectView(getTeamCycleViewId(team.key, 'current'))"
+                  >
+                    Current
+                  </button>
+                  <button
+                    type="button"
+                    class="flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition"
+                    :class="isCycleUpcomingView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
+                    @click="selectView(getTeamCycleViewId(team.key, 'upcoming'))"
+                  >
+                    Upcoming
+                  </button>
+                  <button
+                    type="button"
+                    class="flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition"
+                    :class="isCyclePreviousView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
+                    @click="selectView(getTeamCycleViewId(team.key, 'previous'))"
+                  >
+                    Previous
+                  </button>
+                </div>
+              </div>
               <button
                 type="button"
                 class="flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition"

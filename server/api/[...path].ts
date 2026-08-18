@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import { defineEventHandler, getMethod, getRequestURL, readBody } from 'h3'
 import { isRecord } from '../../shared/typeGuards'
 import { handleAssistantApiRoute } from '../apiAssistantHandlers'
+import { handleCycleApiRoute } from '../apiCycleHandlers'
 import { handleGeneralApiRoute } from '../apiGeneralHandlers'
 import { handleLocalTicketApiRoute } from '../apiLocalTicketHandlers'
 import { handleRemoteTicketApiRoute } from '../apiRemoteTicketHandlers'
@@ -64,6 +65,10 @@ export default defineEventHandler(async (event) => {
     const generalResponse = await handleGeneralApiRoute(event, segments, method)
     if (generalResponse)
       return generalResponse
+
+    const cycleResponse = await handleCycleApiRoute(event, segments, method)
+    if (cycleResponse)
+      return cycleResponse
 
     const localTicketResponse = await handleLocalTicketApiRoute(event, segments, method)
     if (localTicketResponse)

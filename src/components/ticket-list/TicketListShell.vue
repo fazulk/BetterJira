@@ -4,10 +4,12 @@ import AddSpaceModal from '../AddSpaceModal.vue'
 import CreateTicketModal from '../CreateTicketModal.vue'
 import Sidebar from '../Sidebar.vue'
 import TicketDetail from '../TicketDetail.vue'
+import CyclePlanningHeader from './CyclePlanningHeader.vue'
 import TeamSettingsView from './TeamSettingsView.vue'
 import TicketListAssistantHome from './TicketListAssistantHome.vue'
 import TicketListCommandMenu from './TicketListCommandMenu.vue'
 import TicketListInitiativesView from './TicketListInitiativesView.vue'
+import TicketListCyclesDirectory from './TicketListCyclesDirectory.vue'
 import TicketListIssueSections from './TicketListIssueSections.vue'
 import TicketListProjectView from './TicketListProjectView.vue'
 import TicketListSavedViewsView from './TicketListSavedViewsView.vue'
@@ -96,6 +98,16 @@ const {
   handleTicketCreated,
   isAddSpaceModalOpen,
   closeAddSpaceModal,
+  isCyclesDirectory,
+  isCycleWorkingView,
+  spaceCycles,
+  cyclePayload,
+  activeCycle,
+  activeCycleTickets,
+  addableCycleTickets,
+  addTicketToActiveCycle,
+  currentTeamTickets,
+  cycleViewKind,
 } = useTicketListContext()
 </script>
 
@@ -179,7 +191,7 @@ const {
           @toggle-section="toggleProjectSection"
           @prefetch="prefetchTicket"
           @open="openTicket"
-        /><TicketListSavedViewsView
+        />        <TicketListSavedViewsView
           v-else-if="isViewsDirectory"
           :rows="displayedSavedViewRows"
           :grid-template="savedViewGridTemplate"
@@ -187,29 +199,48 @@ const {
           :get-relative-time-label="getRelativeTimeLabel"
           @open="handleViewChange"
         />
-        <TicketListIssueSections
-          v-else
-          class="min-h-0 flex-1 overflow-y-auto"
-          :sections="issueSections"
-          :visible-count="visibleIssueCount"
-          :hidden-completed-count="hiddenCompletedCount"
-          :completed-range="completedRange"
-          :focused-issue-key="focusedIssueKey"
-          :checked-issue-key-set="checkedIssueKeySet"
-          :row-display-props="issueRowDisplayProps"
-          :show-headers="shouldShowIssueSectionHeader()"
-          :get-row-key="getDisplayedIssueRowKey"
-          :is-collapsed="isIssueSectionCollapsed"
-          :is-status-grouping="listGrouping === 'status'"
-          :get-status-category-for-group-label="getStatusCategoryForGroupLabel"
-          empty-title="No issues match this view"
-          empty-description="Adjust filters or create a new issue."
-          @show-completed="completedRange = 'all'"
-          @toggle-section="toggleIssueSection"
-          @select="openTicket"
-          @prefetch="prefetchTicket"
-          @toggle-check="toggleCheckedIssue"
+        <TicketListCyclesDirectory
+          v-else-if="isCyclesDirectory && currentTeamKey"
+          :payload="cyclePayload"
+          :tickets="currentTeamTickets"
+          :team-key="currentTeamKey"
+          :error-message="spaceCycles.errorMessage.value"
+          @open="handleViewChange"
+          @select-board="spaceCycles.setBoard($event)"
         />
+        <div v-else class="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <CyclePlanningHeader
+            v-if="isCycleWorkingView && activeCycle"
+            :cycle="activeCycle"
+            :kind="cycleViewKind === 'directory' || !cycleViewKind ? 'current' : cycleViewKind"
+            :tickets="activeCycleTickets"
+            :addable-tickets="addableCycleTickets"
+            :is-mutating="spaceCycles.isMutating.value"
+            @add="addTicketToActiveCycle"
+          />
+          <TicketListIssueSections
+            class="min-h-0 flex-1 overflow-y-auto"
+            :sections="issueSections"
+            :visible-count="visibleIssueCount"
+            :hidden-completed-count="hiddenCompletedCount"
+            :completed-range="completedRange"
+            :focused-issue-key="focusedIssueKey"
+            :checked-issue-key-set="checkedIssueKeySet"
+            :row-display-props="issueRowDisplayProps"
+            :show-headers="shouldShowIssueSectionHeader()"
+            :get-row-key="getDisplayedIssueRowKey"
+            :is-collapsed="isIssueSectionCollapsed"
+            :is-status-grouping="listGrouping === 'status'"
+            :get-status-category-for-group-label="getStatusCategoryForGroupLabel"
+            :empty-title="isCycleWorkingView ? 'No issues in this cycle' : 'No issues match this view'"
+            :empty-description="isCycleWorkingView ? 'Assign a cycle on the issue, or pick a different cycle view.' : 'Adjust filters or create a new issue.'"
+            @show-completed="completedRange = 'all'"
+            @toggle-section="toggleIssueSection"
+            @select="openTicket"
+            @prefetch="prefetchTicket"
+            @toggle-check="toggleCheckedIssue"
+          />
+        </div>
       </div>
     </main>
     <TicketListCommandMenu

@@ -34,6 +34,7 @@ import {
   updateTicketWatching,
   uploadTicketAttachment,
 } from './jira'
+import { updateTicketSprint } from './jiraSprints'
 import { getTicketDevStatus } from './jiraDevStatus'
 
 const MAX_IMAGE_ATTACHMENT_BYTES = 25 * 1024 * 1024
@@ -143,6 +144,15 @@ export async function handleRemoteTicketApiRoute(
       ? body.teamId.trim()
       : null
     const ticket = await updateTicketTeam(ticketKey, teamId)
+    return Response.json(ticket, { headers: API_HEADERS })
+  }
+
+  if (segments.length === 3 && segments[2] === 'sprint' && method === 'PUT') {
+    const body = await readBody<unknown>(event)
+    const sprintId = isRecord(body) && typeof body.sprintId === 'string' && body.sprintId.trim()
+      ? body.sprintId.trim()
+      : null
+    const ticket = await updateTicketSprint(ticketKey, sprintId)
     return Response.json(ticket, { headers: API_HEADERS })
   }
 

@@ -39,6 +39,19 @@ export function normalizeSpaceIcon(value: unknown): string | undefined {
   return /^[a-z0-9-]+$/.test(trimmed) ? trimmed : undefined
 }
 
+export function normalizeBoardId(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
+    return value
+  }
+
+  if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+    const boardId = Number(value.trim())
+    return boardId > 0 ? boardId : undefined
+  }
+
+  return undefined
+}
+
 export function normalizeSpaceColor(value: unknown): string | undefined {
   if (typeof value !== 'string') {
     return undefined

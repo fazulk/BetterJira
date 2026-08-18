@@ -226,6 +226,14 @@ export function useViewStatePersistence(deps: ViewStatePersistenceDeps) {
         showTriageIssuesRange: 'all',
       }
     }
+    if (section === 'cycle-current' || section === 'cycle-upcoming' || section?.startsWith('cycle-')) {
+      return {
+        ...display,
+        grouping: 'status',
+        completedRange: 'all',
+        showTriageIssuesRange: 'all',
+      }
+    }
     return display
   }
 

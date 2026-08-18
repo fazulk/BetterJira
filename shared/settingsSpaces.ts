@@ -1,6 +1,7 @@
 import type { AppSpaceSetting, AppSpaceTeamFilter } from './settingsTypes'
 import { LOCAL_SPACE_KEY, LOCAL_SPACE_NAME } from './localTickets'
 import {
+  normalizeBoardId,
   normalizeSpaceColor,
   normalizeSpaceIcon,
   normalizeSpaceKey,
@@ -25,12 +26,14 @@ function withAppearance(
   icon: string | undefined,
   color: string | undefined,
   teamFilter?: AppSpaceTeamFilter,
+  boardId?: number,
 ): AppSpaceSetting {
   return {
     ...base,
     ...(icon ? { icon } : {}),
     ...(color ? { color } : {}),
     ...(teamFilter ? { teamFilter } : {}),
+    ...(boardId ? { boardId } : {}),
   }
 }
 
@@ -55,6 +58,7 @@ function normalizeSpaceSetting(value: unknown): AppSpaceSetting | null {
     normalizeSpaceIcon(recordValue.icon),
     normalizeSpaceColor(recordValue.color),
     normalizeSpaceTeamFilter(recordValue.teamFilter),
+    normalizeBoardId(recordValue.boardId),
   )
 }
 
@@ -111,6 +115,7 @@ export function reconcileSpaceSettings(spaces: AppSpaceSetting[]): AppSpaceSetti
         space.icon,
         space.color,
         space.teamFilter,
+        space.boardId,
       ))
       continue
     }
@@ -124,6 +129,7 @@ export function reconcileSpaceSettings(spaces: AppSpaceSetting[]): AppSpaceSetti
       existingSpace.icon ?? space.icon,
       existingSpace.color ?? space.color,
       existingSpace.teamFilter ?? space.teamFilter,
+      existingSpace.boardId ?? space.boardId,
     ))
   }
 

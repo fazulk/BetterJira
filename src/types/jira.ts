@@ -18,6 +18,7 @@ export interface JiraTeamRef {
 export interface JiraSprintRef {
   id: string
   name: string
+  state?: 'future' | 'active' | 'closed'
 }
 
 export interface JiraTicket {

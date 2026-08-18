@@ -51,7 +51,7 @@ export function serializeJiraLogPayload(value: unknown): string | undefined {
 }
 
 export function formatJiraRequestTarget(url: URL): string {
-  return url.pathname.replace(/^\/rest\/(?:api\/3|dev-status\/latest)/, '') || '/'
+  return url.pathname.replace(/^\/rest\/(?:api\/3|agile\/1\.0|dev-status\/latest)/, '') || '/'
 }
 
 interface SystemErrorLike {

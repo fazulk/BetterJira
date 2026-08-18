@@ -4,11 +4,17 @@ import type { JiraTicket } from '@/types/jira'
 import { getStatusGroup } from '@/types/jira'
 import { getTicketLabels, getTimeValue, isBacklogIssueTicket, isSubIssueTicket } from './helpers'
 
+export type CycleTicketFilter
+  = { match: 'current', sprintId?: string | null }
+    | { match: 'id', sprintId: string }
+    | { match: 'none' }
+
 interface UseTicketVisibilityDeps {
   currentTeamSection: ComputedRef<string | null>
   completedRange: Ref<IssueVisibilityRange>
   showSubIssuesRange: Ref<IssueVisibilityRange>
   showTriageIssuesRange: Ref<IssueVisibilityRange>
+  cycleFilter?: ComputedRef<CycleTicketFilter | null>
 }
 
 export function useTicketVisibility(deps: UseTicketVisibilityDeps) {
@@ -28,6 +34,16 @@ export function useTicketVisibility(deps: UseTicketVisibilityDeps) {
     )
   }
   function isTicketInCurrentTeamSection(ticket: JiraTicket): boolean {
+    const cycleFilter = deps.cycleFilter?.value
+    if (cycleFilter) {
+      if (cycleFilter.match === 'none')
+        return false
+      if (cycleFilter.match === 'current') {
+        return ticket.inCurrentSprint
+          || Boolean(cycleFilter.sprintId && (ticket.sprints ?? []).some(sprint => sprint.id === cycleFilter.sprintId))
+      }
+      return (ticket.sprints ?? []).some(sprint => sprint.id === cycleFilter.sprintId)
+    }
     const section = deps.currentTeamSection.value
     if (section === null)
       return true

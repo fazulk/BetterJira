@@ -220,7 +220,14 @@ function getTicketSprints(fields: JiraApiIssueFields | undefined, sprintFieldId:
     if (!isJiraApiSprint(sprint) || (typeof sprint.id !== 'string' && typeof sprint.id !== 'number'))
       return []
     const id = String(sprint.id)
-    return [{ id, name: typeof sprint.name === 'string' && sprint.name ? sprint.name : id }]
+    const mapped: JiraSprintRef = {
+      id,
+      name: typeof sprint.name === 'string' && sprint.name ? sprint.name : id,
+    }
+    if (sprint.state === 'future' || sprint.state === 'active' || sprint.state === 'closed') {
+      mapped.state = sprint.state
+    }
+    return [mapped]
   })
 }
 

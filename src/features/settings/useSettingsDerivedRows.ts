@@ -110,9 +110,9 @@ export function useSettingsDerivedRows(input: SettingsDerivedRowsInput) {
     { label: 'Routing', value: 'By team', detail: 'Jira spaces define the Linear-style team boundary for intake and issue views.' },
   ])
   const teamCycleRows = computed<SettingsDetailRow[]>(() => [
-    { label: 'Current sprint', value: formatCount(currentSprintIssueCount.value, 'issue', 'issues'), detail: 'Jira sprint membership is surfaced as issue metadata and filters only.' },
-    { label: 'Backlog', value: formatCount(backlogIssueCount.value, 'issue', 'issues'), detail: 'Active issues outside the current Jira sprint appear in backlog-style views.' },
-    { label: 'Linear cycles', value: 'Deferred', detail: 'Full cycle planning remains out of scope until this app has a dedicated cycle model.' },
+    { label: 'Source of truth', value: 'Jira sprints', detail: 'Cycles are a Linear-style view of the Scrum board bound to this team. Creating, starting, and completing writes through to Jira.' },
+    { label: 'Current cycle', value: formatCount(currentSprintIssueCount.value, 'issue', 'issues'), detail: 'Issues in the active Jira sprint on the bound board.' },
+    { label: 'Backlog', value: formatCount(backlogIssueCount.value, 'issue', 'issues'), detail: 'Active issues outside the current Jira sprint.' },
   ])
   const teamAiRows = computed<SettingsDetailRow[]>(() => [
     { label: 'Provider', value: getProviderLabel(input.aiSettings.value.provider), detail: input.aiSettings.value.model },
@@ -135,7 +135,7 @@ export function useSettingsDerivedRows(input: SettingsDerivedRowsInput) {
     if (input.activeSettingsSection.value === 'team-triage')
       return 'How intake-like issue views are derived from Jira data.'
     if (input.activeSettingsSection.value === 'team-cycles')
-      return 'Sprint-backed metadata without full Linear cycle planning.'
+      return 'Jira sprints presented as Linear-style cycles. Bind a Scrum board from the team’s Cycles directory if the project has more than one.'
     if (input.activeSettingsSection.value === 'team-ai')
       return 'Assistant capabilities available in this first pass.'
     return ''

@@ -1,4 +1,5 @@
 import type { IssueVisibilityRange } from '@/features/ticket-list/types'
+import type { CycleTicketFilter } from '@/features/ticket-list/useTicketVisibility'
 import type { JiraTicket } from '@/types/jira'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, ref } from 'vue'
@@ -95,6 +96,40 @@ describe('current-view visibility predicates', () => {
 
     currentTeamSection.value = 'backlog'
     expect(visibility.filterTicketsForCurrentView([active, backlog]).map(ticket => ticket.key)).toEqual(['ENG-2'])
+    scope.stop()
+  })
+
+  it('filters cycle working views by sprint membership', () => {
+    const currentTeamSection = ref<string | null>('cycle-current')
+    const completedRange = ref<IssueVisibilityRange>('all')
+    const showSubIssuesRange = ref<IssueVisibilityRange>('all')
+    const showTriageIssuesRange = ref<IssueVisibilityRange>('all')
+    const cycleFilter = ref<CycleTicketFilter | null>({ match: 'current', sprintId: '9' })
+    const scope = effectScope()
+    const visibility = scope.run(() =>
+      useTicketVisibility({
+        currentTeamSection: computed(() => currentTeamSection.value),
+        completedRange,
+        showSubIssuesRange,
+        showTriageIssuesRange,
+        cycleFilter: computed(() => cycleFilter.value),
+      }),
+    )
+    if (!visibility) {
+      throw new Error('effectScope.run returned undefined')
+    }
+
+    const inSprint = makeTicket({ key: 'ENG-1', inCurrentSprint: true, sprints: [{ id: '9', name: 'Sprint 9' }] })
+    const upcoming = makeTicket({ key: 'ENG-2', sprints: [{ id: '10', name: 'Sprint 10' }] })
+    const other = makeTicket({ key: 'ENG-3' })
+
+    expect(visibility.filterTicketsForCurrentView([inSprint, upcoming, other]).map(ticket => ticket.key)).toEqual(['ENG-1'])
+
+    cycleFilter.value = { match: 'id', sprintId: '10' }
+    expect(visibility.filterTicketsForCurrentView([inSprint, upcoming, other]).map(ticket => ticket.key)).toEqual(['ENG-2'])
+
+    cycleFilter.value = { match: 'none' }
+    expect(visibility.filterTicketsForCurrentView([inSprint, upcoming, other])).toEqual([])
     scope.stop()
   })
 
