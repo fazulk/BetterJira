@@ -41,6 +41,9 @@ export interface JiraTicket {
   assigneeAccountId?: string
   reporter?: string
   reporterAccountId?: string
+  testedBy?: string
+  approvers?: string[]
+  approvedToProductionBy?: string
   isWatching?: boolean
   watchCount?: number
   description?: string

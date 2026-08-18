@@ -17,11 +17,25 @@ import { extractDescription, extractDescriptionAdf } from './jiraDescription'
 let sprintFieldIdPromise: Promise<string | null> | null = null
 let teamFieldIdPromise: Promise<string | null> | null = null
 let storyPointFieldIdsPromise: Promise<StoryPointFieldIds> | null = null
+let workflowPeopleFieldIdsPromise: Promise<WorkflowPeopleFieldIds> | null = null
 
 export interface StoryPointFieldIds {
   estimate: string | null
   points: string | null
 }
+
+/** Custom people fields used in the deployment / QA workflow. */
+export interface WorkflowPeopleFieldIds {
+  testedBy: string | null
+  approvers: string | null
+  approvedToProductionBy: string | null
+}
+
+const WORKFLOW_PEOPLE_FIELD_NAMES = {
+  testedBy: 'Tested by',
+  approvers: 'Approvers',
+  approvedToProductionBy: 'Approved to Production by',
+} as const
 
 export function isJiraApiUser(value: unknown): value is Required<JiraApiUser> {
   if (!isRecord(value))
@@ -183,6 +197,58 @@ export async function resolveStoryPointFieldIds(): Promise<StoryPointFieldIds> {
   }
 }
 
+async function resolveCustomFieldIdByExactName(name: string): Promise<string | null> {
+  const data = await jiraFetch('/field/search', {
+    params: {
+      query: name,
+      maxResults: '50',
+    },
+  })
+
+  if (!isRecord(data) || !Array.isArray(data.values)) {
+    return null
+  }
+
+  for (const field of data.values) {
+    if (!isRecord(field) || typeof field.id !== 'string' || field.name !== name) {
+      continue
+    }
+    return field.id
+  }
+
+  return null
+}
+
+async function getWorkflowPeopleFieldIds(): Promise<WorkflowPeopleFieldIds> {
+  if (!workflowPeopleFieldIdsPromise) {
+    workflowPeopleFieldIdsPromise = (async () => {
+      const [testedBy, approvers, approvedToProductionBy] = await Promise.all([
+        resolveCustomFieldIdByExactName(WORKFLOW_PEOPLE_FIELD_NAMES.testedBy),
+        resolveCustomFieldIdByExactName(WORKFLOW_PEOPLE_FIELD_NAMES.approvers),
+        resolveCustomFieldIdByExactName(WORKFLOW_PEOPLE_FIELD_NAMES.approvedToProductionBy),
+      ])
+
+      return { testedBy, approvers, approvedToProductionBy }
+    })().catch((error: unknown) => {
+      workflowPeopleFieldIdsPromise = null
+      throw error
+    })
+  }
+
+  return workflowPeopleFieldIdsPromise
+}
+
+export async function resolveWorkflowPeopleFieldIds(): Promise<WorkflowPeopleFieldIds> {
+  try {
+    return await getWorkflowPeopleFieldIds()
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown error'
+    console.warn('Unable to resolve Jira workflow people fields:', message)
+    return { testedBy: null, approvers: null, approvedToProductionBy: null }
+  }
+}
+
 function mapTeam(fields: JiraApiIssueFields | undefined, teamFieldId: string | null): JiraTeamRef | undefined {
   if (!fields || !teamFieldId || !isRecord(fields)) {
     return undefined
@@ -243,6 +309,41 @@ function mapStoryPoints(fields: JiraApiIssueFields | undefined, fieldIds: StoryP
   return typeof points === 'number' && Number.isFinite(points) ? points : undefined
 }
 
+function mapUserDisplayName(value: unknown): string | undefined {
+  if (!isJiraApiUser(value))
+    return undefined
+  const displayName = value.displayName.trim()
+  return displayName || undefined
+}
+
+function mapUserDisplayNames(value: unknown): string[] | undefined {
+  if (!Array.isArray(value))
+    return undefined
+
+  const names = value.flatMap((entry) => {
+    const name = mapUserDisplayName(entry)
+    return name ? [name] : []
+  })
+
+  return names.length ? names : undefined
+}
+
+function mapWorkflowPeople(
+  fields: JiraApiIssueFields | undefined,
+  fieldIds: WorkflowPeopleFieldIds,
+): Pick<JiraTicket, 'testedBy' | 'approvers' | 'approvedToProductionBy'> {
+  if (!fields || !isRecord(fields))
+    return {}
+
+  return {
+    testedBy: fieldIds.testedBy ? mapUserDisplayName(fields[fieldIds.testedBy]) : undefined,
+    approvers: fieldIds.approvers ? mapUserDisplayNames(fields[fieldIds.approvers]) : undefined,
+    approvedToProductionBy: fieldIds.approvedToProductionBy
+      ? mapUserDisplayName(fields[fieldIds.approvedToProductionBy])
+      : undefined,
+  }
+}
+
 export function mapAttachment(attachment: JiraApiAttachment): JiraAttachment | null {
   if (typeof attachment.id !== 'string' || !attachment.id)
     return null
@@ -286,10 +387,16 @@ export function mapIssue(
   sprintFieldId: string | null = null,
   teamFieldId: string | null = null,
   storyPointFieldIds: StoryPointFieldIds = { estimate: null, points: null },
+  workflowPeopleFieldIds: WorkflowPeopleFieldIds = {
+    testedBy: null,
+    approvers: null,
+    approvedToProductionBy: null,
+  },
 ): JiraTicket {
   const fields = issue.fields
   const sprints = getTicketSprints(fields, sprintFieldId)
   const descriptionAdf = includeDescription ? extractDescriptionAdf(fields?.description) : undefined
+  const workflowPeople = mapWorkflowPeople(fields, workflowPeopleFieldIds)
   const ticket: JiraTicket = {
     key: issue.key ?? '',
     summary: fields?.summary ?? '',
@@ -313,6 +420,9 @@ export function mapIssue(
     assigneeAccountId: fields?.assignee?.accountId ?? undefined,
     reporter: fields?.reporter?.displayName ?? undefined,
     reporterAccountId: fields?.reporter?.accountId ?? undefined,
+    testedBy: workflowPeople.testedBy,
+    approvers: workflowPeople.approvers,
+    approvedToProductionBy: workflowPeople.approvedToProductionBy,
     isWatching: fields?.watches?.isWatching ?? undefined,
     watchCount: fields?.watches?.watchCount ?? undefined,
     description: includeDescription ? extractDescription(fields?.description, descriptionAdf) : undefined,

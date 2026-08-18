@@ -50,3 +50,56 @@ describe('mapIssue story points', () => {
     expect(mapStoryPoints(Number.NaN, Number.POSITIVE_INFINITY)).toBeUndefined()
   })
 })
+
+describe('mapIssue workflow people', () => {
+  const workflowPeopleFields = {
+    testedBy: 'customfield_tested_by',
+    approvers: 'customfield_approvers',
+    approvedToProductionBy: 'customfield_approved_to_prod',
+  }
+
+  it('maps tested by, approvers, and approved-to-production users when present', () => {
+    const fields = {
+      customfield_tested_by: { accountId: 'u-1', displayName: 'Jon Prevost' },
+      customfield_approvers: [
+        { accountId: 'u-2', displayName: 'Pedro Moreira' },
+        { accountId: 'u-3', displayName: 'Naomi Golovin' },
+      ],
+      customfield_approved_to_prod: { accountId: 'u-4', displayName: 'Raja Sharma' },
+    } as JiraApiIssueFields
+
+    const ticket = mapIssue(
+      { key: 'TEST-1', fields },
+      false,
+      null,
+      null,
+      storyPointFields,
+      workflowPeopleFields,
+    )
+
+    expect(ticket.testedBy).toBe('Jon Prevost')
+    expect(ticket.approvers).toEqual(['Pedro Moreira', 'Naomi Golovin'])
+    expect(ticket.approvedToProductionBy).toBe('Raja Sharma')
+  })
+
+  it('omits empty or invalid workflow people values', () => {
+    const fields = {
+      customfield_tested_by: { accountId: 'u-1' },
+      customfield_approvers: [],
+      customfield_approved_to_prod: null,
+    } as JiraApiIssueFields
+
+    const ticket = mapIssue(
+      { key: 'TEST-1', fields },
+      false,
+      null,
+      null,
+      storyPointFields,
+      workflowPeopleFields,
+    )
+
+    expect(ticket.testedBy).toBeUndefined()
+    expect(ticket.approvers).toBeUndefined()
+    expect(ticket.approvedToProductionBy).toBeUndefined()
+  })
+})

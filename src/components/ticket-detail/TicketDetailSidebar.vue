@@ -56,6 +56,25 @@ const jiraUrl = computed(() => buildJiraIssueUrl(jiraConnection.value.baseUrl, p
 const detailJiraTypeLabel = computed(() => (
   !props.isLocalTicket && props.ticket.issueType ? props.ticket.issueType : null
 ))
+const detailTestedBy = computed(() => {
+  const name = props.ticket.testedBy?.trim()
+  return name || null
+})
+const detailApprovers = computed(() => {
+  const names = (props.ticket.approvers ?? [])
+    .map(name => name.trim())
+    .filter(Boolean)
+  return names.length ? names : null
+})
+const detailApprovedToProductionBy = computed(() => {
+  const name = props.ticket.approvedToProductionBy?.trim()
+  return name || null
+})
+const hasWorkflowPeople = computed(() => Boolean(
+  detailTestedBy.value
+  || detailApprovers.value
+  || detailApprovedToProductionBy.value,
+))
 const detailProjectParent = computed(() => {
   const parent = props.ticket.parent
   if (!parent || !parent.issueType.toLowerCase().includes('epic'))
@@ -488,6 +507,20 @@ defineExpose({
           >
             Open in Jira
           </a>
+          <div v-if="hasWorkflowPeople" class="space-y-2">
+            <div v-if="detailApprovers" class="flex items-start gap-2 px-0.5">
+              <span class="w-36 shrink-0 pt-0.5 text-xs text-slate-500">Approvers</span>
+              <span class="min-w-0 text-xs text-slate-300">{{ detailApprovers.join(', ') }}</span>
+            </div>
+            <div v-if="detailTestedBy" class="flex items-start gap-2 px-0.5">
+              <span class="w-36 shrink-0 pt-0.5 text-xs text-slate-500">Tested by</span>
+              <span class="min-w-0 text-xs text-slate-300">{{ detailTestedBy }}</span>
+            </div>
+            <div v-if="detailApprovedToProductionBy" class="flex items-start gap-2 px-0.5">
+              <span class="w-36 shrink-0 pt-0.5 text-xs text-slate-500">Approved to production by</span>
+              <span class="min-w-0 text-xs text-slate-300">{{ detailApprovedToProductionBy }}</span>
+            </div>
+          </div>
         </div>
       </section>
     </div>
