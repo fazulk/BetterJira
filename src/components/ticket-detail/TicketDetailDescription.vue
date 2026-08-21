@@ -4,7 +4,7 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import JiraDescriptionEditor from '@/components/JiraDescriptionEditor.vue'
 import { useUpdateTicketDescription } from '@/composables/useUpdateTicketDescription'
 import { useUploadTicketAttachment } from '@/composables/useUploadTicketAttachment'
-import { coerceDescriptionToAdf, isSupportedEditorAdf } from '~/shared/jiraAdf'
+import { adfToPlainText, coerceDescriptionToAdf, isSupportedEditorAdf } from '~/shared/jiraAdf'
 import { isLocalTicketKey } from '~/shared/localTickets'
 
 const props = defineProps<{
@@ -24,6 +24,7 @@ const DESCRIPTION_SAVED_MESSAGE_MS = 3000
 const descriptionEditorRef = ref<{ focusEditor: () => void, blurEditor: () => void } | null>(null)
 const descriptionEditorShellRef = ref<HTMLDivElement | null>(null)
 const descriptionEditorActive = ref(false)
+const descriptionTouchedByUser = ref(false)
 const descriptionDraft = ref<JiraAdfDocument | null>(null)
 const descriptionDraftTicketKey = ref<string | null>(null)
 const descriptionPersistedSignature = ref(adfSignature(null))
@@ -51,6 +52,19 @@ function getEditableDescriptionAdf(nextTicket: JiraTicket | null): JiraAdfDocume
 
 function adfSignature(doc: JiraAdfDocument | null): string {
   return JSON.stringify(doc)
+}
+
+function isEmptyDescription(doc: JiraAdfDocument | null | undefined): boolean {
+  return !adfToPlainText(doc).trim()
+}
+
+function isPlaceholderEditorNoise(doc: JiraAdfDocument | null | undefined): boolean {
+  // TipTap emits an empty paragraph (`{type:'paragraph', content:[]}`), not
+  // `null`. That round-trip is not a user edit — unless the user actually
+  // focused the editor after the real description loaded and cleared it.
+  return isEmptyDescription(doc)
+    && !descriptionEditorActive.value
+    && !descriptionTouchedByUser.value
 }
 
 function nodeHasUploadState(node: JiraAdfNode, state: 'pending' | 'error'): boolean {
@@ -135,6 +149,8 @@ function blurDescriptionEditor(): void {
 }
 
 function handleDescriptionFocusIn(): void {
+  if (!props.detailLoaded)
+    return
   descriptionEditorActive.value = true
 }
 
@@ -174,6 +190,11 @@ async function flushDescriptionAutosave(): Promise<void> {
 
   const descriptionAdf = descriptionDraft.value
   if (descriptionHasPendingImageUpload.value || descriptionHasFailedImageUpload.value) {
+    clearDescriptionSaveTimer()
+    return
+  }
+
+  if (isPlaceholderEditorNoise(descriptionAdf) && !isEmptyDescription(getEditableDescriptionAdf(props.ticket))) {
     clearDescriptionSaveTimer()
     return
   }
@@ -226,16 +247,18 @@ watch(() => props.ticket, (nextTicket) => {
   if (ticketChanged) {
     descriptionEditorRef.value?.blurEditor()
     descriptionEditorActive.value = false
+    descriptionTouchedByUser.value = false
     void flushDescriptionAutosave()
     syncDescriptionDraftFromTicket(nextTicket)
+    return
   }
-  else if (!isDescriptionDraftDirty()) {
-    // Resync even while the editor is active: an empty draft seeded from the
-    // partial list-cache ticket must be replaced by the real description, or
-    // the next keystroke autosaves the near-empty draft over it. Genuine
-    // edits are protected by the dirty check above.
+
+  // Resync even while the editor is active: an empty draft seeded from the
+  // partial list-cache ticket must be replaced by the real description, or
+  // the next keystroke autosaves the near-empty draft over it. Genuine
+  // edits are protected by descriptionTouchedByUser / the dirty check.
+  if (!descriptionTouchedByUser.value || !isDescriptionDraftDirty() || isPlaceholderEditorNoise(descriptionDraft.value))
     syncDescriptionDraftFromTicket(nextTicket)
-  }
 }, { immediate: true })
 
 watch(descriptionDraft, (nextDraft) => {
@@ -244,7 +267,23 @@ watch(descriptionDraft, (nextDraft) => {
   if (!descriptionDraftTicketKey.value)
     return
 
+  if (isPlaceholderEditorNoise(nextDraft)) {
+    if (!isEmptyDescription(getEditableDescriptionAdf(props.ticket))) {
+      syncDescriptionDraftFromTicket(props.ticket)
+      return
+    }
+
+    clearDescriptionSaveTimer()
+    return
+  }
+
+  if (!props.detailLoaded) {
+    clearDescriptionSaveTimer()
+    return
+  }
+
   if (descriptionHasPendingImageUpload.value || descriptionHasFailedImageUpload.value) {
+    descriptionTouchedByUser.value = true
     clearDescriptionSaveTimer()
     clearDescriptionSavedMessageTimer()
     descriptionSaveStatus.value = 'dirty'
@@ -262,6 +301,7 @@ watch(descriptionDraft, (nextDraft) => {
     return
   }
 
+  descriptionTouchedByUser.value = true
   clearDescriptionSavedMessageTimer()
   descriptionSaveStatus.value = 'dirty'
   descriptionSaveError.value = null

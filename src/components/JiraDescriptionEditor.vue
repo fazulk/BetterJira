@@ -150,16 +150,39 @@ function syncLinkTitlesSoon() {
   if (typeof window === 'undefined')
     return
   window.requestAnimationFrame(() => {
-    const root = editor.value?.view.dom
-    if (!root)
+    const instance = editor.value
+    if (!instance || instance.isDestroyed)
       return
 
-    for (const link of root.querySelectorAll('a[href]')) {
-      const href = link.getAttribute('href')
-      if (href)
-        link.setAttribute('title', href)
+    try {
+      const root = instance.view.dom
+      if (!root)
+        return
+
+      for (const link of root.querySelectorAll('a[href]')) {
+        const href = link.getAttribute('href')
+        if (href)
+          link.setAttribute('title', href)
+      }
+    }
+    catch {
+      // The editor view is created asynchronously and throws if accessed too early.
     }
   })
+}
+
+function applyEditorDocument(nextValue: JiraAdfDocument | null): void {
+  const instance = editor.value
+  if (!instance || instance.isDestroyed)
+    return
+
+  const currentValue = readEditorDocument()
+  if (JSON.stringify(currentValue) === JSON.stringify(normalizeAdf(nextValue)))
+    return
+
+  instance.commands.setContent(toEditorDocument(nextValue, resolveMediaSrc), { emitUpdate: false })
+  bumpEditorTick()
+  syncLinkTitlesSoon()
 }
 
 function readEditorDocument(): JiraAdfDocument | null {
@@ -220,23 +243,19 @@ const editor = useEditor({
 })
 /* eslint-enable ts/no-use-before-define */
 
-watch(() => props.modelValue, (nextValue) => {
-  const instance = editor.value
+watch(editor, (instance) => {
   if (!instance)
     return
+  instance.setEditable(!(props.disabled || props.unsupported), false)
+  applyEditorDocument(props.modelValue)
+})
 
-  const currentValue = readEditorDocument()
-  if (JSON.stringify(currentValue) === JSON.stringify(normalizeAdf(nextValue))) {
-    return
-  }
-
-  instance.commands.setContent(toEditorDocument(nextValue, resolveMediaSrc))
-  bumpEditorTick()
-  syncLinkTitlesSoon()
+watch(() => props.modelValue, (nextValue) => {
+  applyEditorDocument(nextValue)
 })
 
 watch(() => props.disabled || props.unsupported, (nextDisabled) => {
-  editor.value?.setEditable(!nextDisabled)
+  editor.value?.setEditable(!nextDisabled, false)
 })
 
 onBeforeUnmount(() => {

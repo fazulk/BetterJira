@@ -66,6 +66,15 @@ function adfDoc(text: string): JiraAdfDocument {
   }
 }
 
+/** TipTap's empty document: not `null`, so a naive signature compare treats it as dirty. */
+function emptyParagraphDoc(): JiraAdfDocument {
+  return {
+    type: 'doc',
+    version: 1,
+    content: [{ type: 'paragraph', content: [] }],
+  }
+}
+
 function makeTicket(overrides: Partial<JiraTicket> & { key: string }): JiraTicket {
   return {
     summary: `Summary for ${overrides.key}`,
@@ -92,14 +101,18 @@ function mountComponent(ticket: JiraTicket, detailLoaded: boolean) {
   })
 }
 
-async function typeIntoEditor(text: string): Promise<void> {
+async function emitEditorDoc(doc: JiraAdfDocument | null): Promise<void> {
   const emit = harness.emitters.at(-1)
   if (!emit)
     throw new Error('Editor stub never mounted')
-  const draft = JSON.parse(JSON.stringify(harness.lastModel ?? adfDoc(''))) as JiraAdfDocument
-  draft.content[0]!.content = [{ type: 'text', text }]
-  emit('update:modelValue', draft)
+  emit('update:modelValue', doc)
   await nextTick()
+}
+
+async function typeIntoEditor(text: string): Promise<void> {
+  const draft = JSON.parse(JSON.stringify(harness.lastModel ?? adfDoc(''))) as JiraAdfDocument
+  draft.content[0]!.content = text ? [{ type: 'text', text }] : []
+  await emitEditorDoc(draft)
 }
 
 beforeEach(() => {
@@ -162,5 +175,61 @@ describe('ticket detail description autosave', () => {
     await vi.advanceTimersByTimeAsync(3000)
 
     expect(harness.mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('resyncs after TipTap emits an empty paragraph against the list-cache placeholder', async () => {
+    const wrapper = mountComponent(PARTIAL_TICKET, false)
+    await nextTick()
+
+    // Opening the ticket creates the editor with empty content. TipTap's
+    // onUpdate / setEditable emit an empty paragraph, which is not `null`,
+    // so a signature compare treats the draft as dirty and would skip resync.
+    await emitEditorDoc(emptyParagraphDoc())
+
+    await wrapper.setProps({ ticket: FULL_TICKET, detailLoaded: true })
+    await nextTick()
+    await nextTick()
+
+    expect(harness.lastModel).toEqual(adfDoc('real description'))
+
+    wrapper.unmount()
+    await vi.advanceTimersByTimeAsync(3000)
+
+    expect(harness.mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('ignores an empty editor emit after the real description has loaded', async () => {
+    const wrapper = mountComponent(PARTIAL_TICKET, false)
+    await nextTick()
+
+    await wrapper.setProps({ ticket: FULL_TICKET, detailLoaded: true })
+    await nextTick()
+    await nextTick()
+
+    expect(harness.lastModel).toEqual(adfDoc('real description'))
+
+    // setEditable(true) when detailLoaded flips emits onUpdate with whatever
+    // the editor currently has — including a stale empty document.
+    await emitEditorDoc(emptyParagraphDoc())
+    await nextTick()
+
+    expect(harness.lastModel).toEqual(adfDoc('real description'))
+
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(harness.mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('still saves when the user clears the description after it has loaded', async () => {
+    const wrapper = mountComponent(FULL_TICKET, true)
+    await nextTick()
+
+    await wrapper.find('.relative').trigger('focusin')
+    await emitEditorDoc(emptyParagraphDoc())
+    await vi.advanceTimersByTimeAsync(3000)
+
+    expect(harness.mutateAsync).toHaveBeenCalledTimes(1)
+    const saved = harness.mutateAsync.mock.calls[0]?.[0] as { key: string, descriptionAdf: JiraAdfDocument | null }
+    expect(saved.key).toBe('T-1')
+    expect(saved.descriptionAdf === null || saved.descriptionAdf.content.every(node => !node.content?.length)).toBe(true)
   })
 })
