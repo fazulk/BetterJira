@@ -18,12 +18,24 @@ const emit = defineEmits<{
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
+const listRef = ref<HTMLElement | null>(null)
 
 function emitQueryInput(event: Event): void {
   if (event.target instanceof HTMLInputElement) {
     emit('update:query', event.target.value)
   }
 }
+
+watch(
+  () => props.activeIndex,
+  (index) => {
+    nextTick(() => {
+      listRef.value
+        ?.querySelector<HTMLElement>(`[data-command-index="${index}"]`)
+        ?.scrollIntoView({ block: 'nearest' })
+    })
+  },
+)
 
 watch(
   () => props.open,
@@ -70,7 +82,7 @@ watch(
             </div>
           </div>
 
-          <div class="max-h-[28rem] overflow-y-auto py-2">
+          <div ref="listRef" class="max-h-[28rem] overflow-y-auto py-2">
             <template v-if="items.length">
               <div v-for="(item, index) in items" :key="item.id">
                 <div
@@ -81,6 +93,7 @@ watch(
                 </div>
                 <button
                   type="button"
+                  :data-command-index="index"
                   class="flex w-full items-center gap-3 px-3 py-2 text-left transition"
                   :class="activeIndex === index ? 'bg-white/[0.06]' : 'hover:bg-white/[0.035]'"
                   @mouseenter="emit('activate', index)"
