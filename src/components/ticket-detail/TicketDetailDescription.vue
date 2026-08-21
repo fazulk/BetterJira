@@ -118,6 +118,10 @@ function scheduleDescriptionAutosave(): void {
 }
 
 function focusDescriptionEditor(): void {
+  // Never activate the editor against a partial ticket — its empty draft
+  // would block the resync of the real description and get autosaved over it.
+  if (!props.detailLoaded)
+    return
   descriptionEditorActive.value = true
   nextTick(() => {
     descriptionEditorRef.value?.focusEditor()
@@ -225,7 +229,11 @@ watch(() => props.ticket, (nextTicket) => {
     void flushDescriptionAutosave()
     syncDescriptionDraftFromTicket(nextTicket)
   }
-  else if (!descriptionEditorActive.value && !isDescriptionDraftDirty()) {
+  else if (!isDescriptionDraftDirty()) {
+    // Resync even while the editor is active: an empty draft seeded from the
+    // partial list-cache ticket must be replaced by the real description, or
+    // the next keystroke autosaves the near-empty draft over it. Genuine
+    // edits are protected by the dirty check above.
     syncDescriptionDraftFromTicket(nextTicket)
   }
 }, { immediate: true })
