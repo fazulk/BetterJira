@@ -356,17 +356,41 @@ defineExpose({
         >
           {{ descriptionSaveMessage }}
         </span>
-        <JiraDescriptionEditor
-          ref="descriptionEditorRef"
-          v-model="descriptionDraft"
-          :attachments="ticket.attachments"
-          :disabled="!detailLoaded"
-          :ticket-key="ticket.key"
-          :upload-image="isLocalTicket ? undefined : uploadDescriptionImage"
-          :show-toolbar="descriptionEditorActive"
-          placeholder="Add a description..."
-          @preview-image="emit('previewImage', $event)"
-        />
+        <div :class="{ invisible: !detailLoaded }">
+          <JiraDescriptionEditor
+            ref="descriptionEditorRef"
+            v-model="descriptionDraft"
+            :attachments="ticket.attachments"
+            :disabled="!detailLoaded"
+            :ticket-key="ticket.key"
+            :upload-image="isLocalTicket ? undefined : uploadDescriptionImage"
+            :show-toolbar="descriptionEditorActive"
+            placeholder="Add a description..."
+            @preview-image="emit('previewImage', $event)"
+          />
+        </div>
+        <div
+          v-if="!detailLoaded"
+          class="absolute inset-0 z-10 flex min-h-[240px] flex-col space-y-2"
+          role="status"
+          aria-live="polite"
+          aria-label="Loading description"
+        >
+          <div class="h-11 shrink-0" aria-hidden="true" />
+          <div class="animate-pulse space-y-3.5" aria-hidden="true">
+            <div class="space-y-2.5">
+              <div class="h-3 rounded-sm bg-white/[0.06]" />
+              <div class="h-3 w-[94%] rounded-sm bg-white/[0.06]" />
+              <div class="h-3 w-[88%] rounded-sm bg-white/[0.05]" />
+              <div class="h-3 w-[42%] rounded-sm bg-white/[0.045]" />
+            </div>
+            <div class="space-y-2.5">
+              <div class="h-3 w-[96%] rounded-sm bg-white/[0.05]" />
+              <div class="h-3 w-[81%] rounded-sm bg-white/[0.045]" />
+              <div class="h-3 w-[57%] rounded-sm bg-white/[0.04]" />
+            </div>
+          </div>
+        </div>
       </div>
       <div
         v-if="descriptionHasUnsupportedContent && descriptionEditorActive"

@@ -177,6 +177,19 @@ describe('ticket detail description autosave', () => {
     expect(harness.mutateAsync).not.toHaveBeenCalled()
   })
 
+  it('shows a description skeleton until the ticket detail has loaded', async () => {
+    const wrapper = mountComponent(PARTIAL_TICKET, false)
+    const status = wrapper.get('[role="status"]')
+
+    expect(status.attributes('aria-label')).toBe('Loading description')
+    expect(status.text()).toBe('')
+
+    await wrapper.setProps({ ticket: FULL_TICKET, detailLoaded: true })
+    await nextTick()
+
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+  })
+
   it('resyncs after TipTap emits an empty paragraph against the list-cache placeholder', async () => {
     const wrapper = mountComponent(PARTIAL_TICKET, false)
     await nextTick()
