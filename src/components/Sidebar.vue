@@ -152,7 +152,7 @@ const {
           </button>
         </section>
 
-        <section v-if="!collapsed" class="space-y-1">
+        <section v-if="!collapsed">
           <button
             type="button"
             class="flex h-6 w-full items-center justify-between rounded-md px-2 text-left text-[12px] font-medium text-[#777a83] transition hover:bg-white/[0.045] hover:text-[#b9bbc3]"
@@ -162,31 +162,37 @@ const {
             <span>Workspace</span>
             <Icon
               name="lucide:chevron-down"
-              class="h-3 w-3 transition-transform"
+              class="h-3 w-3 transition-transform duration-200"
               :class="workspaceExpanded ? '' : '-rotate-90'"
               aria-hidden="true"
             />
           </button>
-          <template v-if="workspaceExpanded">
-            <button
-              v-for="item in workspaceItems"
-              :key="item.id"
-              type="button"
-              class="flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition"
-              :class="isActiveView(item.id) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#a9abb3] hover:bg-white/[0.045] hover:text-[#e6e7ea]'"
-              @click="selectView(item.id)"
-            >
-              <Icon
-                :name="item.icon === 'initiative' ? 'lucide:flag' : item.icon === 'project' ? 'lucide:box' : item.icon === 'view' ? 'lucide:layers' : 'lucide:circle-dashed'"
-                class="h-3.5 w-3.5 shrink-0 text-[#8f9198]"
-                aria-hidden="true"
-              />
-              <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
-            </button>
-          </template>
+          <div
+            class="sidebar-collapse"
+            :class="workspaceExpanded ? 'sidebar-collapse-open' : 'sidebar-collapse-closed'"
+            :inert="!workspaceExpanded"
+          >
+            <div class="sidebar-collapse-inner space-y-1 pt-1">
+              <button
+                v-for="item in workspaceItems"
+                :key="item.id"
+                type="button"
+                class="flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition"
+                :class="isActiveView(item.id) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#a9abb3] hover:bg-white/[0.045] hover:text-[#e6e7ea]'"
+                @click="selectView(item.id)"
+              >
+                <Icon
+                  :name="item.icon === 'initiative' ? 'lucide:flag' : item.icon === 'project' ? 'lucide:box' : item.icon === 'view' ? 'lucide:layers' : 'lucide:circle-dashed'"
+                  class="h-3.5 w-3.5 shrink-0 text-[#8f9198]"
+                  aria-hidden="true"
+                />
+                <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+              </button>
+            </div>
+          </div>
         </section>
 
-        <section v-if="!collapsed" class="space-y-1">
+        <section v-if="!collapsed">
           <button
             type="button"
             class="flex h-6 w-full items-center justify-between rounded-md px-2 text-left text-[12px] font-medium text-[#777a83] transition hover:bg-white/[0.045] hover:text-[#b9bbc3]"
@@ -196,55 +202,61 @@ const {
             <span>Favorites</span>
             <Icon
               name="lucide:chevron-down"
-              class="h-3 w-3 transition-transform"
+              class="h-3 w-3 transition-transform duration-200"
               :class="favoritesExpanded ? '' : '-rotate-90'"
               aria-hidden="true"
             />
           </button>
-          <template v-if="favoritesExpanded">
-            <button
-              v-for="favoriteView in favoriteViews"
-              :key="favoriteView.id"
-              type="button"
-              class="flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition"
-              :class="isActiveView(favoriteView.id) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#a9abb3] hover:bg-white/[0.045] hover:text-[#e6e7ea]'"
-              @click="emit('favoriteView', favoriteView.id)"
-              @contextmenu="openFavoriteMenu(favoriteView, $event)"
-            >
-              <Icon
-                v-if="favoriteView.icon"
-                :name="`lucide:${favoriteView.icon}`"
-                class="h-3.5 w-3.5 shrink-0"
-                :style="favoriteView.color ? { color: favoriteView.color } : undefined"
-                aria-hidden="true"
-              />
-              <span v-else class="w-3.5 shrink-0 text-center text-[13px] leading-none text-[#d7a543]" aria-hidden="true">★</span>
-              <span class="min-w-0 flex-1 truncate">{{ favoriteView.label }}</span>
-              <span v-if="favoriteView.showIssueCount && favoriteView.count !== undefined" class="text-[11px] text-[#6f727b]">{{ favoriteView.count }}</span>
-            </button>
-            <button
-              v-for="ticket in pinnedTicketItems"
-              :key="ticket.key"
-              type="button"
-              class="flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition"
-              :class="selectedKey === ticket.key ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#a9abb3] hover:bg-white/[0.045] hover:text-[#e6e7ea]'"
-              :title="`${ticket.key}: ${ticket.status}`"
-              @mouseenter="emit('prefetch', ticket.key)"
-              @click="emit('select', ticket.key)"
-            >
-              <span class="flex h-4 w-4 shrink-0 items-center justify-center">
+          <div
+            class="sidebar-collapse"
+            :class="favoritesExpanded ? 'sidebar-collapse-open' : 'sidebar-collapse-closed'"
+            :inert="!favoritesExpanded"
+          >
+            <div class="sidebar-collapse-inner space-y-1 pt-1">
+              <button
+                v-for="favoriteView in favoriteViews"
+                :key="favoriteView.id"
+                type="button"
+                class="flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition"
+                :class="isActiveView(favoriteView.id) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#a9abb3] hover:bg-white/[0.045] hover:text-[#e6e7ea]'"
+                @click="emit('favoriteView', favoriteView.id)"
+                @contextmenu="openFavoriteMenu(favoriteView, $event)"
+              >
                 <Icon
-                  v-if="ticket.projectIcon"
-                  :name="`lucide:${ticket.projectIcon}`"
-                  class="h-3.5 w-3.5"
-                  :style="ticket.projectColor ? { color: ticket.projectColor } : undefined"
+                  v-if="favoriteView.icon"
+                  :name="`lucide:${favoriteView.icon}`"
+                  class="h-3.5 w-3.5 shrink-0"
+                  :style="favoriteView.color ? { color: favoriteView.color } : undefined"
                   aria-hidden="true"
                 />
-                <StatusIcon v-else :status="ticket.status" :status-category="ticket.statusCategory" :size="16" />
-              </span>
-              <span class="min-w-0 flex-1 truncate">{{ ticket.summary }}</span>
-            </button>
-          </template>
+                <span v-else class="w-3.5 shrink-0 text-center text-[13px] leading-none text-[#d7a543]" aria-hidden="true">★</span>
+                <span class="min-w-0 flex-1 truncate">{{ favoriteView.label }}</span>
+                <span v-if="favoriteView.showIssueCount && favoriteView.count !== undefined" class="text-[11px] text-[#6f727b]">{{ favoriteView.count }}</span>
+              </button>
+              <button
+                v-for="ticket in pinnedTicketItems"
+                :key="ticket.key"
+                type="button"
+                class="flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition"
+                :class="selectedKey === ticket.key ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#a9abb3] hover:bg-white/[0.045] hover:text-[#e6e7ea]'"
+                :title="`${ticket.key}: ${ticket.status}`"
+                @mouseenter="emit('prefetch', ticket.key)"
+                @click="emit('select', ticket.key)"
+              >
+                <span class="flex h-4 w-4 shrink-0 items-center justify-center">
+                  <Icon
+                    v-if="ticket.projectIcon"
+                    :name="`lucide:${ticket.projectIcon}`"
+                    class="h-3.5 w-3.5"
+                    :style="ticket.projectColor ? { color: ticket.projectColor } : undefined"
+                    aria-hidden="true"
+                  />
+                  <StatusIcon v-else :status="ticket.status" :status-category="ticket.statusCategory" :size="16" />
+                </span>
+                <span class="min-w-0 flex-1 truncate">{{ ticket.summary }}</span>
+              </button>
+            </div>
+          </div>
         </section>
 
         <section v-if="!collapsed" class="space-y-1">
@@ -260,7 +272,7 @@ const {
             </button>
           </div>
 
-          <div v-for="team in teamItems" :key="team.key" class="space-y-0.5">
+          <div v-for="team in teamItems" :key="team.key">
             <div
               class="flex h-7 w-full items-center rounded-md text-[13px] text-[#c6c8ce] transition hover:bg-white/[0.045] hover:text-[#f0f1f4]"
               :class="viewNavigationIsActive && isTeamViewForTeam(currentViewId, team.key) ? 'bg-white/[0.055]' : ''"
@@ -289,105 +301,117 @@ const {
               >
                 <Icon
                   name="lucide:chevron-down"
-                  class="h-3.5 w-3.5 transition-transform"
+                  class="h-3.5 w-3.5 transition-transform duration-200"
                   :class="isTeamExpanded(team.key) ? '' : '-rotate-90'"
                   aria-hidden="true"
                 />
               </button>
             </div>
 
-            <div v-if="isTeamExpanded(team.key)" class="ml-5 space-y-0.5">
-              <button
-                type="button"
-                class="flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition"
-                :class="isActiveView(getTeamViewId(team.key, 'triage')) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
-                @click="selectView(getTeamViewId(team.key, 'triage'))"
-              >
-                <span class="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border border-current" aria-hidden="true">
-                  <Icon name="lucide:arrow-left-right" class="h-2.5 w-2.5" />
-                </span>
-                <span class="flex-1 truncate">Triage</span>
-                <span v-if="team.triageCount > 0">{{ team.triageCount }}</span>
-              </button>
-              <button
-                type="button"
-                class="flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition"
-                :class="isTeamIssuesView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
-                @click="selectView(getTeamViewId(team.key, 'active'))"
-              >
-                <Icon name="lucide:copy" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span class="flex-1 truncate">Issues</span>
-              </button>
-              <div v-if="team.key !== LOCAL_SPACE_KEY" class="space-y-0.5">
-                <div class="flex h-6 w-full items-center rounded-md text-[12px] transition" :class="isTeamCyclesView(team.key) ? 'bg-white/[0.055] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'">
-                  <button
-                    type="button"
-                    class="flex h-full min-w-0 flex-1 items-center gap-2 rounded-l-md px-2 text-left"
-                    @click="selectView(getTeamCycleViewId(team.key, 'directory'))"
+            <div
+              class="sidebar-collapse ml-5"
+              :class="isTeamExpanded(team.key) ? 'sidebar-collapse-open' : 'sidebar-collapse-closed'"
+              :inert="!isTeamExpanded(team.key)"
+            >
+              <div class="sidebar-collapse-inner space-y-0.5 pt-0.5">
+                <button
+                  type="button"
+                  class="flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition"
+                  :class="isActiveView(getTeamViewId(team.key, 'triage')) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
+                  @click="selectView(getTeamViewId(team.key, 'triage'))"
+                >
+                  <span class="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border border-current" aria-hidden="true">
+                    <Icon name="lucide:arrow-left-right" class="h-2.5 w-2.5" />
+                  </span>
+                  <span class="flex-1 truncate">Triage</span>
+                  <span v-if="team.triageCount > 0">{{ team.triageCount }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition"
+                  :class="isTeamIssuesView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
+                  @click="selectView(getTeamViewId(team.key, 'active'))"
+                >
+                  <Icon name="lucide:copy" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span class="flex-1 truncate">Issues</span>
+                </button>
+                <div v-if="team.key !== LOCAL_SPACE_KEY">
+                  <div class="flex h-6 w-full items-center rounded-md text-[12px] transition" :class="isTeamCyclesView(team.key) ? 'bg-white/[0.055] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'">
+                    <button
+                      type="button"
+                      class="flex h-full min-w-0 flex-1 items-center gap-2 rounded-l-md px-2 text-left"
+                      @click="selectView(getTeamCycleViewId(team.key, 'directory'))"
+                    >
+                      <Icon name="lucide:circle-play" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      <span class="flex-1 truncate">Cycles</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-[#6f727b] transition hover:bg-white/[0.06] hover:text-[#f0f1f4]"
+                      :aria-expanded="isCycleSectionExpanded(team.key)"
+                      :aria-label="`${isCycleSectionExpanded(team.key) ? 'Collapse' : 'Expand'} cycles`"
+                      @click.stop="toggleCycleSection(team.key)"
+                    >
+                      <Icon
+                        name="lucide:chevron-down"
+                        class="h-3 w-3 transition-transform duration-200"
+                        :class="isCycleSectionExpanded(team.key) ? '' : '-rotate-90'"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+                  <div
+                    class="sidebar-collapse ml-[1.125rem] border-l border-white/[0.08] pl-2"
+                    :class="isCycleSectionExpanded(team.key) ? 'sidebar-collapse-open' : 'sidebar-collapse-closed'"
+                    :inert="!isCycleSectionExpanded(team.key)"
                   >
-                    <Icon name="lucide:circle-play" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    <span class="flex-1 truncate">Cycles</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-[#6f727b] transition hover:bg-white/[0.06] hover:text-[#f0f1f4]"
-                    :aria-expanded="isCycleSectionExpanded(team.key)"
-                    :aria-label="`${isCycleSectionExpanded(team.key) ? 'Collapse' : 'Expand'} cycles`"
-                    @click.stop="toggleCycleSection(team.key)"
-                  >
-                    <Icon
-                      name="lucide:chevron-down"
-                      class="h-3 w-3 transition-transform"
-                      :class="isCycleSectionExpanded(team.key) ? '' : '-rotate-90'"
-                      aria-hidden="true"
-                    />
-                  </button>
+                    <div class="sidebar-collapse-inner pt-0.5">
+                      <button
+                        type="button"
+                        class="flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition"
+                        :class="isCycleCurrentView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
+                        @click="selectView(getTeamCycleViewId(team.key, 'current'))"
+                      >
+                        Current
+                      </button>
+                      <button
+                        type="button"
+                        class="flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition"
+                        :class="isCycleUpcomingView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
+                        @click="selectView(getTeamCycleViewId(team.key, 'upcoming'))"
+                      >
+                        Upcoming
+                      </button>
+                      <button
+                        type="button"
+                        class="flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition"
+                        :class="isCyclePreviousView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
+                        @click="selectView(getTeamCycleViewId(team.key, 'previous'))"
+                      >
+                        Previous
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div v-if="isCycleSectionExpanded(team.key)" class="ml-[1.125rem] border-l border-white/[0.08] pl-2">
-                  <button
-                    type="button"
-                    class="flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition"
-                    :class="isCycleCurrentView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
-                    @click="selectView(getTeamCycleViewId(team.key, 'current'))"
-                  >
-                    Current
-                  </button>
-                  <button
-                    type="button"
-                    class="flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition"
-                    :class="isCycleUpcomingView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
-                    @click="selectView(getTeamCycleViewId(team.key, 'upcoming'))"
-                  >
-                    Upcoming
-                  </button>
-                  <button
-                    type="button"
-                    class="flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition"
-                    :class="isCyclePreviousView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
-                    @click="selectView(getTeamCycleViewId(team.key, 'previous'))"
-                  >
-                    Previous
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  class="flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition"
+                  :class="isActiveView(getTeamViewId(team.key, 'projects')) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
+                  @click="selectView(getTeamViewId(team.key, 'projects'))"
+                >
+                  <Icon name="lucide:box" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span class="flex-1 truncate">Projects</span>
+                </button>
+                <button
+                  type="button"
+                  class="flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition"
+                  :class="isTeamViewsView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
+                  @click="selectView(getTeamViewId(team.key, 'views'))"
+                >
+                  <Icon name="lucide:layers" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span class="flex-1 truncate">Views</span>
+                </button>
               </div>
-              <button
-                type="button"
-                class="flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition"
-                :class="isActiveView(getTeamViewId(team.key, 'projects')) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
-                @click="selectView(getTeamViewId(team.key, 'projects'))"
-              >
-                <Icon name="lucide:box" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span class="flex-1 truncate">Projects</span>
-              </button>
-              <button
-                type="button"
-                class="flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition"
-                :class="isTeamViewsView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'"
-                @click="selectView(getTeamViewId(team.key, 'views'))"
-              >
-                <Icon name="lucide:layers" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span class="flex-1 truncate">Views</span>
-              </button>
             </div>
           </div>
         </section>
@@ -476,3 +500,45 @@ const {
     </Teleport>
   </aside>
 </template>
+
+<style scoped>
+.sidebar-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms ease;
+}
+
+.sidebar-collapse-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.sidebar-collapse-closed {
+  pointer-events: none;
+}
+
+.sidebar-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+  transform: translateY(-4px);
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-collapse-open > .sidebar-collapse-inner {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-collapse,
+  .sidebar-collapse-inner {
+    transition: none;
+  }
+
+  .sidebar-collapse-inner {
+    transform: none;
+  }
+}
+</style>

@@ -95,10 +95,10 @@ const rowGridTemplate = computed(() => {
   // Checkbox column hidden for now (selection still works via keyboard);
   // revisit whether row-level bulk selection earns its place.
   const columns: string[] = []
-  if (props.showStatus !== false)
-    columns.push('18px')
   if (props.showId !== false)
     columns.push('82px')
+  if (props.showStatus !== false)
+    columns.push('18px')
   columns.push('minmax(0,1fr)')
   if (projectChip.value)
     columns.push('auto')
@@ -145,11 +145,11 @@ function formatDate(value: string | undefined): string {
     @keydown.enter.prevent="$emit('select', rowIssueKey)"
     @keydown.space.prevent="$emit('select', rowIssueKey)"
   >
+    <span v-if="showId !== false" class="truncate font-medium text-[#8f9198]">{{ rowIssueKey }}</span>
+
     <span v-if="showStatus !== false" class="flex h-4 w-4 items-center justify-center">
       <StatusIcon :status="ticket.status" :status-category="ticket.statusCategory" :size="16" />
     </span>
-
-    <span v-if="showId !== false" class="truncate font-medium text-[#8f9198]">{{ rowIssueKey }}</span>
 
     <span class="min-w-0 truncate">
       <span class="font-medium">{{ rowPrimarySummary }}</span>

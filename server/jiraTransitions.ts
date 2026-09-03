@@ -20,11 +20,15 @@ export async function getTransitions(key: string): Promise<JiraTransition[]> {
 
   return data.transitions
     .filter(isJiraApiTransition)
-    .map(t => ({
-      id: t.id,
-      name: t.name,
-      statusCategory: t.to?.statusCategory?.key ?? 'indeterminate',
-    }))
+    .map((t) => {
+      const destinationName = typeof t.to?.name === 'string' && t.to.name.trim() ? t.to.name.trim() : t.name
+      return {
+        id: t.id,
+        name: t.name,
+        statusName: destinationName,
+        statusCategory: t.to?.statusCategory?.key ?? 'indeterminate',
+      }
+    })
 }
 
 export async function updateTicketStatus(key: string, transitionId: string): Promise<JiraTicket> {

@@ -9,6 +9,7 @@ import {
   useTicketDetailPropertyEditors,
 } from '@/features/ticket-detail/useTicketDetailPropertyEditors'
 import { useTicketDetailStatusEditor } from '@/features/ticket-detail/useTicketDetailStatusEditor'
+import { getTransitionLabel } from '@/types/jira'
 import { assignedCycleFromTicket } from '~/shared/cycles'
 import { LOCAL_PRIORITY_NAMES } from '~/shared/localTickets'
 
@@ -203,7 +204,7 @@ defineExpose({
               :key="transition.id"
               :value="transition.id"
             >
-              {{ transition.name }}
+              {{ getTransitionLabel(transition) }}
             </option>
           </select>
           <div class="flex flex-wrap items-center gap-1.5">

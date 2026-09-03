@@ -115,6 +115,8 @@ export interface RefreshTicketsResult {
 export interface JiraTransition {
   id: string
   name: string
+  /** Destination status name (`transitions[].to.name`). May differ from the transition (button) name. */
+  statusName: string
   statusCategory: string
 }
 
@@ -165,6 +167,8 @@ export interface JiraApiTransition {
   id?: string
   name?: string
   to?: {
+    id?: string
+    name?: string
     statusCategory?: {
       key?: string
     }

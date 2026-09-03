@@ -92,7 +92,32 @@ export type JiraActivityItem = JiraActivityComment | JiraActivityHistory
 export interface JiraTransition {
   id: string
   name: string
+  /** Destination status name. Falls back to `name` for stale cached payloads. */
+  statusName?: string
   statusCategory: string
+}
+
+/** Destination status name for a transition (what the ticket status becomes). */
+export function getTransitionStatusName(transition: JiraTransition): string {
+  return transition.statusName?.trim() ? transition.statusName : transition.name
+}
+
+/** Dropdown label: destination status, with the transition (button) name as context when it differs. */
+export function getTransitionLabel(transition: JiraTransition): string {
+  const statusName = getTransitionStatusName(transition)
+  const actionName = transition.name.trim()
+  if (!actionName || actionName.toLowerCase() === statusName.toLowerCase()) {
+    return statusName
+  }
+  // Local transitions use "Move to X" labels; the destination alone is the label.
+  const moveToPrefix = 'move to '
+  if (actionName.toLowerCase().startsWith(moveToPrefix)) {
+    const moveTarget = actionName.slice(moveToPrefix.length).trim()
+    if (moveTarget.toLowerCase() === statusName.toLowerCase()) {
+      return statusName
+    }
+  }
+  return `${statusName} (${actionName})`
 }
 
 export interface JiraPriority {

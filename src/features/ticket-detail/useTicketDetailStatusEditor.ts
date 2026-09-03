@@ -3,6 +3,7 @@ import type { JiraTicket } from '@/types/jira'
 import { computed, ref, watch } from 'vue'
 import { useTransitions } from '@/composables/useTransitions'
 import { useUpdateTicketStatus } from '@/composables/useUpdateTicketStatus'
+import { getTransitionStatusName } from '@/types/jira'
 import { getLocalStatusIdFromDisplayName, getLocalTransitions } from '~/shared/localTickets'
 
 interface TicketDetailStatusEditorInput {
@@ -75,10 +76,9 @@ export function useTicketDetailStatusEditor(input: TicketDetailStatusEditorInput
       await updateStatusMutation.mutateAsync({
         key: input.ticket.value.key,
         transitionId: selectedTransition.id,
-        // Local transition names are "Move to X" labels; the optimistic status is the target name.
-        statusName: 'statusName' in selectedTransition && typeof selectedTransition.statusName === 'string'
-          ? selectedTransition.statusName
-          : selectedTransition.name,
+        // Optimistic status is the destination status, not the transition (button) label.
+        // Local transitions already expose statusName; remote ones do too (with fallback).
+        statusName: getTransitionStatusName(selectedTransition),
         statusCategory: selectedTransition.statusCategory,
       })
       isEditingStatus.value = false
