@@ -96,7 +96,7 @@ const rowGridTemplate = computed(() => {
   // revisit whether row-level bulk selection earns its place.
   const columns: string[] = []
   if (props.showId !== false)
-    columns.push('82px')
+    columns.push('70px')
   if (props.showStatus !== false)
     columns.push('18px')
   columns.push('minmax(0,1fr)')

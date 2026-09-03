@@ -318,9 +318,6 @@ export function useSidebarNavigation(
   }
 
   function isCycleSectionExpanded(teamKey: string): boolean {
-    if (isTeamCyclesView(teamKey)) {
-      return true
-    }
     return expandedCycleTeamKeys.value.includes(teamKey)
   }
 
@@ -367,6 +364,23 @@ export function useSidebarNavigation(
 
     emit('view', viewId)
   }
+
+  // Keep the cycles subsection open when landing on a cycles view via a path
+  // that bypasses selectView (deep link, back/forward, command menu). This
+  // only runs on view change, so a manual collapse afterwards sticks.
+  watch(currentViewId, (viewId) => {
+    const teamKey = getTeamKeyFromViewId(viewId)
+    if (teamKey === null) {
+      return
+    }
+    const section = parseTeamViewId(viewId)?.section
+    if (section === 'cycles' || section?.startsWith('cycle-')) {
+      expandTeam(teamKey)
+      if (!expandedCycleTeamKeys.value.includes(teamKey)) {
+        expandedCycleTeamKeys.value = [...expandedCycleTeamKeys.value, teamKey]
+      }
+    }
+  }, { immediate: true })
 
   function openTeamMenu(team: TeamNavItem, event: MouseEvent): void {
     event.preventDefault()
