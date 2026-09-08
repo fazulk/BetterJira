@@ -28,7 +28,8 @@
     "dist:desktop:linux": "node scripts/build-desktop-artifact.mjs --platform linux --target AppImage --arch x64",
     "dist:desktop:win": "node scripts/build-desktop-artifact.mjs --platform win --target nsis",
     "dist:desktop:win:arm64": "node scripts/build-desktop-artifact.mjs --platform win --target nsis --arch arm64",
-    "dist:desktop:win:x64": "node scripts/build-desktop-artifact.mjs --platform win --target nsis --arch x64"
+    "dist:desktop:win:x64": "node scripts/build-desktop-artifact.mjs --platform win --target nsis --arch x64",
+    "check:styles": "bun scripts/check-stylex.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

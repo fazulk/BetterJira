@@ -19,7 +19,7 @@ const styles = stylex.create({
     fontWeight: 500,
     lineHeight: 1.25,
     color: colors['--color-slate-300'],
-    transitionProperty: 'background-color',
+    transitionProperty: 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter',
     transitionDuration: '150ms',
     transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
     paddingInline: '0.5rem',

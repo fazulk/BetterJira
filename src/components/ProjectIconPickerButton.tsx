@@ -1,12 +1,24 @@
+import type { StyleXStyles } from '@stylexjs/stylex'
+import type { PropType } from 'vue'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Icon } from '#components'
 import SpaceIconPicker from '@/components/SpaceIconPicker'
 import { useProjectAppearances } from '@/composables/useProjectAppearances'
 import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON } from '~/shared/settings'
 
+const styles = stylex.create({
+  root: { position: 'relative', flexShrink: 0 },
+  trigger: { display: 'flex', width: '2.25rem', height: '2.25rem', alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', color: '#fff', filter: { 'default': null, ':hover': 'brightness(1.1)' }, transitionProperty: 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)' },
+  color: (color: string) => ({ backgroundColor: color }),
+  icon: { width: '1.25rem', height: '1.25rem' },
+  popover: { position: 'absolute', left: 0, top: '2.75rem', zIndex: 50 },
+  reset: { marginTop: '0.25rem', width: '100%', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255,255,255,0.08)', backgroundColor: { 'default': '#16181d', ':hover': 'rgba(255,255,255,0.06)' }, paddingInline: '0.75rem', paddingBlock: '0.5rem', textAlign: 'left', fontSize: 12, color: { 'default': '#aeb0b7', ':hover': '#f0f1f4' }, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', transitionProperty: 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)' },
+})
+
 export default defineComponent({
   name: 'ProjectIconPickerButton',
-  props: { projectKey: { type: String, required: true } },
+  props: { projectKey: { type: String, required: true }, xstyle: { type: [Object, Array] as PropType<StyleXStyles> } },
   setup(props) {
     const { getProjectAppearance, setProjectAppearance, resetProjectAppearance } = useProjectAppearances()
 
@@ -62,20 +74,20 @@ export default defineComponent({
     })
 
     return () => (
-      <div ref={rootElement} class="relative shrink-0">
+      <div ref={rootElement} {...stylex.attrs(styles.root, props.xstyle)}>
         <button
           type="button"
-          class="flex h-9 w-9 items-center justify-center rounded-md text-white transition hover:brightness-110"
-          style={{ backgroundColor: appearance.value.color }}
+          {...stylex.attrs(styles.trigger, styles.color(appearance.value.color))}
+
           title="Change project icon and color"
           aria-label="Change project icon and color"
           aria-expanded={pickerOpen.value}
           onClick={togglePicker}
         >
-          <Icon name={`lucide:${appearance.value.icon}`} class="h-5 w-5" aria-hidden="true" />
+          <Icon name={`lucide:${appearance.value.icon}`} {...stylex.attrs(styles.icon)} aria-hidden="true" />
         </button>
         {pickerOpen.value && (
-          <div class="absolute left-0 top-11 z-50">
+          <div {...stylex.attrs(styles.popover)}>
             <SpaceIconPicker
               icon={appearance.value.icon}
               color={appearance.value.color}
@@ -85,7 +97,7 @@ export default defineComponent({
             {!isDefaultAppearance.value && (
               <button
                 type="button"
-                class="mt-1 w-full rounded-lg border border-white/[0.08] bg-[#16181d] px-3 py-2 text-left text-[12px] text-[#aeb0b7] shadow-2xl shadow-black/50 transition hover:bg-white/[0.06] hover:text-[#f0f1f4]"
+                {...stylex.attrs(styles.reset)}
                 onClick={() => resetProjectAppearance(props.projectKey)}
               >
                 Reset to default icon

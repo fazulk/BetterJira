@@ -1,5 +1,23 @@
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, onMounted, onUnmounted, ref, Teleport, watch, withModifiers } from 'vue'
 import { addHexAlpha, normalizeLabelHexColor, useLabelColors } from '@/composables/useLabelColors'
+import { colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  root: { position: 'fixed', zIndex: 100, width: '14rem', borderRadius: '1rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'color-mix(in oklab, #11131a 95%, transparent)', padding: '0.75rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-200'], boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' },
+  position: (left: string, top: string) => ({ left, top }),
+  heading: { marginBottom: '0.75rem', minWidth: 0 },
+  title: { fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.18em', color: colors['--color-slate-500'] },
+  label: { marginTop: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600, color: colors['--color-slate-100'] },
+  palette: { display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '0.5rem' },
+  swatch: { display: 'flex', width: '2rem', height: '2rem', alignItems: 'center', justifyContent: 'center', borderRadius: '1rem', borderWidth: 1, borderStyle: 'solid', scale: { 'default': null, ':hover': '105%' }, filter: { 'default': null, ':hover': 'brightness(1.25)' }, transitionProperty: 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)' },
+  swatchColor: (background: string, color: string) => ({ backgroundColor: background, borderColor: color, color }),
+  selected: { boxShadow: '0 0 0 2px #11131a, 0 0 0 4px rgba(255,255,255,0.7)' },
+  dot: { width: '0.75rem', height: '0.75rem', borderRadius: '9999px', backgroundColor: 'currentColor' },
+  custom: { marginTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', borderRadius: '1rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-300'] },
+  colorInput: { height: '1.75rem', width: '2.25rem', cursor: 'pointer', borderRadius: '0.25rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'transparent', padding: 0 },
+  reset: { marginTop: '0.5rem', width: '100%', borderRadius: '1rem', paddingInline: '0.75rem', paddingBlock: '0.5rem', textAlign: 'left', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-100'] }, backgroundColor: { 'default': null, ':hover': 'rgba(255,255,255,0.05)' }, transitionProperty: 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)' },
+})
 
 export default defineComponent({
   name: 'LabelColorMenu',
@@ -31,14 +49,6 @@ export default defineComponent({
     watch(currentColor, (color) => {
       customColor.value = color
     }, { immediate: true })
-
-    function swatchStyle(color: string) {
-      return {
-        backgroundColor: addHexAlpha(color, '26'),
-        borderColor: color,
-        color,
-      }
-    }
 
     function chooseColor(color: string): void {
       setLabelColor(currentLabel.value, color)
@@ -112,36 +122,36 @@ export default defineComponent({
         {labelColorMenuState.value.open && (
           <div
             ref={menuElement}
-            class="fixed z-[100] w-56 rounded-2xl border border-white/[0.08] bg-[#11131a]/95 p-3 text-sm text-slate-200 shadow-2xl shadow-black/40 backdrop-blur"
-            style={menuStyle.value}
+            {...stylex.attrs(styles.root, styles.position(menuStyle.value.left, menuStyle.value.top))}
+
             role="menu"
             onContextmenu={withModifiers(() => {}, ['prevent'])}
           >
-            <div class="mb-3 min-w-0">
-              <div class="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Label color</div>
-              <div class="mt-1 truncate font-semibold text-slate-100">{currentLabel.value}</div>
+            <div {...stylex.attrs(styles.heading)}>
+              <div {...stylex.attrs(styles.title)}>Label color</div>
+              <div {...stylex.attrs(styles.label)}>{currentLabel.value}</div>
             </div>
-            <div class="grid grid-cols-5 gap-2" aria-label="Preset label colors">
+            <div {...stylex.attrs(styles.palette)} aria-label="Preset label colors">
               {labelColorPalette.map(color => (
                 <button
                   key={color}
                   type="button"
-                  class={['flex h-8 w-8 items-center justify-center rounded-2xl border transition hover:scale-105 hover:brightness-125', currentColor.value === color && 'ring-2 ring-white/70 ring-offset-2 ring-offset-[#11131a]']}
-                  style={swatchStyle(color)}
+                  {...stylex.attrs(styles.swatch, styles.swatchColor(addHexAlpha(color, '26'), color), currentColor.value === color && styles.selected)}
+
                   aria-label={`Set ${currentLabel.value} to ${color}`}
                   onPointerdown={withModifiers(() => chooseColor(color), ['prevent', 'stop'])}
                   onClick={() => chooseColor(color)}
                 >
-                  <span class="h-3 w-3 rounded-full bg-current" />
+                  <span {...stylex.attrs(styles.dot)} />
                 </button>
               ))}
             </div>
-            <label class="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-slate-300">
+            <label {...stylex.attrs(styles.custom)}>
               <span>Custom</span>
               <input
                 v-model={customColor.value}
                 type="color"
-                class="h-7 w-9 cursor-pointer rounded border border-white/[0.1] bg-transparent p-0"
+                {...stylex.attrs(styles.colorInput)}
                 aria-label="Custom label color"
                 onInput={previewCustomColor}
                 onChange={commitCustomColor}
@@ -149,7 +159,7 @@ export default defineComponent({
             </label>
             <button
               type="button"
-              class="mt-2 w-full rounded-2xl px-3 py-2 text-left text-xs text-slate-400 transition hover:bg-white/[0.05] hover:text-slate-100"
+              {...stylex.attrs(styles.reset)}
               onPointerdown={withModifiers(resetColor, ['prevent', 'stop'])}
               onClick={resetColor}
             >

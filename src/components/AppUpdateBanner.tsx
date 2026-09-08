@@ -1,32 +1,33 @@
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent, Transition } from 'vue'
 import { useAppUpdate } from '@/composables/useAppUpdate'
-import './AppUpdateBanner.css'
+import { notificationStyles as styles } from '@/styles/notifications'
 
 export default defineComponent({
   name: 'AppUpdateBanner',
   setup() {
     const { applyUpdate, dismiss, update } = useAppUpdate()
     return () => (
-      <Transition name="update-banner">
+      <Transition enterActiveClass={stylex.attrs(styles.transition).class} leaveActiveClass={stylex.attrs(styles.transition).class} enterFromClass={stylex.attrs(styles.hidden).class} leaveToClass={stylex.attrs(styles.hidden).class}>
         {() => update.value && (
-          <div class="fixed bottom-4 left-4 z-[90] overflow-hidden rounded-lg border border-white/[0.08] bg-surface-1/95 text-slate-200 shadow-xl shadow-black/35 backdrop-blur">
-            <div class="flex min-w-0 items-center gap-3 px-3.5 py-2.5">
-              <div class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-300/90" />
-              <p class="min-w-0 text-[13px] leading-5 text-slate-300">
+          <div {...stylex.attrs(styles.surface, styles.update)}>
+            <div {...stylex.attrs(styles.content)}>
+              <div {...stylex.attrs(styles.dot, styles.updateDot)} />
+              <p {...stylex.attrs(styles.message)}>
                 BetterJira
                 {update.value.version}
                 {' '}
                 is available
               </p>
-              <div class="flex shrink-0 items-center gap-1">
-                <button type="button" class="h-6 rounded-md px-2 text-[12px] text-sky-300/90 transition hover:bg-white/[0.05] hover:text-sky-200" onClick={applyUpdate}>Restart to update</button>
+              <div {...stylex.attrs(styles.actions)}>
+                <button type="button" {...stylex.attrs(styles.button, styles.restart)} onClick={applyUpdate}>Restart to update</button>
                 <button
                   type="button"
-                  class="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-200"
+                  {...stylex.attrs(styles.button, styles.dismiss)}
                   aria-label="Dismiss update notification"
                   onClick={dismiss}
                 >
-                  <svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <svg {...stylex.attrs(styles.icon)} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                     <path stroke-linecap="round" d="M4.25 4.25l7.5 7.5M11.75 4.25l-7.5 7.5" />
                   </svg>
                 </button>

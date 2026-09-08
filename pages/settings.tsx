@@ -1,7 +1,10 @@
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent } from 'vue'
 import SettingsPage from '@/components/SettingsPage'
 
 definePageMeta({ key: 'settings' })
+
+const styles = stylex.create({ root: { height: '100vh', overflow: 'hidden' } })
 
 export default defineComponent({
   name: 'SettingsRoute',
@@ -10,7 +13,7 @@ export default defineComponent({
       void navigateTo('/')
     }
     return () => (
-      <main class="h-screen overflow-hidden">
+      <main {...stylex.attrs(styles.root)}>
         <SettingsPage onClose={closeSettings} />
       </main>
     )

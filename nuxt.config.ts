@@ -25,6 +25,7 @@ export default defineNuxtConfig({
     {
       path: '~/src/components',
       pathPrefix: false,
+      ignore: ['**/*.stylex.ts', '**/*.styles.ts'],
     },
   ],
   imports: {
