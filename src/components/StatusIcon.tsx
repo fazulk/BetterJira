@@ -1,5 +1,10 @@
+import type { StyleXStyles } from '@stylexjs/stylex'
+import type { PropType } from 'vue'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent } from 'vue'
 import { getStatusLane, getStatusProgress, useStatusPreferences } from '@/composables/useStatusPreferences'
+
+const styles = stylex.create({ root: { flexShrink: 0 } })
 
 const center = 7
 const outerRadius = 5
@@ -8,6 +13,7 @@ const pieRadius = 2.6
 export default defineComponent({
   name: 'StatusIcon',
   props: {
+    xstyle: { type: [Object, Array] as PropType<StyleXStyles> },
     status: {
       type: String,
       required: true,
@@ -45,7 +51,7 @@ export default defineComponent({
         viewBox="0 0 14 14"
         fill="none"
         aria-hidden="true"
-        class="shrink-0"
+        {...stylex.attrs(styles.root, props.xstyle)}
       >
         {lane.value === 'completed' && (
           <>

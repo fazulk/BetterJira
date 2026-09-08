@@ -55,8 +55,8 @@ describe('vue TSX pilot components', () => {
       },
     })
 
-    expect(wrapper.classes()).toContain('text-xs')
-    expect(wrapper.find('.h-2.w-2').attributes('style')).toContain('background-color: #ff0000')
+    expect(wrapper.props('dense')).toBe(false)
+    expect(wrapper.find('[data-label-dot]').attributes('style')).toContain('#ff0000')
     expect(wrapper.text()).toBe('Alpha')
 
     await wrapper.setProps({
@@ -65,8 +65,8 @@ describe('vue TSX pilot components', () => {
       showDot: false,
     })
 
-    expect(wrapper.classes()).toContain('text-[11px]')
-    expect(wrapper.find('.h-2.w-2').exists()).toBe(false)
+    expect(wrapper.props('dense')).toBe(true)
+    expect(wrapper.find('[data-label-dot]').exists()).toBe(false)
     expect(wrapper.text()).toBe('Beta')
 
     await wrapper.trigger('contextmenu')
@@ -95,7 +95,7 @@ describe('vue TSX pilot components', () => {
 
     const icon = wrapper.find('[data-test-id="nuxt-icon"]')
     expect(icon.attributes('data-name')).toBe('lucide:folder')
-    expect(wrapper.find('span span').attributes('style')).toContain('color: #22d3ee')
+    expect(wrapper.find('span span').attributes('style')).toContain('#22d3ee')
     expect(wrapper.find('strong').text()).toBe('Backlog')
   })
 

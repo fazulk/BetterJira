@@ -1,9 +1,40 @@
+import type { StyleXStyles } from '@stylexjs/stylex'
+import type { PropType } from 'vue'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent } from 'vue'
 import { useLabelColors } from '@/composables/useLabelColors'
+import { colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  root: {
+    display: 'inline-flex',
+    maxWidth: '100%',
+    alignItems: 'center',
+    gap: '0.375rem',
+    borderRadius: '0.75rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: { 'default': 'rgba(255, 255, 255, 0.025)', ':hover': 'rgba(255, 255, 255, 0.04)' },
+    fontWeight: 500,
+    lineHeight: 1.25,
+    color: colors['--color-slate-300'],
+    transitionProperty: 'background-color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    paddingInline: '0.5rem',
+    paddingBlock: '0.375rem',
+    fontSize: '0.75rem',
+  },
+  dense: { paddingBlock: '0.25rem', fontSize: 11 },
+  dot: (color: string) => ({ width: '0.5rem', height: '0.5rem', flexShrink: 0, borderRadius: '9999px', backgroundColor: color }),
+  text: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+})
 
 export default defineComponent({
   name: 'LabelPill',
   props: {
+    xstyle: { type: [Object, Array] as PropType<StyleXStyles> },
     label: {
       type: String,
       required: true,
@@ -21,10 +52,6 @@ export default defineComponent({
     const { getLabelColor, openLabelColorMenu } = useLabelColors()
 
     const labelColor = computed(() => getLabelColor(props.label))
-    const dotStyle = computed(() => ({
-      backgroundColor: labelColor.value,
-    }))
-    const sizeClass = computed(() => props.dense ? 'px-2 py-1 text-[11px]' : 'px-2 py-1.5 text-xs')
 
     function handleContextMenu(event: MouseEvent): void {
       openLabelColorMenu(props.label, event)
@@ -32,15 +59,12 @@ export default defineComponent({
 
     return () => (
       <span
-        class={[
-          'inline-flex max-w-full items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.025] font-medium leading-[1.25] text-slate-300 transition hover:bg-white/[0.04]',
-          sizeClass.value,
-        ]}
+        {...stylex.attrs(styles.root, props.dense && styles.dense, props.xstyle)}
         title="Right-click to change label color"
         onContextmenu={handleContextMenu}
       >
-        {props.showDot && <span class="h-2 w-2 shrink-0 rounded-full" style={dotStyle.value} />}
-        <span class="truncate">{props.label}</span>
+        {props.showDot && <span data-label-dot {...stylex.attrs(styles.dot(labelColor.value))} />}
+        <span {...stylex.attrs(styles.text)}>{props.label}</span>
       </span>
     )
   },
