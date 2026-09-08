@@ -1,3 +1,4 @@
+import * as stylex from '@stylexjs/stylex'
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, defineComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { Icon } from '#components'
@@ -8,9 +9,92 @@ import { useAssistantChat } from '@/composables/useAssistantChat'
 import { useAssistantPanel } from '@/composables/useAssistantPanel'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 import { useAssistantSkills } from '@/composables/useAssistantSkills'
+import { breakpoints, colors } from '@/styles/tokens.stylex'
 import { getAssistantActionLabel, getAssistantProviderLabel, getAssistantReasoningLabel } from '~/shared/assistant'
 import { isLocalTicketKey } from '~/shared/localTickets'
-import './AskAssistantPanel.css'
+
+const thinking = stylex.keyframes({
+  '0%': { opacity: 0.35, transform: 'translateY(0)' },
+  '30%': { opacity: 1, transform: 'translateY(-3px)' },
+  '60%': { opacity: 0.35, transform: 'translateY(0)' },
+  '100%': { opacity: 0.35, transform: 'translateY(0)' },
+})
+
+const styles = stylex.create({
+  root: {
+    position: 'fixed',
+    right: '1rem',
+    bottom: '1rem',
+    zIndex: 40,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    borderRadius: '0.75rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#16171b',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+    transitionProperty: 'all',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  minimized: { height: '3rem' },
+  normalHeight: { height: '32rem', maxHeight: 'calc(100dvh - 2rem)' },
+  expandedHeight: { height: '80vh', maxHeight: 'calc(100dvh - 2rem)' },
+  normalWidth: { width: '24rem', maxWidth: 'calc(100vw - 2rem)' },
+  expandedWidth: { width: '40rem', maxWidth: 'calc(100vw - 2rem)' },
+  header: { display: 'flex', height: '3rem', flexShrink: 0, alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '0.75rem' },
+  headerTitle: { display: 'flex', minWidth: 0, alignItems: 'center', gap: '0.5rem' },
+  headerIcon: { width: '1rem', height: '1rem', flexShrink: 0, color: colors['--color-accent-indigo'] },
+  headerText: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-100'] },
+  headerActions: { display: 'flex', flexShrink: 0, alignItems: 'center', gap: '0.125rem' },
+  iconButton: { display: 'flex', width: '1.75rem', height: '1.75rem', alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-200'] }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)', backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.05)' } },
+  iconSm: { width: '1rem', height: '1rem' },
+  meta: { display: 'flex', flexShrink: 0, flexWrap: 'wrap', alignItems: 'center', columnGap: '0.75rem', rowGap: '0.25rem', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: 11, color: colors['--color-slate-400'] },
+  metaItem: { display: 'flex', alignItems: 'center', gap: '0.375rem' },
+  metaItemShrink: { minWidth: 0 },
+  metaIcon: { width: '0.75rem', height: '0.75rem', flexShrink: 0 },
+  truncate: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  messages: { minHeight: 0, flexGrow: '1', flexShrink: '1', flexBasis: '0%', overflowY: 'auto', paddingInline: '0.75rem', paddingBlock: '1rem' },
+  emptyState: { display: 'flex', height: '100%', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', paddingInline: '1rem', textAlign: 'center' },
+  emptyIcon: { width: '1.75rem', height: '1.75rem', color: colors['--color-slate-600'] },
+  emptyText: { fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-400'] },
+  emptyStrong: { fontWeight: 500, color: colors['--color-slate-200'] },
+  emptyHint: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-600'] },
+  messageListItem: { display: 'flex', marginTop: '1rem' },
+  firstMessage: { marginTop: 0 },
+  messageUserAlign: { justifyContent: 'flex-end' },
+  messageAssistantAlign: { justifyContent: 'flex-start' },
+  bubble: { overflowWrap: 'break-word', borderRadius: '0.5rem', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: 13, lineHeight: 1.625 },
+  userBubble: { maxWidth: '85%', whiteSpace: 'pre-wrap', backgroundColor: 'rgba(111, 115, 255, 0.9)', color: colors['--color-white'] },
+  assistantBubble: { minWidth: 0, maxWidth: '100%', color: colors['--color-slate-200'] },
+  skillTag: { display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginRight: '0.25rem', marginBottom: '0.25rem', borderRadius: '0.25rem', backgroundColor: 'rgba(255, 255, 255, 0.14)', paddingInline: '0.375rem', paddingBlock: '0.125rem', fontSize: 11, color: 'rgba(255, 255, 255, 0.9)' },
+  skillTagIcon: { width: '0.75rem', height: '0.75rem' },
+  pending: { display: 'flex', alignItems: 'center', gap: '0.625rem', paddingBlock: '0.25rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-400'] },
+  pendingWithContent: { marginTop: '0.75rem' },
+  pendingDots: { display: 'flex', height: '1.25rem', flexShrink: 0, alignItems: 'center', gap: '0.25rem', color: colors['--color-accent-indigo'] },
+  pendingDot: { width: '0.375rem', height: '0.375rem', borderRadius: '9999px', backgroundColor: 'currentColor', animationName: { default: thinking, [breakpoints.reducedMotion]: 'none' }, animationDuration: '1.2s', animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite' },
+  pendingStatus: { minWidth: 0, overflowWrap: 'break-word' },
+  error: { borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(251, 113, 133, 0.2)', backgroundColor: 'rgba(244, 63, 94, 0.1)', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-rose-200'] },
+  composerShell: { flexShrink: 0, borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: 'rgba(255, 255, 255, 0.06)', padding: '0.75rem' },
+  ticketPill: { display: 'inline-flex', maxWidth: '100%', alignItems: 'center', gap: '0.375rem', marginBottom: '0.5rem', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.03)', paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: 11, color: colors['--color-slate-400'] },
+  ticketIcon: { width: '0.75rem', height: '0.75rem', flexShrink: 0 },
+  warning: { marginBottom: '0.5rem', fontSize: 11, color: 'rgba(252, 211, 77, 0.8)' },
+  inputBox: { borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.03)', paddingInline: '0.625rem', paddingBlock: '0.5rem' },
+  inputBoxFocused: { borderColor: 'rgba(255, 255, 255, 0.16)' },
+  composerRow: { display: 'flex', alignItems: 'flex-end', gap: '0.5rem', marginTop: '0.375rem' },
+  textarea: { 'maxHeight': '8rem', 'minHeight': '1.5rem', 'flexGrow': '1', 'flexShrink': '1', 'flexBasis': '0%', 'resize': 'none', 'borderWidth': 0, 'backgroundColor': 'transparent', 'fontSize': 13, 'color': colors['--color-slate-200'], 'outlineStyle': 'none', '::placeholder': { color: colors['--color-slate-600'] } },
+  sendButton: { display: 'flex', width: '1.75rem', height: '1.75rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', backgroundColor: { 'default': colors['--color-accent-indigo'], ':hover': 'rgba(111, 115, 255, 0.9)', ':disabled': 'rgba(255, 255, 255, 0.06)' }, color: { 'default': colors['--color-white'], ':disabled': colors['--color-slate-600'] }, cursor: { 'default': null, ':disabled': 'not-allowed' }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  stopButton: { display: 'flex', width: '1.75rem', height: '1.75rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', backgroundColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':hover': 'rgba(255, 255, 255, 0.14)' }, color: colors['--color-slate-200'], transitionProperty: 'background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  stopIcon: { width: '0.875rem', height: '0.875rem' },
+})
+
+const dotDelays = ['0ms', '160ms', '320ms']
+
+const dynamicStyles = stylex.create({
+  animationDelay: (delay: string) => ({ animationDelay: delay }),
+})
 
 export default defineComponent({
   name: 'AskAssistantPanel',
@@ -49,6 +133,7 @@ export default defineComponent({
     const scrollRef = ref<HTMLElement | null>(null)
     const { skills } = useAssistantSkills()
     const selectedSkillIds = ref<string[]>([])
+    const inputBoxFocused = ref(false)
 
     const actionLabel = computed(() => getAssistantActionLabel(settings.value.provider))
     const providerLabel = computed(() => getAssistantProviderLabel(settings.value.provider))
@@ -99,69 +184,69 @@ export default defineComponent({
 
     return () => (
       <div
-        class={[
-          'fixed bottom-4 right-4 z-40 flex flex-col overflow-hidden rounded-xl border border-white/[0.1] bg-[#16171b] shadow-2xl shadow-black/50 transition-all',
-          minimized.value ? 'h-12' : expanded.value ? 'h-[80vh] max-h-[calc(100dvh-2rem)]' : 'h-[32rem] max-h-[calc(100dvh-2rem)]',
-          expanded.value ? 'w-[40rem] max-w-[calc(100vw-2rem)]' : 'w-[24rem] max-w-[calc(100vw-2rem)]',
-        ]}
+        {...stylex.attrs(
+          styles.root,
+          minimized.value ? styles.minimized : expanded.value ? styles.expandedHeight : styles.normalHeight,
+          expanded.value ? styles.expandedWidth : styles.normalWidth,
+        )}
       >
-        <div class="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-white/[0.06] px-3">
-          <div class="flex min-w-0 items-center gap-2">
-            <Icon name="lucide:sparkles" class="h-4 w-4 shrink-0 text-accent-indigo" aria-hidden="true" />
-            <span class="truncate text-sm font-medium text-slate-100">{actionLabel.value}</span>
+        <div {...stylex.attrs(styles.header)}>
+          <div {...stylex.attrs(styles.headerTitle)}>
+            <Icon name="lucide:sparkles" {...stylex.attrs(styles.headerIcon)} aria-hidden="true" />
+            <span {...stylex.attrs(styles.headerText)}>{actionLabel.value}</span>
           </div>
-          <div class="flex shrink-0 items-center gap-0.5">
+          <div {...stylex.attrs(styles.headerActions)}>
             {!minimized.value && hasConversation.value && (
-              <button type="button" class="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-200" aria-label="New chat" title="New chat" onClick={startNewChat}>
-                <Icon name="lucide:plus" class="h-4 w-4" aria-hidden="true" />
+              <button type="button" {...stylex.attrs(styles.iconButton)} aria-label="New chat" title="New chat" onClick={startNewChat}>
+                <Icon name="lucide:plus" {...stylex.attrs(styles.iconSm)} aria-hidden="true" />
               </button>
             )}
             <button
               type="button"
-              class="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-200"
+              {...stylex.attrs(styles.iconButton)}
               aria-label={minimized.value ? 'Restore' : 'Minimize'}
               onClick={() => {
                 minimized.value = !minimized.value
               }}
             >
-              <Icon name={minimized.value ? 'lucide:chevron-up' : 'lucide:minus'} class="h-4 w-4" aria-hidden="true" />
+              <Icon name={minimized.value ? 'lucide:chevron-up' : 'lucide:minus'} {...stylex.attrs(styles.iconSm)} aria-hidden="true" />
             </button>
             {!minimized.value && (
               <button
                 type="button"
-                class="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-200"
+                {...stylex.attrs(styles.iconButton)}
                 aria-label={expanded.value ? 'Shrink' : 'Expand'}
                 onClick={() => {
                   expanded.value = !expanded.value
                 }}
               >
-                <Icon name={expanded.value ? 'lucide:shrink' : 'lucide:expand'} class="h-4 w-4" aria-hidden="true" />
+                <Icon name={expanded.value ? 'lucide:shrink' : 'lucide:expand'} {...stylex.attrs(styles.iconSm)} aria-hidden="true" />
               </button>
             )}
-            <button type="button" class="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-200" aria-label="Close" onClick={close}>
-              <Icon name="lucide:x" class="h-4 w-4" aria-hidden="true" />
+            <button type="button" {...stylex.attrs(styles.iconButton)} aria-label="Close" onClick={close}>
+              <Icon name="lucide:x" {...stylex.attrs(styles.iconSm)} aria-hidden="true" />
             </button>
           </div>
         </div>
 
         {!minimized.value && (
           <>
-            <div class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-white/[0.06] px-3 py-2 text-[11px] text-slate-400">
-              <span class="flex min-w-0 items-center gap-1.5" title={`Model: ${modelLabel.value}`}>
-                <Icon name="lucide:cpu" class="h-3 w-3 shrink-0" aria-hidden="true" />
-                <span class="truncate">{modelLabel.value}</span>
+            <div {...stylex.attrs(styles.meta)}>
+              <span {...stylex.attrs(styles.metaItem, styles.metaItemShrink)} title={`Model: ${modelLabel.value}`}>
+                <Icon name="lucide:cpu" {...stylex.attrs(styles.metaIcon)} aria-hidden="true" />
+                <span {...stylex.attrs(styles.truncate)}>{modelLabel.value}</span>
               </span>
-              <span class="flex items-center gap-1.5">
-                <Icon name="lucide:brain" class="h-3 w-3 shrink-0" aria-hidden="true" />
+              <span {...stylex.attrs(styles.metaItem)}>
+                <Icon name="lucide:brain" {...stylex.attrs(styles.metaIcon)} aria-hidden="true" />
                 {reasoningLabel.value}
               </span>
             </div>
 
-            <div ref={scrollRef} class="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-4">
+            <div ref={scrollRef} {...stylex.attrs(styles.messages)}>
               {!hasConversation.value && (
-                <div class="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
-                  <Icon name="lucide:sparkles" class="h-7 w-7 text-slate-600" aria-hidden="true" />
-                  <p class="text-sm text-slate-400">
+                <div {...stylex.attrs(styles.emptyState)}>
+                  <Icon name="lucide:sparkles" {...stylex.attrs(styles.emptyIcon)} aria-hidden="true" />
+                  <p {...stylex.attrs(styles.emptyText)}>
                     Ask
                     {' '}
                     {providerLabel.value}
@@ -169,30 +254,35 @@ export default defineComponent({
                     about
                     {' '}
                     {ticketKey.value
-                      ? <span class="font-medium text-slate-200">{ticketKey.value}</span>
+                      ? <span {...stylex.attrs(styles.emptyStrong)}>{ticketKey.value}</span>
                       : <span>your Jira tickets</span>}
                     .
                   </p>
-                  <p class="text-xs text-slate-600">It can read, edit, transition, and comment via the CLI.</p>
+                  <p {...stylex.attrs(styles.emptyHint)}>It can read, edit, transition, and comment via the CLI.</p>
                 </div>
               )}
 
-              {messages.value.map(message => (
-                <div key={message.id} class={['flex', message.role === 'user' ? 'justify-end' : 'justify-start']}>
+              {messages.value.map((message, index) => (
+                <div
+                  key={message.id}
+                  {...stylex.attrs(
+                    styles.messageListItem,
+                    index === 0 && styles.firstMessage,
+                    message.role === 'user' ? styles.messageUserAlign : styles.messageAssistantAlign,
+                  )}
+                >
                   <div
-                    class={[
-                      'break-words rounded-lg px-3 py-2 text-[13px] leading-relaxed',
-                      message.role === 'user'
-                        ? 'max-w-[85%] whitespace-pre-wrap bg-accent-indigo/90 text-white'
-                        : 'min-w-0 max-w-full text-slate-200',
-                    ]}
+                    {...stylex.attrs(
+                      styles.bubble,
+                      message.role === 'user' ? styles.userBubble : styles.assistantBubble,
+                    )}
                   >
                     {message.role === 'assistant' && message.content && <AssistantMarkdown content={message.content} />}
                     {message.role === 'user' && (
                       <>
                         {(message.skills ?? []).map(skill => (
-                          <span key={skill.name} class="mb-1 mr-1 inline-flex items-center gap-1 rounded bg-white/[0.14] px-1.5 py-0.5 text-[11px] text-white/90">
-                            <Icon name="lucide:box" class="h-3 w-3" aria-hidden="true" />
+                          <span key={skill.name} {...stylex.attrs(styles.skillTag)}>
+                            <Icon name="lucide:box" {...stylex.attrs(styles.skillTagIcon)} aria-hidden="true" />
                             {skill.name}
                           </span>
                         ))}
@@ -200,27 +290,27 @@ export default defineComponent({
                       </>
                     )}
                     {message.role === 'assistant' && message.pending && isStreaming.value && (
-                      <div role="status" class={['flex items-center gap-2.5 py-1 text-xs text-slate-400', message.content ? 'mt-3' : '']}>
-                        <span class="flex h-5 shrink-0 items-center gap-1 text-accent-indigo" aria-hidden="true">
-                          {[1, 2, 3].map(dot => (
-                            <span key={dot} class="assistant-thinking-dot h-1.5 w-1.5 rounded-full bg-current" style={{ animationDelay: `${(dot - 1) * 160}ms` }} />
+                      <div role="status" {...stylex.attrs(styles.pending, message.content ? styles.pendingWithContent : null)}>
+                        <span {...stylex.attrs(styles.pendingDots)} aria-hidden="true">
+                          {dotDelays.map(delay => (
+                            <span key={delay} {...stylex.attrs(styles.pendingDot, dynamicStyles.animationDelay(delay))} />
                           ))}
                         </span>
-                        <span class="min-w-0 break-words">{statusText.value || (message.content ? 'Responding…' : `${providerLabel.value} is thinking…`)}</span>
+                        <span {...stylex.attrs(styles.pendingStatus)}>{statusText.value || (message.content ? 'Responding…' : `${providerLabel.value} is thinking…`)}</span>
                       </div>
                     )}
                   </div>
                 </div>
               ))}
 
-              {errorText.value && <p class="rounded-md border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">{errorText.value}</p>}
+              {errorText.value && <p {...stylex.attrs(styles.error)}>{errorText.value}</p>}
             </div>
 
-            <div class="shrink-0 border-t border-white/[0.06] p-3">
+            <div {...stylex.attrs(styles.composerShell)}>
               {ticketKey.value && (
-                <div class="mb-2 inline-flex max-w-full items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-[11px] text-slate-400">
-                  <Icon name="lucide:ticket" class="h-3 w-3 shrink-0" aria-hidden="true" />
-                  <span class="truncate">
+                <div {...stylex.attrs(styles.ticketPill)}>
+                  <Icon name="lucide:ticket" {...stylex.attrs(styles.ticketIcon)} aria-hidden="true" />
+                  <span {...stylex.attrs(styles.truncate)}>
                     {ticketKey.value}
                     {ticketSummary.value && (
                       <span>
@@ -233,33 +323,37 @@ export default defineComponent({
               )}
 
               {!providerAvailable.value && (
-                <p class="mb-2 text-[11px] text-amber-300/80">
+                <p {...stylex.attrs(styles.warning)}>
                   {providerLabel.value}
                   {' '}
                   CLI was not detected. Choose an available provider in Settings → Assistant.
                 </p>
               )}
 
-              <div class="space-y-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-2 focus-within:border-white/[0.16]">
+              <div
+                {...stylex.attrs(styles.inputBox, inputBoxFocused.value && styles.inputBoxFocused)}
+                onFocusin={() => { inputBoxFocused.value = true }}
+                onFocusout={() => { inputBoxFocused.value = false }}
+              >
                 <AssistantSkillPicker modelValue={selectedSkillIds.value} onUpdate:modelValue={(value) => { selectedSkillIds.value = value }} />
-                <div class="flex items-end gap-2">
+                <div {...stylex.attrs(styles.composerRow)}>
                   <textarea
                     v-model={draft.value}
                     rows="1"
                     aria-label="Message the assistant"
                     placeholder={`Ask ${providerLabel.value}…`}
-                    class="max-h-32 min-h-[1.5rem] flex-1 resize-none bg-transparent text-[13px] text-slate-200 outline-none placeholder:text-slate-600"
+                    {...stylex.attrs(styles.textarea)}
                     onKeydown={handleKeydown}
                   />
                   {isStreaming.value
                     ? (
-                        <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/[0.08] text-slate-200 transition hover:bg-white/[0.14]" aria-label="Stop" onClick={stop}>
-                          <Icon name="lucide:square" class="h-3.5 w-3.5" aria-hidden="true" />
+                        <button type="button" {...stylex.attrs(styles.stopButton)} aria-label="Stop" onClick={stop}>
+                          <Icon name="lucide:square" {...stylex.attrs(styles.stopIcon)} aria-hidden="true" />
                         </button>
                       )
                     : (
-                        <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent-indigo text-white transition hover:bg-accent-indigo/90 disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-slate-600" disabled={!canSubmit.value} aria-label="Send" onClick={submit}>
-                          <Icon name="lucide:arrow-up" class="h-4 w-4" aria-hidden="true" />
+                        <button type="button" {...stylex.attrs(styles.sendButton)} disabled={!canSubmit.value} aria-label="Send" onClick={submit}>
+                          <Icon name="lucide:arrow-up" {...stylex.attrs(styles.iconSm)} aria-hidden="true" />
                         </button>
                       )}
                 </div>

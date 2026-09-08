@@ -1,13 +1,64 @@
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent } from 'vue'
 import { Icon } from '#components'
 import { useSettingsPageContext } from '@/features/settings/settingsPageContext'
+import { breakpoints, colors } from '@/styles/tokens.stylex'
 
 interface StatusBadge {
   label: string
   icon: string
   spin?: boolean
-  classes: string
+  variant: 'connected' | 'checking' | 'error' | 'unconfigured'
 }
+
+const spin = stylex.keyframes({ to: { transform: 'rotate(360deg)' } })
+
+const styles = stylex.create({
+  section: { maxWidth: '48rem', marginInline: 'auto' },
+  blockGap: { marginTop: '1.25rem' },
+  title: { fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 600, color: colors['--color-slate-100'] },
+  copy: { marginTop: '0.25rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-500'] },
+  card: { borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
+  cardHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem', paddingBlock: '0.75rem' },
+  minWidth: { minWidth: 0 },
+  cardTitle: { fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-200'] },
+  cardMeta: { marginTop: '0.125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  cardMetaStrong: { color: colors['--color-slate-300'] },
+  badge: { display: 'inline-flex', flexShrink: 0, alignItems: 'center', gap: '0.375rem', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', paddingInline: '0.625rem', paddingBlock: '0.25rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500 },
+  badgeConnected: { borderColor: 'rgba(76, 183, 130, 0.25)', backgroundColor: 'rgba(76, 183, 130, 0.1)', color: colors['--color-accent-sage'] },
+  badgeChecking: { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.04)', color: colors['--color-slate-400'] },
+  badgeError: { borderColor: 'rgba(228, 93, 106, 0.25)', backgroundColor: 'rgba(228, 93, 106, 0.1)', color: colors['--color-accent-rose'] },
+  badgeUnconfigured: { borderColor: 'rgba(215, 165, 67, 0.25)', backgroundColor: 'rgba(215, 165, 67, 0.1)', color: colors['--color-accent-amber'] },
+  iconSm: { width: '0.875rem', height: '0.875rem' },
+  iconXs: { width: '0.75rem', height: '0.75rem' },
+  iconMuted: { flexShrink: 0, color: colors['--color-slate-500'] },
+  spin: { animationName: { default: spin, [breakpoints.reducedMotion]: 'none' }, animationDuration: '1s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' },
+  errorBanner: { display: 'flex', flexDirection: { default: 'column', [breakpoints.sm]: 'row' }, gap: '0.5rem', alignItems: { [breakpoints.sm]: 'flex-start' }, justifyContent: { [breakpoints.sm]: 'space-between' }, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(228, 93, 106, 0.05)', paddingInline: '1rem', paddingBlock: '0.75rem' },
+  errorTextRow: { display: 'flex', minWidth: 0, gap: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-accent-rose'] },
+  errorTextIcon: { marginTop: '0.125rem', width: '0.875rem', height: '0.875rem', flexShrink: 0 },
+  breakWords: { minWidth: 0, overflowWrap: 'break-word' },
+  retryButton: { display: 'inline-flex', flexShrink: 0, alignItems: 'center', gap: '0.375rem', alignSelf: 'flex-start', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(228, 93, 106, 0.25)', paddingInline: '0.625rem', paddingBlock: '0.25rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-accent-rose'], backgroundColor: { 'default': null, ':hover': 'rgba(228, 93, 106, 0.1)' }, cursor: { 'default': null, ':disabled': 'not-allowed' }, opacity: { 'default': 1, ':disabled': 0.5 }, transitionProperty: 'background-color, opacity', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  body: { display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' },
+  grid: { display: 'grid', gap: '0.75rem', gridTemplateColumns: { [breakpoints.md]: 'repeat(2, minmax(0, 1fr))' } },
+  label: { display: 'block' },
+  labelText: { display: 'block', marginBottom: '0.375rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-slate-500'] },
+  input: { 'width': '100%', 'borderRadius': '0.375rem', 'borderWidth': 1, 'borderStyle': 'solid', 'borderColor': { 'default': 'rgba(255, 255, 255, 0.06)', ':focus': 'rgba(255, 255, 255, 0.16)' }, 'backgroundColor': { 'default': 'rgba(255, 255, 255, 0.04)', ':focus': 'rgba(255, 255, 255, 0.06)' }, 'paddingInline': '0.75rem', 'paddingBlock': '0.5rem', 'fontSize': '0.875rem', 'lineHeight': '1.25rem', 'color': colors['--color-slate-200'], 'outlineStyle': 'none', 'transitionProperty': 'border-color, background-color', 'transitionDuration': '150ms', 'transitionTimingFunction': 'cubic-bezier(0.4, 0, 0.2, 1)', '::placeholder': { color: colors['--color-slate-500'] } },
+  rightAligned: { display: 'flex', justifyContent: 'flex-end' },
+  button: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':hover': 'rgba(255, 255, 255, 0.14)', ':disabled': 'rgba(255, 255, 255, 0.08)' }, backgroundColor: { 'default': 'rgba(255, 255, 255, 0.04)', ':hover': 'rgba(255, 255, 255, 0.06)', ':disabled': 'rgba(255, 255, 255, 0.04)' }, paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-200'], cursor: { 'default': null, ':disabled': 'not-allowed' }, opacity: { 'default': 1, ':disabled': 0.5 }, transitionProperty: 'border-color, background-color, opacity', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  tokenSection: { borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: 'rgba(255, 255, 255, 0.06)', paddingTop: '1rem' },
+  tokenHeader: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.375rem' },
+  savedPill: { display: 'inline-flex', alignItems: 'center', gap: '0.25rem', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(76, 183, 130, 0.25)', backgroundColor: 'rgba(76, 183, 130, 0.1)', paddingInline: '0.5rem', paddingBlock: '0.125rem', fontSize: 11, fontWeight: 500, color: colors['--color-accent-sage'] },
+  tokenRow: { display: 'flex', flexDirection: { default: 'column', [breakpoints.md]: 'row' }, gap: '0.5rem', alignItems: { [breakpoints.md]: 'flex-start' } },
+  tokenFields: { width: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  storedToken: { display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.02)', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-400'] },
+  tokenDots: { letterSpacing: '0.2em', color: colors['--color-slate-500'] },
+  hiddenLabel: { marginLeft: 'auto', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-600'] },
+  externalLink: { display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-200'] }, transitionProperty: 'color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  tokenButton: { width: { [breakpoints.md]: 'auto' } },
+  feedback: { borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem' },
+  feedbackSuccess: { borderColor: 'rgba(76, 183, 130, 0.25)', backgroundColor: 'rgba(76, 183, 130, 0.1)', color: colors['--color-accent-sage'] },
+  feedbackError: { borderColor: 'rgba(228, 93, 106, 0.25)', backgroundColor: 'rgba(228, 93, 106, 0.1)', color: colors['--color-accent-rose'] },
+})
 
 export default defineComponent({
   name: 'SettingsWorkspaceSection',
@@ -34,18 +85,15 @@ export default defineComponent({
     const statusBadge = computed<StatusBadge>(() => {
       switch (jiraConnectionStatus.value) {
         case 'connected':
-          return { label: 'Connected', icon: 'lucide:circle-check', classes: 'border-accent-sage/25 bg-accent-sage/10 text-accent-sage' }
+          return { label: 'Connected', icon: 'lucide:circle-check', variant: 'connected' }
         case 'checking':
-          return { label: 'Checking…', icon: 'lucide:loader-circle', spin: true, classes: 'border-white/[0.08] bg-white/[0.04] text-slate-400' }
+          return { label: 'Checking…', icon: 'lucide:loader-circle', spin: true, variant: 'checking' }
         case 'error':
-          return { label: 'Connection failed', icon: 'lucide:circle-alert', classes: 'border-accent-rose/25 bg-accent-rose/10 text-accent-rose' }
+          return { label: 'Connection failed', icon: 'lucide:circle-alert', variant: 'error' }
         default:
-          return { label: 'Not configured', icon: 'lucide:circle-dashed', classes: 'border-accent-amber/25 bg-accent-amber/10 text-accent-amber' }
+          return { label: 'Not configured', icon: 'lucide:circle-dashed', variant: 'unconfigured' }
       }
     })
-
-    const inputClass = 'w-full rounded-md border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-slate-200 outline-none transition placeholder:text-slate-500 focus:border-white/[0.16] focus:bg-white/[0.06]'
-    const buttonClass = 'inline-flex items-center justify-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-200 transition hover:border-white/[0.14] hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-white/[0.08] disabled:hover:bg-white/[0.04]'
 
     function saveConnectionFromEnter(event: KeyboardEvent): void {
       if (event.key === 'Enter') {
@@ -62,28 +110,28 @@ export default defineComponent({
     }
 
     return () => (
-      <section class="mx-auto max-w-3xl space-y-5">
+      <section {...stylex.attrs(styles.section)}>
         <div>
-          <h2 class="text-xl font-semibold text-slate-100">Workspace</h2>
-          <p class="mt-1 text-sm text-slate-500">Manage your Jira connection details.</p>
+          <h2 {...stylex.attrs(styles.title)}>Workspace</h2>
+          <p {...stylex.attrs(styles.copy)}>Manage your Jira connection details.</p>
         </div>
 
-        <div class="rounded-lg border border-white/[0.06] bg-white/[0.02]">
-          <div class="flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-3">
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-slate-200">Jira connection</p>
+        <div {...stylex.attrs(styles.card, styles.blockGap)}>
+          <div {...stylex.attrs(styles.cardHeader)}>
+            <div {...stylex.attrs(styles.minWidth)}>
+              <p {...stylex.attrs(styles.cardTitle)}>Jira connection</p>
               {jiraConnectionStatus.value === 'connected' && jiraConnectedUserName.value && (
-                <p class="mt-0.5 truncate text-xs text-slate-500">
+                <p {...stylex.attrs(styles.cardMeta)}>
                   Signed in as
                   {' '}
-                  <span class="text-slate-300">{jiraConnectedUserName.value}</span>
+                  <span {...stylex.attrs(styles.cardMetaStrong)}>{jiraConnectedUserName.value}</span>
                 </p>
               )}
               {jiraConnectionStatus.value === 'unconfigured' && (
-                <p class="mt-0.5 truncate text-xs text-slate-500">Add your URL, email, and API token to connect.</p>
+                <p {...stylex.attrs(styles.cardMeta)}>Add your URL, email, and API token to connect.</p>
               )}
               {jiraConnectionStatus.value !== 'connected' && jiraConnectionStatus.value !== 'unconfigured' && jiraSavedBaseUrl.value && (
-                <p class="mt-0.5 truncate text-xs text-slate-500">
+                <p {...stylex.attrs(styles.cardMeta)}>
                   {jiraSavedBaseUrl.value}
                   {jiraSavedEmail.value && (
                     <span>
@@ -94,79 +142,86 @@ export default defineComponent({
                 </p>
               )}
             </div>
-            <span class={['inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium', statusBadge.value.classes]}>
-              <Icon name={statusBadge.value.icon} class={['h-3.5 w-3.5', { 'animate-spin': statusBadge.value.spin }]} aria-hidden="true" />
+            <span
+              {...stylex.attrs(
+                styles.badge,
+                statusBadge.value.variant === 'connected' && styles.badgeConnected,
+                statusBadge.value.variant === 'checking' && styles.badgeChecking,
+                statusBadge.value.variant === 'error' && styles.badgeError,
+                statusBadge.value.variant === 'unconfigured' && styles.badgeUnconfigured,
+              )}
+            >
+              <Icon name={statusBadge.value.icon} {...stylex.attrs(styles.iconSm, statusBadge.value.spin && styles.spin)} aria-hidden="true" />
               {statusBadge.value.label}
             </span>
           </div>
 
           {jiraConnectionStatus.value === 'error' && (
-            <div class="flex flex-col gap-2 border-b border-white/[0.06] bg-accent-rose/5 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
-              <div class="flex min-w-0 gap-2 text-xs text-accent-rose">
-                <Icon name="lucide:triangle-alert" class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <p class="min-w-0 break-words">{jiraConnectionErrorMessage.value || 'Could not reach Jira. Check your connection details below.'}</p>
+            <div {...stylex.attrs(styles.errorBanner)}>
+              <div {...stylex.attrs(styles.errorTextRow)}>
+                <Icon name="lucide:triangle-alert" {...stylex.attrs(styles.errorTextIcon)} aria-hidden="true" />
+                <p {...stylex.attrs(styles.breakWords)}>{jiraConnectionErrorMessage.value || 'Could not reach Jira. Check your connection details below.'}</p>
               </div>
-              <button type="button" class="inline-flex shrink-0 items-center gap-1.5 self-start rounded-md border border-accent-rose/25 px-2.5 py-1 text-xs font-medium text-accent-rose transition hover:bg-accent-rose/10 disabled:cursor-not-allowed disabled:opacity-50" disabled={isRecheckingJiraConnection.value} onClick={recheckJiraConnection}>
-                <Icon name="lucide:refresh-cw" class={['h-3 w-3', { 'animate-spin': isRecheckingJiraConnection.value }]} aria-hidden="true" />
+              <button type="button" {...stylex.attrs(styles.retryButton)} disabled={isRecheckingJiraConnection.value} onClick={recheckJiraConnection}>
+                <Icon name="lucide:refresh-cw" {...stylex.attrs(styles.iconXs, isRecheckingJiraConnection.value && styles.spin)} aria-hidden="true" />
                 Retry
               </button>
             </div>
           )}
 
-          <div class="space-y-4 p-4">
-            <div class="grid gap-3 md:grid-cols-2">
-              <label class="block">
-                <span class="mb-1.5 block text-xs font-medium text-slate-500">Jira URL</span>
-                <input v-model={jiraBaseUrlDraft.value} type="url" name="jira-base-url" autocomplete="url" placeholder="https://example.atlassian.net" class={inputClass} onKeydown={saveConnectionFromEnter} />
+          <div {...stylex.attrs(styles.body)}>
+            <div {...stylex.attrs(styles.grid)}>
+              <label {...stylex.attrs(styles.label)}>
+                <span {...stylex.attrs(styles.labelText)}>Jira URL</span>
+                <input v-model={jiraBaseUrlDraft.value} type="url" name="jira-base-url" autocomplete="url" placeholder="https://example.atlassian.net" {...stylex.attrs(styles.input)} onKeydown={saveConnectionFromEnter} />
               </label>
-              <label class="block">
-                <span class="mb-1.5 block text-xs font-medium text-slate-500">Atlassian email</span>
-                <input v-model={jiraEmailDraft.value} type="email" name="jira-email" autocomplete="email" placeholder="you@example.com" class={inputClass} onKeydown={saveConnectionFromEnter} />
+              <label {...stylex.attrs(styles.label)}>
+                <span {...stylex.attrs(styles.labelText)}>Atlassian email</span>
+                <input v-model={jiraEmailDraft.value} type="email" name="jira-email" autocomplete="email" placeholder="you@example.com" {...stylex.attrs(styles.input)} onKeydown={saveConnectionFromEnter} />
               </label>
             </div>
-            <div class="flex justify-end">
-              <button type="button" class={buttonClass} disabled={!canSaveJiraConnectionDetails.value} onClick={saveJiraConnectionDetails}>Save connection</button>
+            <div {...stylex.attrs(styles.rightAligned)}>
+              <button type="button" {...stylex.attrs(styles.button)} disabled={!canSaveJiraConnectionDetails.value} onClick={saveJiraConnectionDetails}>Save connection</button>
             </div>
 
-            <div class="border-t border-white/[0.06] pt-4">
-              <div class="mb-1.5 flex items-center gap-2">
-                <span class="text-xs font-medium text-slate-500">API token</span>
+            <div {...stylex.attrs(styles.tokenSection)}>
+              <div {...stylex.attrs(styles.tokenHeader)}>
+                <span {...stylex.attrs(styles.labelText)}>API token</span>
                 {jiraHasApiToken.value && (
-                  <span class="inline-flex items-center gap-1 rounded-full border border-accent-sage/25 bg-accent-sage/10 px-2 py-0.5 text-[11px] font-medium text-accent-sage">
-                    <Icon name="lucide:check" class="h-3 w-3" aria-hidden="true" />
+                  <span {...stylex.attrs(styles.savedPill)}>
+                    <Icon name="lucide:check" {...stylex.attrs(styles.iconXs)} aria-hidden="true" />
                     Saved
                   </span>
                 )}
               </div>
 
-              <div class="flex flex-col gap-2 md:flex-row md:items-start">
-                <div class="w-full space-y-2">
+              <div {...stylex.attrs(styles.tokenRow)}>
+                <div {...stylex.attrs(styles.tokenFields)}>
                   {jiraHasApiToken.value && (
-                    <div class="flex items-center gap-2 rounded-md border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm text-slate-400">
-                      <Icon name="lucide:key-round" class="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden="true" />
-                      <span class="tracking-[0.2em] text-slate-500">••••••••••••</span>
-                      <span class="ml-auto text-xs text-slate-600">hidden</span>
+                    <div {...stylex.attrs(styles.storedToken)}>
+                      <Icon name="lucide:key-round" {...stylex.attrs(styles.iconSm, styles.iconMuted)} aria-hidden="true" />
+                      <span {...stylex.attrs(styles.tokenDots)}>••••••••••••</span>
+                      <span {...stylex.attrs(styles.hiddenLabel)}>hidden</span>
                     </div>
                   )}
-                  <input v-model={jiraApiToken.value} type="password" name="jira-api-token" autocomplete="new-password" placeholder={jiraHasApiToken.value ? 'Paste a new token to replace it' : 'Paste your Jira API token'} class={inputClass} onKeydown={saveTokenFromEnter} />
-                  <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noreferrer" class="inline-flex items-center gap-1 text-xs text-slate-400 transition hover:text-slate-200">
-                    <Icon name="lucide:external-link" class="h-3 w-3" aria-hidden="true" />
+                  <input v-model={jiraApiToken.value} type="password" name="jira-api-token" autocomplete="new-password" placeholder={jiraHasApiToken.value ? 'Paste a new token to replace it' : 'Paste your Jira API token'} {...stylex.attrs(styles.input)} onKeydown={saveTokenFromEnter} />
+                  <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noreferrer" {...stylex.attrs(styles.externalLink)}>
+                    <Icon name="lucide:external-link" {...stylex.attrs(styles.iconXs)} aria-hidden="true" />
                     Create a Jira API token
                   </a>
                 </div>
-                <button type="button" class={[buttonClass, 'md:w-auto']} disabled={isSavingSpaceSettings.value || !jiraApiToken.value.trim()} onClick={saveJiraApiToken}>
+                <button type="button" {...stylex.attrs(styles.button, styles.tokenButton)} disabled={isSavingSpaceSettings.value || !jiraApiToken.value.trim()} onClick={saveJiraApiToken}>
                   {jiraHasApiToken.value ? 'Replace token' : 'Save token'}
                 </button>
               </div>
             </div>
 
             {jiraFeedback.value && (
-              <p class={[
-                'rounded-md px-3 py-2 text-xs',
-                jiraFeedback.value.kind === 'success'
-                  ? 'border border-accent-sage/25 bg-accent-sage/10 text-accent-sage'
-                  : 'border border-accent-rose/25 bg-accent-rose/10 text-accent-rose',
-              ]}
+              <p
+                {...stylex.attrs(
+                  styles.feedback,
+                  jiraFeedback.value.kind === 'success' ? styles.feedbackSuccess : styles.feedbackError,
+                )}
               >
                 {jiraFeedback.value.message}
               </p>

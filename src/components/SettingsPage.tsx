@@ -1,3 +1,4 @@
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent } from 'vue'
 import SettingsAboutSection from '@/components/settings/SettingsAboutSection'
 import SettingsAssistantSection from '@/components/settings/SettingsAssistantSection'
@@ -5,6 +6,37 @@ import SettingsTeamSections from '@/components/settings/SettingsTeamSections'
 import SettingsWorkspaceSection from '@/components/settings/SettingsWorkspaceSection'
 import { provideSettingsPageContext } from '@/features/settings/settingsPageContext'
 import { useSettingsPageState } from '@/features/settings/useSettingsPageState'
+import { uiStyles } from '@/styles/shared'
+import { breakpoints, colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  root: { display: 'flex', height: '100%', flexDirection: 'column', backgroundColor: colors['--color-surface-0'] },
+  topBar: { zIndex: 20, display: 'flex', height: '3rem', flexShrink: 0, alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(8, 9, 10, 0.95)', paddingInline: '1rem', backdropFilter: 'blur(8px)' },
+  backButton: { display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '0.375rem', paddingInline: '0.625rem', paddingBlock: '0.375rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-100'] }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.04)' }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  backIcon: { width: '0.875rem', height: '0.875rem' },
+  title: { fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-slate-300'] },
+  headerSpacer: { width: '5rem' },
+  layout: { display: 'grid', minHeight: 0, flexGrow: '1', flexShrink: '1', flexBasis: '0%', gridTemplateColumns: { default: '1fr', [breakpoints.lg]: '18rem minmax(0, 1fr)' } },
+  sidebar: { overflowY: 'auto', borderBottomWidth: { default: 1, [breakpoints.lg]: 0 }, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', borderRightWidth: { [breakpoints.lg]: 1 }, borderRightStyle: { [breakpoints.lg]: 'solid' }, borderRightColor: { [breakpoints.lg]: 'rgba(255, 255, 255, 0.06)' }, paddingInline: '1rem', paddingBlock: '1.25rem' },
+  sidebarHeader: { marginBottom: '1.25rem', paddingInline: '0.5rem' },
+  sidebarTitle: { fontSize: '1.125rem', lineHeight: '1.75rem', fontWeight: 600, color: colors['--color-slate-100'] },
+  sidebarSubtitle: { marginTop: '0.25rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  searchLabel: { display: 'block', marginBottom: '1rem', paddingInline: '0.5rem' },
+  srOnly: { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', borderWidth: 0 },
+  searchInput: { 'width': '100%', 'borderRadius': '0.375rem', 'borderWidth': 1, 'borderStyle': 'solid', 'borderColor': { 'default': 'rgba(255, 255, 255, 0.06)', ':focus': 'rgba(255, 255, 255, 0.16)' }, 'backgroundColor': { 'default': 'rgba(255, 255, 255, 0.035)', ':focus': 'rgba(255, 255, 255, 0.05)' }, 'paddingInline': '0.625rem', 'paddingBlock': '0.375rem', 'fontSize': 12, 'color': colors['--color-slate-200'], 'outlineStyle': 'none', 'transitionProperty': 'border-color, background-color', 'transitionDuration': '150ms', 'transitionTimingFunction': 'cubic-bezier(0.4, 0, 0.2, 1)', '::placeholder': { color: colors['--color-slate-600'] } },
+  nav: { display: 'flex', flexDirection: 'column', gap: '1.25rem' },
+  navGroupHeading: { marginBottom: '0.375rem', paddingInline: '0.625rem', fontSize: 11, fontWeight: 500, color: colors['--color-slate-600'] },
+  navItems: { display: 'flex', flexDirection: 'column', gap: '0.125rem' },
+  navButton: { display: 'flex', width: '100%', alignItems: 'center', gap: '0.5rem', borderRadius: '0.375rem', paddingInline: '0.625rem', paddingBlock: '0.375rem', textAlign: 'left', color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-300'] }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.035)' }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  navButtonActive: { backgroundColor: 'rgba(255, 255, 255, 0.06)', color: colors['--color-slate-100'] },
+  navDot: { width: '0.375rem', height: '0.375rem', flexShrink: 0, borderRadius: '9999px', backgroundColor: colors['--color-slate-700'] },
+  navDotActive: { backgroundColor: colors['--color-accent-indigo'] },
+  navText: { minWidth: 0, flexGrow: '1', flexShrink: '1', flexBasis: '0%' },
+  navLabel: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 500 },
+  navDescription: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '0.125rem', fontSize: 11, color: colors['--color-slate-600'] },
+  emptyResults: { paddingInline: '0.625rem', paddingBlock: '0.5rem', fontSize: 12, color: colors['--color-slate-600'] },
+  main: { minWidth: 0, overflowY: 'auto', paddingInline: { default: '1.25rem', [breakpoints.lg]: '2.5rem' }, paddingBlock: '2rem' },
+})
 
 export default defineComponent({
   name: 'SettingsPage',
@@ -22,55 +54,50 @@ export default defineComponent({
     } = settingsState
 
     return () => (
-      <div class="flex h-full flex-col animate-fade-in bg-surface-0">
-        <div class="z-20 flex h-12 shrink-0 items-center justify-between border-b border-white/[0.06] bg-surface-0/95 px-4 backdrop-blur">
-          <button class="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-slate-100" onClick={() => emit('close')}>
-            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div {...stylex.attrs(styles.root, uiStyles.fadeIn)}>
+        <div {...stylex.attrs(styles.topBar)}>
+          <button {...stylex.attrs(styles.backButton)} onClick={() => emit('close')}>
+            <svg {...stylex.attrs(styles.backIcon)} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 18l-6-6 6-6" />
             </svg>
             Back to app
           </button>
-          <div class="text-xs font-medium text-slate-300">Settings</div>
-          <div class="w-20" />
+          <div {...stylex.attrs(styles.title)}>Settings</div>
+          <div {...stylex.attrs(styles.headerSpacer)} />
         </div>
 
-        <div class="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[18rem_minmax(0,1fr)]">
-          <aside class="overflow-y-auto border-b border-white/[0.06] px-4 py-5 lg:border-b-0 lg:border-r lg:border-white/[0.06]">
-            <div class="mb-5 px-2">
-              <h1 class="text-lg font-semibold text-slate-100">Settings</h1>
-              <p class="mt-1 text-xs text-slate-500">LifeMD workspace</p>
+        <div {...stylex.attrs(styles.layout)}>
+          <aside {...stylex.attrs(styles.sidebar)}>
+            <div {...stylex.attrs(styles.sidebarHeader)}>
+              <h1 {...stylex.attrs(styles.sidebarTitle)}>Settings</h1>
+              <p {...stylex.attrs(styles.sidebarSubtitle)}>LifeMD workspace</p>
             </div>
-            <label class="mb-4 block px-2">
-              <span class="sr-only">Search settings</span>
+            <label {...stylex.attrs(styles.searchLabel)}>
+              <span {...stylex.attrs(styles.srOnly)}>Search settings</span>
               <input
                 v-model={settingsSearchQuery.value}
                 type="search"
                 name="settings-search"
                 placeholder="Search settings"
-                class="w-full rounded-md border border-white/[0.06] bg-white/[0.035] px-2.5 py-1.5 text-[12px] text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.05]"
+                {...stylex.attrs(styles.searchInput)}
               />
             </label>
-            <nav class="space-y-5">
+            <nav {...stylex.attrs(styles.nav)}>
               {filteredSettingsNavigationGroups.value.map(group => (
                 <section key={group.label}>
-                  <h2 class="mb-1.5 px-2.5 text-[11px] font-medium text-slate-600">{group.label}</h2>
-                  <div class="space-y-0.5">
+                  <h2 {...stylex.attrs(styles.navGroupHeading)}>{group.label}</h2>
+                  <div {...stylex.attrs(styles.navItems)}>
                     {group.items.map(item => (
                       <button
                         key={item.id}
                         type="button"
-                        class={[
-                          'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition',
-                          activeSettingsSection.value === item.id
-                            ? 'bg-white/[0.06] text-slate-100'
-                            : 'text-slate-500 hover:bg-white/[0.035] hover:text-slate-300',
-                        ]}
+                        {...stylex.attrs(styles.navButton, activeSettingsSection.value === item.id && styles.navButtonActive)}
                         onClick={() => { activeSettingsSection.value = item.id }}
                       >
-                        <span class={['h-1.5 w-1.5 shrink-0 rounded-full', activeSettingsSection.value === item.id ? 'bg-accent-indigo' : 'bg-slate-700']} />
-                        <span class="min-w-0 flex-1">
-                          <span class="block truncate text-[13px] font-medium">{item.label}</span>
-                          <span class="mt-0.5 block truncate text-[11px] text-slate-600">{item.description}</span>
+                        <span {...stylex.attrs(styles.navDot, activeSettingsSection.value === item.id && styles.navDotActive)} />
+                        <span {...stylex.attrs(styles.navText)}>
+                          <span {...stylex.attrs(styles.navLabel)}>{item.label}</span>
+                          <span {...stylex.attrs(styles.navDescription)}>{item.description}</span>
                         </span>
                       </button>
                     ))}
@@ -78,12 +105,12 @@ export default defineComponent({
                 </section>
               ))}
               {!filteredSettingsNavigationGroups.value.length && (
-                <p class="px-2.5 py-2 text-[12px] text-slate-600">No settings found.</p>
+                <p {...stylex.attrs(styles.emptyResults)}>No settings found.</p>
               )}
             </nav>
           </aside>
 
-          <main class="min-w-0 overflow-y-auto px-5 py-8 lg:px-10">
+          <main {...stylex.attrs(styles.main)}>
             <SettingsAssistantSection v-show={activeSettingsSection.value === 'assistant'} />
             <SettingsWorkspaceSection v-show={activeSettingsSection.value === 'workspace'} />
             <SettingsAboutSection v-show={activeSettingsSection.value === 'about'} />

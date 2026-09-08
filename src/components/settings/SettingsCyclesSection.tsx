@@ -1,9 +1,21 @@
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, ref, watch } from 'vue'
 import { useJiraTickets } from '@/composables/useJiraTickets'
 import { useSpaceCycles } from '@/composables/useSpaceCycles'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
+import { colors } from '@/styles/tokens.stylex'
 import { ticketBelongsToCycle } from '~/shared/cycles'
 import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
+
+const styles = stylex.create({
+  root: { display: 'flex', flexDirection: 'column', gap: '1.25rem', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: '1rem' },
+  muted: { fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-400'] },
+  field: { display: 'block', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-200'] },
+  fieldControlGap: { marginTop: '0.5rem' },
+  select: { display: 'block', width: '100%', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.1)', backgroundColor: colors['--color-slate-900'], paddingInline: '0.75rem', paddingBlock: '0.5rem', opacity: { 'default': 1, ':disabled': 0.5 } },
+  detail: { fontSize: '0.75rem', lineHeight: '1.25rem', color: colors['--color-slate-500'] },
+  error: { fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-red-400'] },
+})
 
 export default defineComponent({
   name: 'SettingsCyclesSection',
@@ -56,41 +68,41 @@ export default defineComponent({
     }
 
     return () => (
-      <div class="space-y-5 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+      <div {...stylex.attrs(styles.root)}>
         {teams.value.length === 0
-          ? <p class="text-sm text-slate-400">Enable a Jira team to configure cycles.</p>
+          ? <p {...stylex.attrs(styles.muted)}>Enable a Jira team to configure cycles.</p>
           : (
               <>
-                <label class="block space-y-2 text-sm text-slate-200">
+                <label {...stylex.attrs(styles.field)}>
                   <span>Team</span>
-                  <select v-model={selectedTeam.value} disabled={isMutating.value} class="block w-full rounded-md border border-white/10 bg-slate-900 px-3 py-2 disabled:opacity-50">
+                  <select v-model={selectedTeam.value} disabled={isMutating.value} {...stylex.attrs(styles.select, styles.fieldControlGap)}>
                     {teams.value.map(team => <option key={team.key} value={team.key}>{team.name || team.key}</option>)}
                   </select>
                 </label>
                 {isLoading.value
-                  ? <p class="text-sm text-slate-400">Loading sprints…</p>
+                  ? <p {...stylex.attrs(styles.muted)}>Loading sprints…</p>
                   : (
                       <>
-                        <label class="block space-y-2 text-sm text-slate-200">
+                        <label {...stylex.attrs(styles.field)}>
                           <span>Jira board</span>
-                          <select value={payload.value.board?.id ?? ''} disabled={isMutating.value || !payload.value.boards.length} class="block w-full rounded-md border border-white/10 bg-slate-900 px-3 py-2 disabled:opacity-50" onChange={(event) => { void save('board', event) }}>
+                          <select value={payload.value.board?.id ?? ''} disabled={isMutating.value || !payload.value.boards.length} {...stylex.attrs(styles.select, styles.fieldControlGap)} onChange={(event) => { void save('board', event) }}>
                             <option value="" disabled>Select a board</option>
                             {payload.value.board && !payload.value.boards.some(board => board.id === payload.value.board?.id) && <option value={payload.value.board.id}>{payload.value.board.name}</option>}
                             {payload.value.boards.map(board => <option key={board.id} value={board.id}>{board.name}</option>)}
                           </select>
                         </label>
-                        {!payload.value.boards.length && !errorMessage.value && <p class="text-sm text-slate-400">No sprint boards found for this team.</p>}
-                        <label class="block space-y-2 text-sm text-slate-200">
+                        {!payload.value.boards.length && !errorMessage.value && <p {...stylex.attrs(styles.muted)}>No sprint boards found for this team.</p>}
+                        <label {...stylex.attrs(styles.field)}>
                           <span>Current sprint</span>
-                          <select value={payload.value.currentSprintId ?? ''} disabled={isMutating.value || !payload.value.board} class="block w-full rounded-md border border-white/10 bg-slate-900 px-3 py-2 disabled:opacity-50" onChange={(event) => { void save('sprint', event) }}>
+                          <select value={payload.value.currentSprintId ?? ''} disabled={isMutating.value || !payload.value.board} {...stylex.attrs(styles.select, styles.fieldControlGap)} onChange={(event) => { void save('sprint', event) }}>
                             <option value="">Automatic from Jira</option>
                             {activeSprints.value.map(sprint => <option key={sprint.id} value={sprint.id}>{sprint.name}</option>)}
                           </select>
                         </label>
-                        <p class="text-xs leading-5 text-slate-500">
+                        <p {...stylex.attrs(styles.detail)}>
                           Choose which active sprint this team follows in BetterJira. Automatic uses the board’s first active sprint. When a selected sprint closes, selection returns to automatic.
                         </p>
-                        <p class="text-sm text-slate-400" aria-live="polite">
+                        <p {...stylex.attrs(styles.muted)} aria-live="polite">
                           {payload.value.current ? `${payload.value.current.name} · ${currentCount.value} issues` : 'No active sprint on this board.'}
                           {isMutating.value && (
                             <span>
@@ -101,7 +113,7 @@ export default defineComponent({
                         </p>
                       </>
                     )}
-                {(saveError.value || errorMessage.value) && <p role="alert" class="text-sm text-red-400">{saveError.value || errorMessage.value}</p>}
+                {(saveError.value || errorMessage.value) && <p role="alert" {...stylex.attrs(styles.error)}>{saveError.value || errorMessage.value}</p>}
               </>
             )}
       </div>

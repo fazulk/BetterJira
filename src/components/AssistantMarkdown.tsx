@@ -1,3 +1,4 @@
+import * as stylex from '@stylexjs/stylex'
 import MarkdownIt from 'markdown-it'
 import { computed, defineComponent } from 'vue'
 import './AssistantMarkdown.css'
@@ -20,6 +21,10 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   return defaultLinkRenderer(tokens, idx, options, env, self)
 }
 
+const styles = stylex.create({
+  root: {},
+})
+
 export default defineComponent({
   name: 'AssistantMarkdown',
   props: {
@@ -31,8 +36,6 @@ export default defineComponent({
   setup(props) {
     const html = computed(() => md.render(props.content))
 
-    return () => (
-      <div class="assistant-markdown" innerHTML={html.value} />
-    )
+    return () => <div {...stylex.attrs(styles.root)} class="assistant-markdown" innerHTML={html.value} />
   },
 })

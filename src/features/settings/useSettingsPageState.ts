@@ -1,5 +1,4 @@
 import type { SettingsSectionId } from './settingsTypes'
-import type { AiProviderAvailability } from '~/shared/ai'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useAiSettings } from '@/composables/useAiSettings'
 import { useJiraCurrentUser } from '@/composables/useJiraCurrentUser'
@@ -109,12 +108,6 @@ export function useSettingsPageState() {
         setAiFeedback('error', message)
       }
     }
-  }
-
-  function getProviderStatusClass(status: AiProviderAvailability): string {
-    return status.available
-      ? 'border-white/[0.08] bg-white/[0.035] text-slate-300'
-      : 'border-white/[0.06] bg-white/[0.02] text-slate-500'
   }
 
   async function handleModelChange(event: Event): Promise<void> {
@@ -293,7 +286,6 @@ export function useSettingsPageState() {
     constrainedSettingsSectionTitle,
     filteredSettingsNavigationGroups,
     getProviderLabel,
-    getProviderStatusClass,
     handleModelChange,
     handleProviderChange,
     isLoadingProviders,

@@ -1,10 +1,12 @@
 import type { StatusLane } from '@/composables/useStatusPreferences'
 import type { TeamStatusSettingsRow } from '@/features/settings/settingsTypes'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, onBeforeUnmount, onMounted, ref, Teleport, vShow, watch, withDirectives } from 'vue'
 import SettingsCyclesSection from '@/components/settings/SettingsCyclesSection'
 import StatusIcon from '@/components/StatusIcon'
 import { getStatusLaneLabel, useStatusPreferences } from '@/composables/useStatusPreferences'
 import { useSettingsPageContext } from '@/features/settings/settingsPageContext'
+import { breakpoints, colors } from '@/styles/tokens.stylex'
 
 interface ColorMenuState {
   open: boolean
@@ -12,6 +14,66 @@ interface ColorMenuState {
   x: number
   y: number
 }
+
+const styles = stylex.create({
+  section: { maxWidth: '48rem', marginInline: 'auto' },
+  blockGap: { marginTop: '1.25rem' },
+  title: { fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 600, color: colors['--color-slate-100'] },
+  copy: { marginTop: '0.25rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-500'] },
+  table: { overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
+  tableRow: { display: 'grid', gap: '0.5rem', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem', paddingBlock: '0.75rem' },
+  teamRowGrid: { gridTemplateColumns: { [breakpoints.md]: 'minmax(0, 1fr) 7rem 10rem' } },
+  memberRowGrid: { gridTemplateColumns: { [breakpoints.md]: 'minmax(0, 1fr) 7rem 8rem' } },
+  constrainedRowGrid: { gridTemplateColumns: { [breakpoints.md]: 'minmax(0, 1fr) 10rem' } },
+  lastRow: { borderBottomWidth: 0 },
+  rowTitle: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-200'] },
+  cellMuted: { fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-500'] },
+  cellValue: { fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-400'], textAlign: { default: 'left', [breakpoints.md]: 'right' } },
+  subtleDetail: { marginTop: '0.125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  multilineDetail: { marginTop: '0.125rem', fontSize: '0.75rem', lineHeight: '1.25rem', color: colors['--color-slate-500'] },
+  minWidth: { minWidth: 0 },
+  memberIssueCount: { textAlign: 'right' },
+  empty: { paddingInline: '1rem', paddingBlock: '1.5rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-500'] },
+  headerBetween: { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' },
+  resetButton: { flexShrink: 0, borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', paddingInline: '0.75rem', paddingBlock: '0.375rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-100'] }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.04)' }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  laneList: { display: 'flex', flexDirection: 'column', gap: '1.5rem' },
+  lane: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
+  laneHeader: { borderRadius: '0.375rem', backgroundColor: 'rgba(255, 255, 255, 0.03)', paddingInline: '0.75rem', paddingBlock: '0.5rem' },
+  laneTitle: { fontSize: 13, fontWeight: 500, color: colors['--color-slate-400'] },
+  statusRow: { display: 'flex', alignItems: 'center', gap: '0.75rem', borderRadius: '0.375rem', paddingInline: '0.75rem', paddingBlock: '0.625rem', backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.025)' }, transitionProperty: 'background-color, opacity', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  statusDragOver: { backgroundColor: 'rgba(255, 255, 255, 0.06)' },
+  statusDragging: { opacity: 0.5 },
+  dragHandle: { width: '0.75rem', flexShrink: 0, cursor: 'grab', userSelect: 'none', textAlign: 'center', color: { default: colors['--color-slate-700'], [stylex.when.ancestor(':hover')]: colors['--color-slate-500'] }, transitionProperty: 'color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  dragHandleDragging: { cursor: 'grabbing' },
+  colorButton: { display: 'inline-flex', width: '1.75rem', height: '1.75rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.06)' }, transitionProperty: 'background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  statusContent: { minWidth: 0, flexGrow: '1', flexShrink: '1', flexBasis: '0%' },
+  statusTitle: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-100'] },
+  noStatuses: { borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.02)', paddingInline: '1rem', paddingBlock: '1.5rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-500'] },
+  menu: { position: 'fixed', zIndex: 100, width: '14rem', borderRadius: '1rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(17, 19, 26, 0.95)', padding: '0.75rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-200'], boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(8px)' },
+  menuIntro: { minWidth: 0, marginBottom: '0.75rem' },
+  menuEyebrow: { fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.18em', color: colors['--color-slate-500'] },
+  menuStatus: { marginTop: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600, color: colors['--color-slate-100'] },
+  swatchGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '0.5rem' },
+  swatch: { display: 'flex', width: '2rem', height: '2rem', alignItems: 'center', justifyContent: 'center', borderRadius: '1rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.1)', transitionProperty: 'filter, transform, border-color, box-shadow', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  swatchHover: { filter: 'brightness(1.25)', transform: 'scale(1.05)' },
+  swatchActive: { borderColor: 'transparent', boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.7), 0 0 0 4px #11131a' },
+  customBox: { marginTop: '0.75rem', borderRadius: '1rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.03)', paddingInline: '0.625rem', paddingBlock: '0.5rem' },
+  customLabel: { marginBottom: '0.375rem', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.18em', color: colors['--color-slate-500'] },
+  customRow: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
+  colorInputLabel: { position: 'relative', width: '1.75rem', height: '1.75rem', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.12)' },
+  nativeColor: { position: 'absolute', inset: 0, width: '100%', height: '100%', cursor: 'pointer', opacity: 0 },
+  hexShell: { display: 'flex', flexGrow: '1', flexShrink: '1', flexBasis: '0%', alignItems: 'center', gap: '0.25rem', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.1)', backgroundColor: 'rgba(255, 255, 255, 0.03)', paddingInline: '0.5rem', paddingBlock: '0.375rem' },
+  hexShellFocused: { borderColor: 'rgba(255, 255, 255, 0.2)' },
+  hash: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  hexInput: { 'width': '100%', 'borderWidth': 0, 'backgroundColor': 'transparent', 'fontSize': '0.75rem', 'lineHeight': '1rem', 'textTransform': 'uppercase', 'letterSpacing': '0.025em', 'color': colors['--color-slate-200'], 'outlineStyle': 'none', '::placeholder': { color: colors['--color-slate-600'] } },
+  invalid: { marginTop: '0.375rem', fontSize: 11, color: colors['--color-rose-300'] },
+  resetColorButton: { marginTop: '0.5rem', width: '100%', borderRadius: '1rem', paddingInline: '0.75rem', paddingBlock: '0.5rem', textAlign: 'left', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-100'] }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.05)' }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+})
+
+const dynamicStyles = stylex.create({
+  menuPosition: (left: number, top: number) => ({ left, top }),
+  backgroundColor: (color: string) => ({ backgroundColor: color }),
+})
 
 function normalizeHexInput(value: string): string | null {
   const trimmed = value.trim().toLowerCase()
@@ -57,6 +119,8 @@ export default defineComponent({
     const colorMenu = ref<ColorMenuState>({ open: false, row: null, x: 0, y: 0 })
     const colorMenuElement = ref<HTMLElement | null>(null)
     const customHexDraft = ref('')
+    const customHexFocused = ref(false)
+    const hoveredSwatch = ref<string | null>(null)
 
     const statusLaneSections = computed(() => statusLaneOrder
       .map(lane => ({
@@ -227,84 +291,85 @@ export default defineComponent({
     return () => (
       <>
         {withDirectives(
-          <section class="mx-auto max-w-3xl space-y-5">
+          <section {...stylex.attrs(styles.section)}>
             <div>
-              <h2 class="text-xl font-semibold text-slate-100">Teams</h2>
-              <p class="mt-1 text-sm text-slate-500">Enabled spaces organized as workspace teams.</p>
+              <h2 {...stylex.attrs(styles.title)}>Teams</h2>
+              <p {...stylex.attrs(styles.copy)}>Enabled spaces organized as workspace teams.</p>
             </div>
-            <div class="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]">
-              {teamSettingsRows.value.map(team => (
-                <div key={team.value} class="grid gap-2 border-b border-white/[0.06] px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1fr)_7rem_10rem]">
-                  <p class="truncate text-sm font-medium text-slate-200">{team.label}</p>
-                  <p class="text-sm text-slate-500">{team.value}</p>
-                  <p class="text-sm text-slate-500">{team.detail}</p>
+            <div {...stylex.attrs(styles.table, styles.blockGap)}>
+              {teamSettingsRows.value.map((team, index) => (
+                <div key={team.value} {...stylex.attrs(styles.tableRow, styles.teamRowGrid, index === teamSettingsRows.value.length - 1 && styles.lastRow)}>
+                  <p {...stylex.attrs(styles.rowTitle)}>{team.label}</p>
+                  <p {...stylex.attrs(styles.cellMuted)}>{team.value}</p>
+                  <p {...stylex.attrs(styles.cellMuted)}>{team.detail}</p>
                 </div>
               ))}
-              {!teamSettingsRows.value.length && <p class="px-4 py-6 text-sm text-slate-500">No enabled Jira spaces.</p>}
+              {!teamSettingsRows.value.length && <p {...stylex.attrs(styles.empty)}>No enabled Jira spaces.</p>}
             </div>
           </section>,
           [[vShow, activeSettingsSection.value === 'team-overview']],
         )}
 
         {withDirectives(
-          <section class="mx-auto max-w-3xl space-y-5">
+          <section {...stylex.attrs(styles.section)}>
             <div>
-              <h2 class="text-xl font-semibold text-slate-100">Team members</h2>
-              <p class="mt-1 text-sm text-slate-500">Membership is inferred from Jira issue assignees and enabled spaces.</p>
+              <h2 {...stylex.attrs(styles.title)}>Team members</h2>
+              <p {...stylex.attrs(styles.copy)}>Membership is inferred from Jira issue assignees and enabled spaces.</p>
             </div>
-            <div class="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]">
-              {teamMemberRows.value.map(team => (
-                <div key={team.teamKey} class="grid gap-2 border-b border-white/[0.06] px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1fr)_7rem_8rem]">
-                  <div class="min-w-0">
-                    <p class="truncate text-sm font-medium text-slate-200">{team.teamName}</p>
-                    <p class="mt-0.5 truncate text-xs text-slate-500">{team.topMembers}</p>
+            <div {...stylex.attrs(styles.table, styles.blockGap)}>
+              {teamMemberRows.value.map((team, index) => (
+                <div key={team.teamKey} {...stylex.attrs(styles.tableRow, styles.memberRowGrid, index === teamMemberRows.value.length - 1 && styles.lastRow)}>
+                  <div {...stylex.attrs(styles.minWidth)}>
+                    <p {...stylex.attrs(styles.rowTitle)}>{team.teamName}</p>
+                    <p {...stylex.attrs(styles.subtleDetail)}>{team.topMembers}</p>
                   </div>
-                  <p class="text-sm text-slate-500">
+                  <p {...stylex.attrs(styles.cellMuted)}>
                     {team.memberCount}
                     {' '}
                     {team.memberCount === 1 ? 'member' : 'members'}
                   </p>
-                  <p class="text-right text-sm text-slate-500">
+                  <p {...stylex.attrs(styles.cellMuted, styles.memberIssueCount)}>
                     {team.issueCount}
                     {' '}
                     {team.issueCount === 1 ? 'issue' : 'issues'}
                   </p>
                 </div>
               ))}
-              {!teamMemberRows.value.length && <p class="px-4 py-6 text-sm text-slate-500">No enabled Jira spaces.</p>}
+              {!teamMemberRows.value.length && <p {...stylex.attrs(styles.empty)}>No enabled Jira spaces.</p>}
             </div>
           </section>,
           [[vShow, activeSettingsSection.value === 'team-members']],
         )}
 
         {withDirectives(
-          <section class="mx-auto max-w-3xl space-y-5">
-            <div class="flex flex-wrap items-start justify-between gap-3">
+          <section {...stylex.attrs(styles.section)}>
+            <div {...stylex.attrs(styles.headerBetween)}>
               <div>
-                <h2 class="text-xl font-semibold text-slate-100">Statuses</h2>
-                <p class="mt-1 text-sm text-slate-500">Drag to set the default order. Click a status icon to change its color. Jira workflows stay managed in Jira.</p>
+                <h2 {...stylex.attrs(styles.title)}>Statuses</h2>
+                <p {...stylex.attrs(styles.copy)}>Drag to set the default order. Click a status icon to change its color. Jira workflows stay managed in Jira.</p>
               </div>
-              <button type="button" class="shrink-0 rounded-md border border-white/[0.08] px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-slate-100" onClick={resetStatusOrder}>
+              <button type="button" {...stylex.attrs(styles.resetButton)} onClick={resetStatusOrder}>
                 Reset order
               </button>
             </div>
 
             {statusLaneSections.value.length
               ? (
-                  <div class="space-y-6">
+                  <div {...stylex.attrs(styles.laneList, styles.blockGap)}>
                     {statusLaneSections.value.map(section => (
-                      <section key={section.lane} class="space-y-1">
-                        <div class="rounded-md bg-white/[0.03] px-3 py-2">
-                          <h3 class="text-[13px] font-medium text-slate-400">{section.label}</h3>
+                      <section key={section.lane} {...stylex.attrs(styles.lane)}>
+                        <div {...stylex.attrs(styles.laneHeader)}>
+                          <h3 {...stylex.attrs(styles.laneTitle)}>{section.label}</h3>
                         </div>
                         {section.rows.map(statusRow => (
                           <div
                             key={statusRow.key}
-                            class={[
-                              'group flex items-center gap-3 rounded-md px-3 py-2.5 transition',
-                              dragOverStatusKey.value === statusRow.key ? 'bg-white/[0.06]' : 'hover:bg-white/[0.025]',
-                              draggedStatusKey.value === statusRow.key ? 'opacity-50' : '',
-                            ]}
+                            {...stylex.attrs(
+                              styles.statusRow,
+                              stylex.defaultMarker(),
+                              dragOverStatusKey.value === statusRow.key && styles.statusDragOver,
+                              draggedStatusKey.value === statusRow.key && styles.statusDragging,
+                            )}
                             draggable="true"
                             onDragstart={event => startStatusDrag(statusRow.key, event)}
                             onDragenter={(event) => {
@@ -321,13 +386,13 @@ export default defineComponent({
                             }}
                             onDragend={finishStatusDrag}
                           >
-                            <span class="w-3 shrink-0 cursor-grab select-none text-center text-slate-700 transition group-hover:text-slate-500 active:cursor-grabbing">⁝⁝</span>
-                            <button type="button" class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition hover:bg-white/[0.06]" aria-label={`Change color for ${statusRow.status}`} title="Change color" onClick={event => openColorMenu(statusRow, event)}>
+                            <span {...stylex.attrs(styles.dragHandle, draggedStatusKey.value === statusRow.key && styles.dragHandleDragging)}>⁝⁝</span>
+                            <button type="button" {...stylex.attrs(styles.colorButton)} aria-label={`Change color for ${statusRow.status}`} title="Change color" onClick={event => openColorMenu(statusRow, event)}>
                               <StatusIcon status={statusRow.status} statusCategory={statusRow.group} size={18} />
                             </button>
-                            <div class="min-w-0 flex-1">
-                              <p class="truncate text-sm font-medium text-slate-100">{statusRow.status}</p>
-                              <p class="mt-0.5 truncate text-xs text-slate-500">
+                            <div {...stylex.attrs(styles.statusContent)}>
+                              <p {...stylex.attrs(styles.statusTitle)}>{statusRow.status}</p>
+                              <p {...stylex.attrs(styles.subtleDetail)}>
                                 {getIssueCountLabel(statusRow.issueCount)}
                                 {' · '}
                                 {statusGroupLabels[statusRow.group]}
@@ -341,37 +406,54 @@ export default defineComponent({
                     ))}
                   </div>
                 )
-              : <p class="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-6 text-sm text-slate-500">No issue statuses loaded yet.</p>}
+              : <p {...stylex.attrs(styles.noStatuses, styles.blockGap)}>No issue statuses loaded yet.</p>}
 
             <Teleport to="body">
               {colorMenu.value.open && (
-                <div ref={colorMenuElement} class="fixed z-[100] w-56 rounded-2xl border border-white/[0.08] bg-[#11131a]/95 p-3 text-sm text-slate-200 shadow-2xl shadow-black/40 backdrop-blur" style={{ left: `${colorMenuLeft.value}px`, top: `${colorMenu.value.y}px` }} role="menu">
-                  <div class="mb-3 min-w-0">
-                    <div class="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Status color</div>
-                    <div class="mt-1 truncate font-semibold text-slate-100">{colorMenu.value.row?.status}</div>
+                <div ref={colorMenuElement} {...stylex.attrs(styles.menu, dynamicStyles.menuPosition(colorMenuLeft.value, colorMenu.value.y))} role="menu">
+                  <div {...stylex.attrs(styles.menuIntro)}>
+                    <div {...stylex.attrs(styles.menuEyebrow)}>Status color</div>
+                    <div {...stylex.attrs(styles.menuStatus)}>{colorMenu.value.row?.status}</div>
                   </div>
 
-                  <div class="grid grid-cols-5 gap-2" aria-label="Preset status colors">
+                  <div {...stylex.attrs(styles.swatchGrid)} aria-label="Preset status colors">
                     {statusColorPalette.map(color => (
-                      <button key={color} type="button" class={['flex h-8 w-8 items-center justify-center rounded-2xl border transition hover:scale-105 hover:brightness-125', activeMenuColor.value === color ? 'ring-2 ring-white/70 ring-offset-2 ring-offset-[#11131a] border-transparent' : 'border-white/10']} style={{ backgroundColor: color }} aria-label={`Set ${colorMenu.value.row?.status} to ${color}`} onClick={() => chooseMenuColor(color)} />
+                      <button
+                        key={color}
+                        type="button"
+                        {...stylex.attrs(
+                          styles.swatch,
+                          hoveredSwatch.value === color && styles.swatchHover,
+                          activeMenuColor.value === color && styles.swatchActive,
+                          dynamicStyles.backgroundColor(color),
+                        )}
+                        aria-label={`Set ${colorMenu.value.row?.status} to ${color}`}
+                        onPointerenter={() => { hoveredSwatch.value = color }}
+                        onPointerleave={() => { hoveredSwatch.value = null }}
+                        onClick={() => chooseMenuColor(color)}
+                      />
                     ))}
                   </div>
 
-                  <div class="mt-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-2.5 py-2">
-                    <div class="mb-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Custom</div>
-                    <div class="flex items-center gap-2">
-                      <label class="relative h-7 w-7 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-white/[0.12]" style={{ backgroundColor: customHexPreview.value }}>
-                        <input type="color" class="absolute inset-0 h-full w-full cursor-pointer opacity-0" value={customHexPreview.value} aria-label="Pick custom status color" onInput={applyNativeColor} />
+                  <div {...stylex.attrs(styles.customBox)}>
+                    <div {...stylex.attrs(styles.customLabel)}>Custom</div>
+                    <div {...stylex.attrs(styles.customRow)}>
+                      <label {...stylex.attrs(styles.colorInputLabel, dynamicStyles.backgroundColor(customHexPreview.value))}>
+                        <input type="color" {...stylex.attrs(styles.nativeColor)} value={customHexPreview.value} aria-label="Pick custom status color" onInput={applyNativeColor} />
                       </label>
-                      <div class="flex flex-1 items-center gap-1 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2 py-1.5 focus-within:border-white/[0.2]">
-                        <span class="text-xs text-slate-500">#</span>
-                        <input v-model={customHexDraft.value} type="text" maxlength="7" spellcheck={false} placeholder="rrggbb" class="w-full bg-transparent text-xs uppercase tracking-wide text-slate-200 outline-none placeholder:text-slate-600" aria-label="Custom hex color" onInput={handleCustomHexInput} onKeydown={handleCustomHexKeydown} />
+                      <div
+                        {...stylex.attrs(styles.hexShell, customHexFocused.value && styles.hexShellFocused)}
+                        onFocusin={() => { customHexFocused.value = true }}
+                        onFocusout={() => { customHexFocused.value = false }}
+                      >
+                        <span {...stylex.attrs(styles.hash)}>#</span>
+                        <input v-model={customHexDraft.value} type="text" maxlength="7" spellcheck={false} placeholder="rrggbb" {...stylex.attrs(styles.hexInput)} aria-label="Custom hex color" onInput={handleCustomHexInput} onKeydown={handleCustomHexKeydown} />
                       </div>
                     </div>
-                    {!isCustomHexValid.value && customHexDraft.value.length > 0 && <p class="mt-1.5 text-[11px] text-rose-300">Enter a 6-digit hex color.</p>}
+                    {!isCustomHexValid.value && customHexDraft.value.length > 0 && <p {...stylex.attrs(styles.invalid)}>Enter a 6-digit hex color.</p>}
                   </div>
 
-                  <button type="button" class="mt-2 w-full rounded-2xl px-3 py-2 text-left text-xs text-slate-400 transition hover:bg-white/[0.05] hover:text-slate-100" onClick={resetMenuColor}>
+                  <button type="button" {...stylex.attrs(styles.resetColorButton)} onClick={resetMenuColor}>
                     Reset to default color
                   </button>
                 </div>
@@ -382,22 +464,22 @@ export default defineComponent({
         )}
 
         {withDirectives(
-          <section class="mx-auto max-w-3xl space-y-5">
+          <section {...stylex.attrs(styles.section)}>
             <div>
-              <h2 class="text-xl font-semibold text-slate-100">{constrainedSettingsSectionTitle.value}</h2>
-              <p class="mt-1 text-sm text-slate-500">{constrainedSettingsSectionDescription.value}</p>
+              <h2 {...stylex.attrs(styles.title)}>{constrainedSettingsSectionTitle.value}</h2>
+              <p {...stylex.attrs(styles.copy)}>{constrainedSettingsSectionDescription.value}</p>
             </div>
             {activeSettingsSection.value === 'team-cycles'
               ? <SettingsCyclesSection />
               : (
-                  <div class="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]">
-                    {constrainedSettingsRows.value.map(row => (
-                      <div key={row.label} class="grid gap-2 border-b border-white/[0.06] px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1fr)_10rem]">
-                        <div class="min-w-0">
-                          <p class="truncate text-sm font-medium text-slate-200">{row.label}</p>
-                          <p class="mt-0.5 text-xs leading-5 text-slate-500">{row.detail}</p>
+                  <div {...stylex.attrs(styles.table, styles.blockGap)}>
+                    {constrainedSettingsRows.value.map((row, index) => (
+                      <div key={row.label} {...stylex.attrs(styles.tableRow, styles.constrainedRowGrid, index === constrainedSettingsRows.value.length - 1 && styles.lastRow)}>
+                        <div {...stylex.attrs(styles.minWidth)}>
+                          <p {...stylex.attrs(styles.rowTitle)}>{row.label}</p>
+                          <p {...stylex.attrs(styles.multilineDetail)}>{row.detail}</p>
                         </div>
-                        <p class="text-left text-sm text-slate-400 md:text-right">{row.value}</p>
+                        <p {...stylex.attrs(styles.cellValue)}>{row.value}</p>
                       </div>
                     ))}
                   </div>
