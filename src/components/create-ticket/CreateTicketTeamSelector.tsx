@@ -1,5 +1,7 @@
 import type { PropType } from 'vue'
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent, ref } from 'vue'
+import { colors } from '@/styles/tokens.stylex'
 
 interface SpaceOption {
   key: string
@@ -10,6 +12,32 @@ function getSelectValue(event: Event): string {
   const target = event.target
   return target instanceof HTMLSelectElement ? target.value : ''
 }
+
+const styles = stylex.create({
+  root: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
+  label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.14em', color: colors['--color-slate-500'] },
+  select: {
+    width: '100%',
+    borderRadius: '0.375rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':focus': 'rgba(255, 255, 255, 0.16)' },
+    backgroundColor: 'rgba(255, 255, 255, 0.025)',
+    paddingInline: '0.625rem',
+    paddingBlock: '0.375rem',
+    fontSize: '0.75rem',
+    lineHeight: '1rem',
+    color: colors['--color-slate-200'],
+    outlineStyle: 'none',
+    transitionProperty: 'border-color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    cursor: { 'default': 'pointer', ':disabled': 'not-allowed' },
+    opacity: { 'default': 1, ':disabled': 0.6 },
+  },
+  helper: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  warning: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-amber-200'] },
+})
 
 export default defineComponent({
   name: 'CreateTicketTeamSelector',
@@ -48,14 +76,14 @@ export default defineComponent({
     expose({ focus })
 
     return () => (
-      <div class="space-y-1.5">
-        <label for="create-space" class="text-[11px] uppercase tracking-[0.14em] text-slate-500">Team</label>
+      <div {...stylex.attrs(styles.root)}>
+        <label for="create-space" {...stylex.attrs(styles.label)}>Team</label>
         <select
           id="create-space"
           ref={spaceSelectRef}
           name="create-space"
           value={props.effectiveSpaceKey ?? ''}
-          class="w-full rounded-md border border-white/[0.08] bg-white/[0.025] px-2.5 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16] disabled:cursor-not-allowed disabled:opacity-60"
+          {...stylex.attrs(styles.select)}
           disabled={props.isCreatePending || props.isSpaceLocked || props.spaces.length === 0}
           onChange={event => emit('update:spaceKey', getSelectValue(event) || null)}
         >
@@ -73,7 +101,7 @@ export default defineComponent({
           ))}
         </select>
         {props.isSpaceLocked && (
-          <p class="text-xs text-slate-500">
+          <p {...stylex.attrs(styles.helper)}>
             Fixed by parent:
             {' '}
             {props.selectedSpaceName}
@@ -81,7 +109,7 @@ export default defineComponent({
           </p>
         )}
         {!props.isSpaceLocked && props.spaces.length === 0 && (
-          <p class="text-xs text-amber-200">
+          <p {...stylex.attrs(styles.warning)}>
             Enable at least one space in settings before creating a top-level issue.
           </p>
         )}

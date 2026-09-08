@@ -1,9 +1,14 @@
 import type { PropType } from 'vue'
 import type { JiraActivityComment, JiraActivityItem, JiraTicket } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 import { useAddTicketMessage } from '@/composables/useAddTicketMessage'
 import { useJiraActivity } from '@/composables/useJiraMessages'
 import { useUpdateTicketWatching } from '@/composables/useUpdateTicketWatching'
+import { colors } from '@/styles/tokens.stylex'
+
+type AvatarTone = 'fallback' | 'neutral' | 'amber' | 'emerald' | 'rose' | 'sky'
+type HistoryTone = 'default' | 'created' | 'status' | 'assignee' | 'priority'
 
 function addActivityParticipantName(names: string[], name: string | undefined): void {
   const nextName = name?.trim()
@@ -12,18 +17,18 @@ function addActivityParticipantName(names: string[], name: string | undefined): 
   names.push(nextName)
 }
 
-function getAssigneeAvatarColor(name: string | undefined): string {
+function getAssigneeAvatarTone(name: string | undefined): AvatarTone {
   if (!name || name === 'Unassigned')
-    return 'bg-slate-500/15 text-slate-400 border-slate-500/15'
+    return 'fallback'
   const hash = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-  const avatarColors = [
-    'bg-white/[0.045] text-slate-300 border-white/[0.08]',
-    'bg-amber-500/20 text-amber-300 border-amber-500/20',
-    'bg-emerald-500/20 text-emerald-300 border-emerald-500/20',
-    'bg-rose-500/20 text-rose-300 border-rose-500/20',
-    'bg-sky-500/20 text-sky-300 border-sky-500/20',
+  const avatarTones: AvatarTone[] = [
+    'neutral',
+    'amber',
+    'emerald',
+    'rose',
+    'sky',
   ]
-  return avatarColors[hash % avatarColors.length] ?? 'bg-white/[0.045] text-slate-300 border-white/[0.08]'
+  return avatarTones[hash % avatarTones.length] ?? 'neutral'
 }
 
 function getAssigneeInitials(name: string | undefined): string {
@@ -42,36 +47,20 @@ function getActivityCreatedAtMs(item: JiraActivityItem): number {
   return Number.isNaN(createdAtMs) ? Number.MIN_SAFE_INTEGER : createdAtMs
 }
 
-function getActivityHistoryMarkerClass(item: JiraActivityItem): string {
+function getActivityHistoryTone(item: JiraActivityItem): HistoryTone {
   if (item.kind !== 'history')
-    return 'border-white/[0.14] text-slate-500'
+    return 'default'
 
   const field = item.field.trim().toLowerCase()
   if (field === 'created')
-    return 'border-sky-400/35 text-sky-300'
+    return 'created'
   if (field === 'status')
-    return 'border-amber-400/40 text-amber-300'
+    return 'status'
   if (field === 'assignee')
-    return 'border-emerald-400/35 text-emerald-300'
+    return 'assignee'
   if (field === 'priority')
-    return 'border-rose-400/35 text-rose-300'
-  return 'border-white/[0.14] text-slate-500'
-}
-
-function getActivityHistoryDotClass(item: JiraActivityItem): string {
-  if (item.kind !== 'history')
-    return 'bg-slate-500'
-
-  const field = item.field.trim().toLowerCase()
-  if (field === 'created')
-    return 'bg-sky-300'
-  if (field === 'status')
-    return 'bg-amber-300'
-  if (field === 'assignee')
-    return 'bg-emerald-300'
-  if (field === 'priority')
-    return 'bg-rose-300'
-  return 'bg-slate-500'
+    return 'priority'
+  return 'default'
 }
 
 function formatActivityTime(value: string): string {
@@ -104,6 +93,98 @@ function formatActivityTime(value: string): string {
   if (label === 'just now')
     return label
   return isFuture ? `in ${label}` : `${label} ago`
+}
+
+const spin = stylex.keyframes({ to: { transform: 'rotate(360deg)' } })
+
+const styles = stylex.create({
+  section: { marginBottom: '2rem' },
+  header: { marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' },
+  titleGroup: { display: 'flex', minWidth: 0, alignItems: 'center', gap: '0.5rem' },
+  title: { margin: 0, fontSize: 15, fontWeight: 600, color: colors['--color-slate-100'] },
+  loadingTiny: { fontSize: 11, color: colors['--color-slate-600'] },
+  headerActions: { display: 'flex', flexShrink: 0, alignItems: 'center', gap: '0.75rem' },
+  watchButton: { borderWidth: 0, backgroundColor: 'transparent', padding: 0, fontSize: 12, color: { 'default': colors['--color-slate-600'], ':hover': colors['--color-slate-300'] }, transitionProperty: 'color, opacity', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)', cursor: { 'default': 'pointer', ':disabled': 'not-allowed' }, opacity: { 'default': 1, ':disabled': 0.6 } },
+  count: { fontSize: 12, color: colors['--color-slate-700'] },
+  avatars: { display: 'flex' },
+  stackedAvatar: { marginLeft: '-0.375rem' },
+  avatar: { display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', fontWeight: 600 },
+  avatarSmall: { width: '1.25rem', height: '1.25rem', borderColor: colors['--color-surface-0'], fontSize: 9 },
+  avatarComment: { width: '1.5rem', height: '1.5rem', marginLeft: '-0.25rem', marginTop: '0.125rem', fontSize: 9 },
+  avatarFallback: { borderColor: 'rgba(100, 116, 139, 0.15)', backgroundColor: 'rgba(100, 116, 139, 0.15)', color: colors['--color-slate-400'] },
+  avatarNeutral: { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.045)', color: colors['--color-slate-300'] },
+  avatarAmber: { borderColor: 'rgba(245, 158, 11, 0.2)', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: colors['--color-amber-300'] },
+  avatarEmerald: { borderColor: 'rgba(16, 185, 129, 0.2)', backgroundColor: 'rgba(16, 185, 129, 0.2)', color: colors['--color-emerald-300'] },
+  avatarRose: { borderColor: 'rgba(244, 63, 94, 0.2)', backgroundColor: 'rgba(244, 63, 94, 0.2)', color: colors['--color-rose-300'] },
+  avatarSky: { borderColor: 'rgba(14, 165, 233, 0.2)', backgroundColor: 'rgba(14, 165, 233, 0.2)', color: colors['--color-sky-300'] },
+  errorBox: { borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(244, 63, 94, 0.2)', backgroundColor: 'rgba(244, 63, 94, 0.05)', paddingInline: '1rem', paddingBlock: '0.75rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-rose-300'] },
+  watchError: { marginBottom: '0.75rem' },
+  skeleton: { display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingLeft: '1rem' },
+  skeletonRow: { display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBlock: '0.125rem', animationName: stylex.keyframes({ '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.5 } }), animationDuration: '2s', animationTimingFunction: 'cubic-bezier(0.4, 0, 0.6, 1)', animationIterationCount: 'infinite' },
+  skeletonDot: { width: '1rem', height: '1rem', flexShrink: 0, borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.1)', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+  skeletonLine: { height: '0.75rem', borderRadius: '0.25rem', backgroundColor: 'rgba(255, 255, 255, 0.05)' },
+  skeletonWide: { width: '66.666667%' },
+  skeletonNarrow: { width: '50%' },
+  timeline: { display: 'flex', flexDirection: 'column', gap: '0.375rem', paddingLeft: '1rem' },
+  historyItem: { position: 'relative', display: 'flex', gap: '0.75rem', paddingBlock: '0.125rem' },
+  historyLine: { position: 'absolute', left: '7px', top: '18px', bottom: '-8px', borderLeftWidth: 1, borderLeftStyle: 'solid', borderLeftColor: 'rgba(255, 255, 255, 0.08)' },
+  marker: { position: 'relative', zIndex: 10, marginTop: '0.25rem', display: 'flex', width: '1rem', height: '1rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', backgroundColor: colors['--color-surface-0'] },
+  markerDefault: { borderColor: 'rgba(255, 255, 255, 0.14)', color: colors['--color-slate-500'] },
+  markerCreated: { borderColor: 'rgba(56, 189, 248, 0.35)', color: colors['--color-sky-300'] },
+  markerStatus: { borderColor: 'rgba(251, 191, 36, 0.4)', color: colors['--color-amber-300'] },
+  markerAssignee: { borderColor: 'rgba(52, 211, 153, 0.35)', color: colors['--color-emerald-300'] },
+  markerPriority: { borderColor: 'rgba(251, 113, 133, 0.35)', color: colors['--color-rose-300'] },
+  markerDot: { width: '0.375rem', height: '0.375rem', borderRadius: '9999px', backgroundColor: 'currentColor' },
+  historyText: { minWidth: 0, flex: '1', fontSize: 13, lineHeight: '1.25rem', color: colors['--color-slate-500'], margin: 0 },
+  time: { color: colors['--color-slate-600'] },
+  comment: { marginLeft: '-1rem', display: 'flex', gap: '0.75rem', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.025)', padding: '1rem' },
+  commentBody: { minWidth: 0, flex: '1' },
+  commentHeader: { marginBottom: '0.25rem', display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.5rem' },
+  author: { fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-200'] },
+  commentTime: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-600'] },
+  replyPill: { marginBottom: '0.5rem', display: 'inline-flex', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: 11, color: colors['--color-slate-500'] },
+  bodyText: { whiteSpace: 'pre-wrap', fontSize: '0.875rem', lineHeight: '1.5rem', color: colors['--color-slate-300'] },
+  empty: { borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255, 255, 255, 0.08)', paddingInline: '1rem', paddingBlock: '0.75rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-600'] },
+  composer: { marginTop: '1.25rem', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '1rem', paddingBlock: '1rem' },
+  textarea: { 'minHeight': '92px', 'width': '100%', 'resize': 'none', 'borderWidth': 1, 'borderStyle': 'solid', 'borderColor': 'transparent', 'backgroundColor': 'transparent', 'padding': 0, 'fontSize': 15, 'lineHeight': '1.5rem', 'color': colors['--color-slate-300'], 'outlineStyle': 'none', '::placeholder': { color: colors['--color-slate-600'] } },
+  composerFooter: { marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' },
+  composerError: { minWidth: 0, flex: '1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-rose-300'] },
+  composerSpacer: { minWidth: 0, flex: '1' },
+  composerActions: { display: 'flex', flexShrink: 0, alignItems: 'center', gap: '0.75rem', color: colors['--color-slate-600'] },
+  disabledIconButton: { display: 'inline-flex', width: '1.75rem', height: '1.75rem', cursor: 'not-allowed', alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', borderWidth: 0, opacity: 0.7 },
+  icon: { width: '1rem', height: '1rem' },
+  postButton: { display: 'inline-flex', width: '1.75rem', height: '1.75rem', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', borderWidth: 0, backgroundColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':hover': 'rgba(255, 255, 255, 0.12)' }, color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-200'] }, transitionProperty: 'color, background-color, opacity', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)', cursor: { 'default': 'pointer', ':disabled': 'not-allowed' }, opacity: { 'default': 1, ':disabled': 0.45 } },
+  postIcon: { width: '0.875rem', height: '0.875rem' },
+  smallSpinner: { width: '0.875rem', height: '0.875rem', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: 'currentColor', borderTopColor: 'transparent', animationName: spin, animationDuration: '1s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' },
+  closedComposer: { marginTop: '1.25rem', display: 'flex', minHeight: '92px', width: '100%', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: { 'default': 'rgba(255, 255, 255, 0.06)', ':hover': 'rgba(255, 255, 255, 0.1)' }, backgroundColor: { 'default': 'rgba(255, 255, 255, 0.025)', ':hover': 'rgba(255, 255, 255, 0.035)' }, paddingInline: '1rem', paddingBlock: '1rem', textAlign: 'left', transitionProperty: 'border-color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  placeholder: { fontSize: 15, color: colors['--color-slate-600'] },
+  closedActions: { marginTop: 'auto', display: 'flex', flexShrink: 0, alignItems: 'center', gap: '0.75rem', color: colors['--color-slate-600'] },
+})
+
+function avatarStyle(tone: AvatarTone) {
+  if (tone === 'fallback')
+    return styles.avatarFallback
+  if (tone === 'amber')
+    return styles.avatarAmber
+  if (tone === 'emerald')
+    return styles.avatarEmerald
+  if (tone === 'rose')
+    return styles.avatarRose
+  if (tone === 'sky')
+    return styles.avatarSky
+  return styles.avatarNeutral
+}
+
+function historyMarkerStyle(tone: HistoryTone) {
+  if (tone === 'created')
+    return styles.markerCreated
+  if (tone === 'status')
+    return styles.markerStatus
+  if (tone === 'assignee')
+    return styles.markerAssignee
+  if (tone === 'priority')
+    return styles.markerPriority
+  return styles.markerDefault
 }
 
 export default defineComponent({
@@ -252,28 +333,28 @@ export default defineComponent({
     })
 
     return () => (
-      <section class="mb-8">
-        <div class="mb-4 flex items-center justify-between gap-4">
-          <div class="flex min-w-0 items-center gap-2">
-            <h2 class="text-[15px] font-semibold text-slate-100">Activity</h2>
-            {activityQuery.isFetching.value && <span class="text-[11px] text-slate-600">Loading...</span>}
+      <section {...stylex.attrs(styles.section)}>
+        <div {...stylex.attrs(styles.header)}>
+          <div {...stylex.attrs(styles.titleGroup)}>
+            <h2 {...stylex.attrs(styles.title)}>Activity</h2>
+            {activityQuery.isFetching.value && <span {...stylex.attrs(styles.loadingTiny)}>Loading...</span>}
           </div>
-          <div class="flex shrink-0 items-center gap-3">
+          <div {...stylex.attrs(styles.headerActions)}>
             <button
               type="button"
-              class="text-[12px] text-slate-600 transition hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+              {...stylex.attrs(styles.watchButton)}
               disabled={updateWatchingMutation.isPending.value}
               onClick={() => void toggleTicketWatching()}
             >
               {detailWatchButtonLabel.value}
             </button>
-            {detailWatchCountLabel.value && <span class="text-[12px] text-slate-700">{detailWatchCountLabel.value}</span>}
+            {detailWatchCountLabel.value && <span {...stylex.attrs(styles.count)}>{detailWatchCountLabel.value}</span>}
             {detailActivityParticipantNames.value.length > 0 && (
-              <div class="flex -space-x-1.5">
-                {detailActivityParticipantNames.value.map(name => (
+              <div {...stylex.attrs(styles.avatars)}>
+                {detailActivityParticipantNames.value.map((name, index) => (
                   <span
                     key={name}
-                    class={['flex h-5 w-5 items-center justify-center rounded-full border border-surface-0 text-[9px] font-semibold', getAssigneeAvatarColor(name)]}
+                    {...stylex.attrs(styles.avatar, styles.avatarSmall, index > 0 ? styles.stackedAvatar : null, avatarStyle(getAssigneeAvatarTone(name)))}
                     title={name}
                   >
                     {getAssigneeInitials(name)}
@@ -285,44 +366,44 @@ export default defineComponent({
         </div>
 
         {watchError.value && (
-          <div class="mb-3 rounded-lg border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-300">
+          <div {...stylex.attrs(styles.errorBox, styles.watchError)}>
             {watchError.value}
           </div>
         )}
         {activityQuery.isError.value
           ? (
-              <div class="rounded-lg border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-300">
+              <div {...stylex.attrs(styles.errorBox)}>
                 Failed to load activity.
               </div>
             )
           : activityQuery.isLoading.value
             ? (
-                <div class="space-y-3 pl-4" aria-hidden="true">
+                <div {...stylex.attrs(styles.skeleton)} aria-hidden="true">
                   {[1, 2, 3, 4].map(skeletonIndex => (
-                    <div key={skeletonIndex} class="flex animate-pulse items-center gap-3 py-0.5">
-                      <span class="h-4 w-4 shrink-0 rounded-full border border-white/[0.1] bg-white/[0.04]" />
-                      <span class={['h-3 rounded bg-white/[0.05]', skeletonIndex % 2 ? 'w-2/3' : 'w-1/2']} />
+                    <div key={skeletonIndex} {...stylex.attrs(styles.skeletonRow)}>
+                      <span {...stylex.attrs(styles.skeletonDot)} />
+                      <span {...stylex.attrs(styles.skeletonLine, skeletonIndex % 2 ? styles.skeletonWide : styles.skeletonNarrow)} />
                     </div>
                   ))}
                 </div>
               )
             : activityTimelineItems.value.length
               ? (
-                  <div class="animate-fade-in space-y-1.5 pl-4">
+                  <div {...stylex.attrs(styles.timeline)}>
                     {activityTimelineItems.value.map((activityItem, activityIndex) => (
                       activityItem.kind === 'history'
                         ? (
-                            <article key={`${activityItem.kind}:${activityItem.id}`} class="relative flex gap-3 py-0.5">
+                            <article key={`${activityItem.kind}:${activityItem.id}`} {...stylex.attrs(styles.historyItem)}>
                               {activityTimelineItems.value[activityIndex + 1]?.kind === 'history' && (
-                                <span class="absolute left-[7px] top-[18px] -bottom-[8px] border-l border-white/[0.08]" aria-hidden="true" />
+                                <span {...stylex.attrs(styles.historyLine)} aria-hidden="true" />
                               )}
-                              <div class={['relative z-10 mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border bg-surface-0', getActivityHistoryMarkerClass(activityItem)]}>
-                                <span class={['h-1.5 w-1.5 rounded-full', getActivityHistoryDotClass(activityItem)]} />
+                              <div {...stylex.attrs(styles.marker, historyMarkerStyle(getActivityHistoryTone(activityItem)))}>
+                                <span {...stylex.attrs(styles.markerDot)} />
                               </div>
-                              <p class="min-w-0 flex-1 text-[13px] leading-5 text-slate-500">
+                              <p {...stylex.attrs(styles.historyText)}>
                                 {activityItem.body}
                                 {formatActivityTime(activityItem.createdAt) && (
-                                  <span class="text-slate-600">
+                                  <span {...stylex.attrs(styles.time)}>
                                     {' '}
                                     ·
                                     {formatActivityTime(activityItem.createdAt)}
@@ -332,23 +413,23 @@ export default defineComponent({
                             </article>
                           )
                         : (
-                            <article key={`${activityItem.kind}:${activityItem.id}`} class="-ml-4 flex gap-3 rounded-lg border border-white/[0.06] bg-white/[0.025] p-4">
-                              <div class={['-ml-1 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[9px] font-semibold', getAssigneeAvatarColor(activityItem.author)]}>
+                            <article key={`${activityItem.kind}:${activityItem.id}`} {...stylex.attrs(styles.comment)}>
+                              <div {...stylex.attrs(styles.avatar, styles.avatarComment, avatarStyle(getAssigneeAvatarTone(activityItem.author)))}>
                                 {getAssigneeInitials(activityItem.author)}
                               </div>
-                              <div class="min-w-0 flex-1">
-                                <div class="mb-1 flex flex-wrap items-baseline gap-2">
-                                  <span class="text-sm font-medium text-slate-200">{activityItem.author}</span>
-                                  <span class="text-xs text-slate-600">{formatActivityTime(activityItem.createdAt)}</span>
+                              <div {...stylex.attrs(styles.commentBody)}>
+                                <div {...stylex.attrs(styles.commentHeader)}>
+                                  <span {...stylex.attrs(styles.author)}>{activityItem.author}</span>
+                                  <span {...stylex.attrs(styles.commentTime)}>{formatActivityTime(activityItem.createdAt)}</span>
                                 </div>
                                 {getActivityCommentParentAuthor(activityItem) && (
-                                  <div class="mb-2 inline-flex rounded-md border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-[11px] text-slate-500">
+                                  <div {...stylex.attrs(styles.replyPill)}>
                                     Reply to
                                     {' '}
                                     {getActivityCommentParentAuthor(activityItem)}
                                   </div>
                                 )}
-                                <div class="whitespace-pre-wrap text-sm leading-6 text-slate-300">
+                                <div {...stylex.attrs(styles.bodyText)}>
                                   {activityItem.body || 'No comment body'}
                                 </div>
                               </div>
@@ -358,53 +439,53 @@ export default defineComponent({
                   </div>
                 )
               : (
-                  <div class="animate-fade-in rounded-lg border border-dashed border-white/[0.08] px-4 py-3 text-sm text-slate-600">
+                  <div {...stylex.attrs(styles.empty)}>
                     No activity yet.
                   </div>
                 )}
 
         {activityComposerOpen.value
           ? (
-              <div class="mt-5 rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 py-4">
+              <div {...stylex.attrs(styles.composer)}>
                 <textarea
                   id="detail-message"
                   ref={messageTextareaRef}
                   v-model={messageDraft.value}
-                  class="min-h-[92px] w-full resize-none border border-transparent bg-transparent p-0 text-[15px] leading-6 text-slate-300 outline-none placeholder:text-slate-600"
+                  {...stylex.attrs(styles.textarea)}
                   rows={4}
                   placeholder="Leave a comment..."
                   onKeydown={handleMessageKeydown}
                 />
-                <div class="mt-2 flex items-center justify-between gap-3">
+                <div {...stylex.attrs(styles.composerFooter)}>
                   {messageError.value
-                    ? <span class="min-w-0 flex-1 truncate text-xs text-rose-300">{messageError.value}</span>
-                    : <span class="min-w-0 flex-1" />}
-                  <span class="flex shrink-0 items-center gap-3 text-slate-600">
+                    ? <span {...stylex.attrs(styles.composerError)}>{messageError.value}</span>
+                    : <span {...stylex.attrs(styles.composerSpacer)} />}
+                  <span {...stylex.attrs(styles.composerActions)}>
                     <button
                       type="button"
-                      class="inline-flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-md opacity-70"
+                      {...stylex.attrs(styles.disabledIconButton)}
                       disabled
                       aria-label="Attachments are not available yet"
                       title="Attachments are not available yet"
                     >
-                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <svg {...stylex.attrs(styles.icon)} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m20 11.5-8.8 8.8a5 5 0 0 1-7.1-7.1l9.5-9.5a3.4 3.4 0 0 1 4.8 4.8l-9.6 9.6a1.8 1.8 0 0 1-2.5-2.5l8.7-8.7" />
                       </svg>
                     </button>
                     <button
                       type="button"
-                      class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.08] text-slate-400 transition hover:bg-white/[0.12] hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-45"
+                      {...stylex.attrs(styles.postButton)}
                       disabled={addMessageMutation.isPending.value || !messageCanSubmit.value}
                       aria-label={addMessageMutation.isPending.value ? 'Posting comment' : 'Post comment'}
                       onClick={() => void submitMessage()}
                     >
                       {!addMessageMutation.isPending.value
                         ? (
-                            <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+                            <svg {...stylex.attrs(styles.postIcon)} viewBox="0 0 16 16" fill="currentColor">
                               <path d="M8 3.2 3.9 7.3l.9.9 2.6-2.6v7.2h1.2V5.6l2.6 2.6.9-.9L8 3.2Z" />
                             </svg>
                           )
-                        : <span class="h-3.5 w-3.5 animate-spin rounded-full border border-current border-t-transparent" />}
+                        : <span {...stylex.attrs(styles.smallSpinner)} />}
                     </button>
                   </span>
                 </div>
@@ -414,26 +495,26 @@ export default defineComponent({
               <div
                 role="button"
                 tabindex={0}
-                class="mt-5 flex min-h-[92px] w-full items-start justify-between gap-4 rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 py-4 text-left transition hover:border-white/[0.1] hover:bg-white/[0.035]"
+                {...stylex.attrs(styles.closedComposer)}
                 onClick={focusMessageComposer}
                 onKeydown={handleClosedComposerKeydown}
               >
-                <span class="text-[15px] text-slate-600">Leave a comment...</span>
-                <span class="mt-auto flex shrink-0 items-center gap-3 text-slate-600">
+                <span {...stylex.attrs(styles.placeholder)}>Leave a comment...</span>
+                <span {...stylex.attrs(styles.closedActions)}>
                   <button
                     type="button"
-                    class="inline-flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-md opacity-70"
+                    {...stylex.attrs(styles.disabledIconButton)}
                     disabled
                     aria-label="Attachments are not available yet"
                     title="Attachments are not available yet"
                     onClick={event => event.stopPropagation()}
                   >
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <svg {...stylex.attrs(styles.icon)} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                       <path stroke-linecap="round" stroke-linejoin="round" d="m20 11.5-8.8 8.8a5 5 0 0 1-7.1-7.1l9.5-9.5a3.4 3.4 0 0 1 4.8 4.8l-9.6 9.6a1.8 1.8 0 0 1-2.5-2.5l8.7-8.7" />
                     </svg>
                   </button>
-                  <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.08] text-slate-400" aria-hidden="true">
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+                  <span {...stylex.attrs(styles.postButton)} aria-hidden="true">
+                    <svg {...stylex.attrs(styles.postIcon)} viewBox="0 0 16 16" fill="currentColor">
                       <path d="M8 3.2 3.9 7.3l.9.9 2.6-2.6v7.2h1.2V5.6l2.6 2.6.9-.9L8 3.2Z" />
                     </svg>
                   </span>

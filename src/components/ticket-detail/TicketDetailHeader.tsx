@@ -1,11 +1,14 @@
 import type { PropType } from 'vue'
 import type { JiraTicket } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, nextTick, onUnmounted, ref, watch } from 'vue'
 import ProjectIconPickerButton from '@/components/ProjectIconPickerButton'
 import { useUpdateTicketTitle } from '@/composables/useUpdateTicketTitle'
+import { breakpoints, colors } from '@/styles/tokens.stylex'
 import { getStatusGroup } from '@/types/jira'
 
 type ProjectDetailHealth = 'On track' | 'At risk' | 'Completed'
+type ProjectHealthTone = 'risk' | 'completed' | 'track'
 
 const datePartFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
@@ -18,12 +21,66 @@ function formatDate(value: string | undefined): string | null {
   return datePartFormatter.format(parsed)
 }
 
-function getProjectDetailHealthClass(health: ProjectDetailHealth): string {
+function getProjectDetailHealthTone(health: ProjectDetailHealth): ProjectHealthTone {
   if (health === 'At risk')
-    return 'border-rose-500/20 bg-rose-500/10 text-rose-300'
+    return 'risk'
   if (health === 'Completed')
-    return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-  return 'border-sky-500/20 bg-sky-500/10 text-sky-300'
+    return 'completed'
+  return 'track'
+}
+
+const styles = stylex.create({
+  projectMargin: { marginBottom: '1.25rem' },
+  noMargin: { marginBottom: 0 },
+  titleStack: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  titleRow: { display: 'flex', alignItems: 'flex-start', gap: '0.75rem' },
+  iconButtonOffset: { marginTop: '0.125rem' },
+  titleInput: { 'minWidth': 0, 'flex': '1', 'resize': 'none', 'overflow': 'hidden', 'borderWidth': 0, 'backgroundColor': 'transparent', 'padding': 0, 'fontSize': '28px', 'fontWeight': 600, 'lineHeight': 1.25, 'color': colors['--color-slate-100'], 'outlineStyle': 'none', 'appearance': 'none', '::placeholder': { color: colors['--color-slate-700'] } },
+  error: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-rose-300'] },
+  parentRow: { marginTop: '0.75rem', display: 'flex', minWidth: 0, flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-500'] },
+  parentButton: { display: 'inline-flex', minWidth: 0, alignItems: 'center', gap: '0.375rem', borderRadius: '0.25rem', borderWidth: 0, backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, paddingInline: '0.25rem', paddingBlock: '0.125rem', textAlign: 'left', transitionProperty: 'background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  parentIconWrap: { display: 'flex', width: '1rem', height: '1rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', color: colors['--color-cyan-400'] },
+  parentIcon: { width: '1rem', height: '1rem' },
+  parentKey: { flexShrink: 0, fontWeight: 500, color: colors['--color-slate-400'] },
+  parentSummary: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, color: colors['--color-slate-200'] },
+  progressPill: { display: 'inline-flex', height: '1.5rem', flexShrink: 0, alignItems: 'center', gap: '0.25rem', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '0.625rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  progressDot: { width: '0.5rem', height: '0.5rem', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(34, 211, 238, 0.5)' },
+  grid: { display: 'grid', overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.015)', fontSize: '0.75rem', lineHeight: '1rem', [breakpoints.md]: { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }, [breakpoints.xl]: { gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' } },
+  gridCell: { borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '0.75rem', paddingBlock: '0.625rem', [breakpoints.md]: { borderRightWidth: 1, borderRightStyle: 'solid', borderRightColor: 'rgba(255, 255, 255, 0.06)' } },
+  gridCellNoMdBottom: { [breakpoints.md]: { borderBottomWidth: 0 } },
+  gridCellNoXlBottom: { [breakpoints.xl]: { borderBottomWidth: 0 } },
+  gridCellXlRight: { [breakpoints.xl]: { borderRightWidth: 1, borderRightStyle: 'solid', borderRightColor: 'rgba(255, 255, 255, 0.06)' } },
+  gridCellLast: { borderBottomWidth: 0, [breakpoints.md]: { borderRightWidth: 0 } },
+  metricLabel: { margin: 0, fontSize: 11, color: colors['--color-slate-600'] },
+  healthPill: { marginTop: '0.25rem', display: 'inline-flex', maxWidth: '100%', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', paddingInline: '0.5rem', paddingBlock: '0.125rem', fontWeight: 500 },
+  healthRisk: { borderColor: 'rgba(244, 63, 94, 0.2)', backgroundColor: 'rgba(244, 63, 94, 0.1)', color: colors['--color-rose-300'] },
+  healthCompleted: { borderColor: 'rgba(16, 185, 129, 0.2)', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: colors['--color-emerald-300'] },
+  healthTrack: { borderColor: 'rgba(14, 165, 233, 0.2)', backgroundColor: 'rgba(14, 165, 233, 0.1)', color: colors['--color-sky-300'] },
+  metricValue: { marginTop: '0.25rem', marginBottom: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, color: colors['--color-slate-300'] },
+  progressHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' },
+  progressPercent: { fontWeight: 500, color: colors['--color-slate-300'] },
+  progressTrack: { marginTop: '0.5rem', height: '0.375rem', overflow: 'hidden', borderRadius: '9999px', backgroundColor: 'rgba(255, 255, 255, 0.06)' },
+  progressFill: { height: '100%', borderRadius: '9999px', transitionProperty: 'all', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  progressWidth: (width: string) => ({ width }),
+  progressRisk: { backgroundColor: 'rgba(251, 113, 133, 0.8)' },
+  progressCompleted: { backgroundColor: 'rgba(52, 211, 153, 0.8)' },
+  progressTrackTone: { backgroundColor: 'rgba(56, 189, 248, 0.8)' },
+})
+
+function healthStyle(tone: ProjectHealthTone) {
+  if (tone === 'risk')
+    return styles.healthRisk
+  if (tone === 'completed')
+    return styles.healthCompleted
+  return styles.healthTrack
+}
+
+function progressStyle(tone: ProjectHealthTone) {
+  if (tone === 'risk')
+    return styles.progressRisk
+  if (tone === 'completed')
+    return styles.progressCompleted
+  return styles.progressTrackTone
 }
 
 export default defineComponent({
@@ -113,13 +170,7 @@ export default defineComponent({
     })
     const projectPriorityLabel = computed(() => props.ticket.priority || 'No priority')
     const projectIssueProgressLabel = computed(() => `${projectCompletedIssueCount.value}/${props.childTickets.length}`)
-    const projectProgressToneClass = computed(() => {
-      if (projectDetailHealth.value === 'At risk')
-        return 'bg-rose-400/80'
-      if (projectDetailHealth.value === 'Completed')
-        return 'bg-emerald-400/80'
-      return 'bg-sky-400/80'
-    })
+    const projectHealthTone = computed(() => getProjectDetailHealthTone(projectDetailHealth.value))
 
     function clearTitleSaveTimer(): void {
       if (!titleSaveTimer.value)
@@ -282,15 +333,19 @@ export default defineComponent({
 
     return () => (
       <header>
-        <div class={props.isProjectDetail ? 'mb-5' : 'mb-0'}>
-          <div class="space-y-2">
-            <div class="group/title flex items-start gap-3">
-              {props.isProjectDetail && <ProjectIconPickerButton projectKey={props.ticket.key} class="mt-0.5" />}
+        <div {...stylex.attrs(props.isProjectDetail ? styles.projectMargin : styles.noMargin)}>
+          <div {...stylex.attrs(styles.titleStack)}>
+            <div {...stylex.attrs(styles.titleRow)}>
+              {props.isProjectDetail && (
+                <div {...stylex.attrs(styles.iconButtonOffset)}>
+                  <ProjectIconPickerButton projectKey={props.ticket.key} />
+                </div>
+              )}
               <textarea
                 id="detail-title"
                 ref={titleInputRef}
                 v-model={titleDraft.value}
-                class="min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent p-0 !text-[28px] !font-semibold !leading-tight text-slate-100 outline-none appearance-none placeholder:text-slate-700"
+                {...stylex.attrs(styles.titleInput)}
                 maxlength={255}
                 rows={1}
                 placeholder="Issue title"
@@ -302,29 +357,29 @@ export default defineComponent({
                 onKeydown={handleTitleKeydown}
               />
             </div>
-            {titleError.value && <span class="text-xs text-rose-300">{titleError.value}</span>}
+            {titleError.value && <span {...stylex.attrs(styles.error)}>{titleError.value}</span>}
           </div>
           {detailIssueParent.value && (
-            <div class="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-sm text-slate-500">
+            <div {...stylex.attrs(styles.parentRow)}>
               <span>{detailIssueParentRelationLabel.value}</span>
               <button
                 type="button"
-                class="inline-flex min-w-0 items-center gap-1.5 rounded px-1 py-0.5 text-left transition hover:bg-white/[0.04]"
+                {...stylex.attrs(styles.parentButton)}
                 onClick={() => emit('select', detailIssueParent.value!.key)}
                 onMouseenter={() => emit('prefetch', detailIssueParent.value!.key)}
               >
-                <span class="flex h-4 w-4 shrink-0 items-center justify-center text-cyan-400" aria-hidden="true">
-                  <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <span {...stylex.attrs(styles.parentIconWrap)} aria-hidden="true">
+                  <svg {...stylex.attrs(styles.parentIcon)} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
                     <circle cx="8" cy="8" r="5.2" />
                     <path stroke-linecap="round" d="M5.7 10.3 10.3 5.7" />
                   </svg>
                 </span>
-                <span class="shrink-0 font-medium text-slate-400">{detailIssueParent.value.key}</span>
-                <span class="min-w-0 truncate font-medium text-slate-200">{detailIssueParent.value.summary}</span>
+                <span {...stylex.attrs(styles.parentKey)}>{detailIssueParent.value.key}</span>
+                <span {...stylex.attrs(styles.parentSummary)}>{detailIssueParent.value.summary}</span>
               </button>
               {detailIssueParentProgressLabel.value && (
-                <span class="inline-flex h-6 shrink-0 items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.025] px-2.5 text-xs text-slate-500">
-                  <span class="h-2 w-2 rounded-full border border-cyan-400/50" />
+                <span {...stylex.attrs(styles.progressPill)}>
+                  <span {...stylex.attrs(styles.progressDot)} />
                   {detailIssueParentProgressLabel.value}
                 </span>
               )}
@@ -333,41 +388,40 @@ export default defineComponent({
         </div>
 
         {props.isProjectDetail && (
-          <div class="grid overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.015] text-xs md:grid-cols-3 xl:grid-cols-6">
-            <div class="border-b border-white/[0.06] px-3 py-2.5 md:border-r xl:border-b-0">
-              <p class="text-[11px] text-slate-600">Health</p>
-              <span class={['mt-1 inline-flex max-w-full rounded-md border px-2 py-0.5 font-medium', getProjectDetailHealthClass(projectDetailHealth.value)]}>
+          <div {...stylex.attrs(styles.grid)}>
+            <div {...stylex.attrs(styles.gridCell, styles.gridCellNoXlBottom)}>
+              <p {...stylex.attrs(styles.metricLabel)}>Health</p>
+              <span {...stylex.attrs(styles.healthPill, healthStyle(projectHealthTone.value))}>
                 {projectDetailHealth.value}
               </span>
             </div>
-            <div class="border-b border-white/[0.06] px-3 py-2.5 md:border-r xl:border-b-0">
-              <p class="text-[11px] text-slate-600">Lead</p>
-              <p class="mt-1 truncate font-medium text-slate-300">{projectLeadLabel.value}</p>
+            <div {...stylex.attrs(styles.gridCell, styles.gridCellNoXlBottom)}>
+              <p {...stylex.attrs(styles.metricLabel)}>Lead</p>
+              <p {...stylex.attrs(styles.metricValue)}>{projectLeadLabel.value}</p>
             </div>
-            <div class="border-b border-white/[0.06] px-3 py-2.5 xl:border-b-0 xl:border-r">
-              <p class="text-[11px] text-slate-600">Priority</p>
-              <p class="mt-1 truncate font-medium text-slate-300">{projectPriorityLabel.value}</p>
+            <div {...stylex.attrs(styles.gridCell, styles.gridCellNoXlBottom, styles.gridCellXlRight)}>
+              <p {...stylex.attrs(styles.metricLabel)}>Priority</p>
+              <p {...stylex.attrs(styles.metricValue)}>{projectPriorityLabel.value}</p>
             </div>
-            <div class="border-b border-white/[0.06] px-3 py-2.5 md:border-r md:border-b-0">
-              <p class="text-[11px] text-slate-600">Target date</p>
-              <p class="mt-1 truncate font-medium text-slate-300">{projectTargetDateLabel.value}</p>
+            <div {...stylex.attrs(styles.gridCell, styles.gridCellNoMdBottom)}>
+              <p {...stylex.attrs(styles.metricLabel)}>Target date</p>
+              <p {...stylex.attrs(styles.metricValue)}>{projectTargetDateLabel.value}</p>
             </div>
-            <div class="border-b border-white/[0.06] px-3 py-2.5 md:border-b-0 md:border-r">
-              <p class="text-[11px] text-slate-600">Issues</p>
-              <p class="mt-1 truncate font-medium text-slate-300">{projectIssueProgressLabel.value}</p>
+            <div {...stylex.attrs(styles.gridCell, styles.gridCellNoMdBottom)}>
+              <p {...stylex.attrs(styles.metricLabel)}>Issues</p>
+              <p {...stylex.attrs(styles.metricValue)}>{projectIssueProgressLabel.value}</p>
             </div>
-            <div class="px-3 py-2.5">
-              <div class="flex items-center justify-between gap-2">
-                <p class="text-[11px] text-slate-600">Progress</p>
-                <span class="font-medium text-slate-300">
+            <div {...stylex.attrs(styles.gridCell, styles.gridCellLast)}>
+              <div {...stylex.attrs(styles.progressHeader)}>
+                <p {...stylex.attrs(styles.metricLabel)}>Progress</p>
+                <span {...stylex.attrs(styles.progressPercent)}>
                   {projectProgress.value}
                   %
                 </span>
               </div>
-              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+              <div {...stylex.attrs(styles.progressTrack)}>
                 <div
-                  class={['h-full rounded-full transition-all', projectProgressToneClass.value]}
-                  style={{ width: `${projectProgress.value}%` }}
+                  {...stylex.attrs(styles.progressFill, progressStyle(projectHealthTone.value), styles.progressWidth(`${projectProgress.value}%`))}
                 />
               </div>
             </div>

@@ -1,5 +1,31 @@
 import type { PropType } from 'vue'
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent } from 'vue'
+import { colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  notice: {
+    borderRadius: '0.5rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    paddingInline: '1rem',
+    paddingBlock: '0.75rem',
+  },
+  submitError: {
+    borderColor: 'rgba(244, 63, 94, 0.2)',
+    backgroundColor: 'rgba(244, 63, 94, 0.1)',
+    fontSize: '0.875rem',
+    lineHeight: '1.25rem',
+    color: colors['--color-rose-200'],
+  },
+  attachmentNotice: {
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(255, 255, 255, 0.025)',
+    fontSize: '0.75rem',
+    lineHeight: '1rem',
+    color: colors['--color-slate-500'],
+  },
+})
 
 export default defineComponent({
   name: 'CreateTicketNotices',
@@ -17,12 +43,12 @@ export default defineComponent({
     return () => (
       <>
         {props.submitError && (
-          <div class="rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          <div {...stylex.attrs(styles.notice, styles.submitError)}>
             {props.submitError}
           </div>
         )}
         {props.attachmentNotice && (
-          <div class="rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 py-3 text-xs text-slate-500">
+          <div {...stylex.attrs(styles.notice, styles.attachmentNotice)}>
             {props.attachmentNotice}
           </div>
         )}

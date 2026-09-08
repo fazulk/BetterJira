@@ -1,17 +1,20 @@
 import type { HardcodedCreateFieldDefinition } from './types'
 
-export const priorityConfig: Record<string, { bg: string }> = {
-  Highest: { bg: 'bg-rose-400' },
-  High: { bg: 'bg-orange-400' },
-  Medium: { bg: 'bg-amber-400' },
-  Low: { bg: 'bg-sky-400' },
-  Lowest: { bg: 'bg-slate-400' },
+export type CreatePriorityTone = 'highest' | 'high' | 'medium' | 'low' | 'lowest' | 'fallback'
+export type CreateAvatarTone = 'neutralStrong' | 'neutralMuted' | 'surface' | 'fallback'
+
+export const priorityConfig: Record<string, { tone: CreatePriorityTone }> = {
+  Highest: { tone: 'highest' },
+  High: { tone: 'high' },
+  Medium: { tone: 'medium' },
+  Low: { tone: 'low' },
+  Lowest: { tone: 'lowest' },
 }
 
-export const avatarColors = [
-  'bg-white/[0.045] text-slate-300 border-white/[0.08]',
-  'bg-white/[0.035] text-slate-400 border-white/[0.08]',
-  'bg-surface-3 text-slate-300 border-white/[0.08]',
+export const avatarTones: CreateAvatarTone[] = [
+  'neutralStrong',
+  'neutralMuted',
+  'surface',
 ]
 
 export const HARDCODED_CREATE_FIELDS: HardcodedCreateFieldDefinition[] = [

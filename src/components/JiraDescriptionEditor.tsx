@@ -1,5 +1,6 @@
 import type { PropType } from 'vue'
 import type { JiraAdfDocument, JiraAttachment } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { mergeAttributes, Node as TiptapNode } from '@tiptap/core'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -11,8 +12,25 @@ import JiraDescriptionEditorToolbar from '@/components/jira-description-editor/J
 import { readAdfDocument, toEditorDocument } from '@/features/jira-description-editor/adfDocument'
 import { createJiraMediaExtensions, mediaImageSrc } from '@/features/jira-description-editor/mediaExtensions'
 import { usePastedImageUpload } from '@/features/jira-description-editor/usePastedImageUpload'
+import { colors } from '@/styles/tokens.stylex'
 import { normalizeAdf } from '~/shared/jiraAdf'
 import '@/assets/jiraDescriptionEditor.css'
+
+const styles = stylex.create({
+  root: { display: 'flex', height: '100%', minHeight: 0, flexDirection: 'column', gap: '0.5rem' },
+  editorShell: { display: 'flex', minHeight: 0, flex: '1', overflow: 'hidden' },
+  unsupported: { opacity: 0.7 },
+  editorContent: {
+    height: '100%',
+    minHeight: '240px',
+    width: '100%',
+    overflowY: 'auto',
+    fontSize: '0.875rem',
+    lineHeight: 1.625,
+    color: colors['--color-slate-300'],
+    outlineStyle: 'none',
+  },
+})
 
 const JiraMention = TiptapNode.create({
   name: 'mention',
@@ -444,7 +462,7 @@ export default defineComponent({
     })
 
     return () => (
-      <div class="flex h-full min-h-0 flex-col space-y-2">
+      <div {...stylex.attrs(styles.root)}>
         <JiraDescriptionEditorToolbar
           currentBlockType={currentBlockType.value}
           disabled={props.disabled}
@@ -464,12 +482,12 @@ export default defineComponent({
         />
 
         <div
-          class={['flex min-h-0 flex-1 overflow-hidden', props.unsupported ? 'opacity-70' : '']}
+          {...stylex.attrs(styles.editorShell, props.unsupported ? styles.unsupported : null)}
           onDblclick={handleEditorDoubleClick}
         >
           <EditorContent
             editor={editor.value}
-            class="jira-description-editor h-full min-h-[240px] w-full overflow-y-auto text-sm leading-relaxed text-slate-300 outline-none"
+            class={['jira-description-editor', stylex.attrs(styles.editorContent).class]}
           />
         </div>
       </div>

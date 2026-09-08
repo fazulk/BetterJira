@@ -1,5 +1,6 @@
 import type { PropType } from 'vue'
 import type { JiraAssignableUser, JiraCreateIssueType, JiraTicket } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, onUnmounted, ref, Teleport, Transition, watch } from 'vue'
 import CreateTicketAssigneeField from '@/components/create-ticket/CreateTicketAssigneeField'
 import CreateTicketDueDateField from '@/components/create-ticket/CreateTicketDueDateField'
@@ -19,13 +20,14 @@ import { useJiraCurrentUser } from '@/composables/useJiraCurrentUser'
 import { usePriorities } from '@/composables/usePriorities'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { HARDCODED_CREATE_FIELDS } from '@/features/create-ticket/constants'
-import { getAllowedIssueTypesForParent, getCreateIssueTypeLabel, getIssueTypeBadgeClass } from '@/features/create-ticket/issueTypePolicy'
+import { getAllowedIssueTypesForParent, getCreateIssueTypeLabel, getIssueTypeBadgeTone } from '@/features/create-ticket/issueTypePolicy'
 import { useCreateFieldOptions } from '@/features/create-ticket/useCreateFieldOptions'
 import { useCreateTicketDerivedState } from '@/features/create-ticket/useCreateTicketDerivedState'
 import { useCreateTicketFieldValues } from '@/features/create-ticket/useCreateTicketFieldValues'
 import { useCreateTicketFormSync } from '@/features/create-ticket/useCreateTicketFormSync'
 import { focusElementById, useCreateTicketShortcuts } from '@/features/create-ticket/useCreateTicketShortcuts'
 import { useCreateTicketSubmit } from '@/features/create-ticket/useCreateTicketSubmit'
+import { breakpoints, colors } from '@/styles/tokens.stylex'
 import { readLocalStorageString } from '@/utils/browserStorage'
 import { LOCAL_ISSUE_TYPE } from '~/shared/localTickets'
 
@@ -41,6 +43,66 @@ interface ParentPickerExpose {
 interface FocusableFieldExpose {
   focus: () => void
 }
+
+const styles = stylex.create({
+  backdrop: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 50,
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingInline: '0.75rem',
+    paddingBlock: '9vh',
+    backdropFilter: 'blur(4px)',
+  },
+  dialog: {
+    width: '100%',
+    maxWidth: '42rem',
+    overflow: 'hidden',
+    borderRadius: '0.5rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: colors['--color-surface-1'],
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4)',
+  },
+  body: {
+    maxHeight: '68vh',
+    overflowY: 'auto',
+    padding: '1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+  },
+  responsiveControls: {
+    display: 'grid',
+    gap: '0.75rem',
+    borderTopWidth: 1,
+    borderTopStyle: 'solid',
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    paddingTop: '1rem',
+    [breakpoints.md]: {
+      gridTemplateColumns: 'minmax(0,1fr) auto',
+    },
+  },
+  secondaryFields: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+  },
+  secondaryFieldsRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    gap: '0.75rem',
+    borderTopWidth: 1,
+    borderTopStyle: 'solid',
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    paddingTop: '1rem',
+  },
+})
 
 export default defineComponent({
   name: 'CreateTicketModal',
@@ -299,11 +361,11 @@ export default defineComponent({
         <Transition name="fade">
           {open.value && (
             <div
-              class="fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-3 py-[9vh] backdrop-blur-sm"
+              {...stylex.attrs(styles.backdrop)}
               onClick={handleBackdropClick}
             >
               <div
-                class="w-full max-w-[42rem] overflow-hidden rounded-lg border border-white/[0.08] bg-surface-1 shadow-xl shadow-black/40"
+                {...stylex.attrs(styles.dialog)}
                 role="dialog"
                 aria-modal="true"
                 aria-label="Create issue"
@@ -315,7 +377,7 @@ export default defineComponent({
                   onClose={closeModal}
                 />
 
-                <div class="max-h-[68vh] space-y-4 overflow-y-auto px-4 py-4">
+                <div {...stylex.attrs(styles.body)}>
                   <CreateTicketPrimaryFields
                     fields={primaryFields.value}
                     getCreateFieldError={getCreateFieldError}
@@ -327,7 +389,7 @@ export default defineComponent({
                     updateFieldValue={updateFieldValue}
                   />
 
-                  <div class="grid gap-3 border-t border-white/[0.06] pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                  <div {...stylex.attrs(styles.responsiveControls)}>
                     <CreateTicketTeamSelector
                       ref={teamSelectorRef}
                       effectiveSpaceKey={effectiveSpaceKey.value}
@@ -343,7 +405,7 @@ export default defineComponent({
                       createIssueTypesError={createIssueTypesError.value}
                       effectiveParentKey={effectiveParentKey.value}
                       getCreateIssueTypeLabel={getCreateIssueTypeLabel}
-                      getIssueTypeBadgeClass={getIssueTypeBadgeClass}
+                      getIssueTypeBadgeTone={getIssueTypeBadgeTone}
                       isCreatePending={isCreatePending.value}
                       isIssueTypeLocked={issueTypeLocked.value}
                       isLoadingIssueTypes={createIssueTypesQuery.isLoading.value}
@@ -366,8 +428,8 @@ export default defineComponent({
                     {...{ 'onUpdate:parentKey': (value: string | null) => (parentKey.value = value) }}
                   />
 
-                  <div class="space-y-4">
-                    <div class="flex flex-wrap items-start gap-3 border-t border-white/[0.06] pt-4">
+                  <div {...stylex.attrs(styles.secondaryFields)}>
+                    <div {...stylex.attrs(styles.secondaryFieldsRow)}>
                       <CreateTicketPriorityField
                         ref={priorityFieldRef}
                         fieldError={getCreateFieldError('priority')}

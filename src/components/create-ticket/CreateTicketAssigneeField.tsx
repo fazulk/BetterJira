@@ -1,7 +1,174 @@
 import type { PropType } from 'vue'
+import type { CreateAvatarTone } from '@/features/create-ticket/constants'
 import type { JiraAssignableUser } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent } from 'vue'
 import { useAssigneePicker } from '@/features/create-ticket/useAssigneePicker'
+import { colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  root: { minWidth: 0, flex: '1', display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  label: { display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-200'] },
+  localPanel: {
+    borderRadius: '0.5rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    paddingInline: '0.75rem',
+    paddingBlock: '0.625rem',
+  },
+  localRow: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', fontSize: 11, color: colors['--color-slate-300'] },
+  youPill: {
+    borderRadius: '0.375rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.035)',
+    paddingInline: '0.5rem',
+    paddingBlock: '0.125rem',
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.025em',
+    color: colors['--color-slate-300'],
+  },
+  mutedText: { color: colors['--color-slate-500'] },
+  errorText: { color: colors['--color-rose-300'] },
+  localDescription: { marginTop: '0.375rem', fontSize: 10, lineHeight: 1.625, color: colors['--color-slate-600'] },
+  retryButton: { marginTop: '0.5rem', fontSize: 11, color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-200'] }, backgroundColor: 'transparent', borderWidth: 0, padding: 0 },
+  picker: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    borderRadius: '0.375rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: { 'default': 'rgba(255, 255, 255, 0.06)', ':hover': 'rgba(255, 255, 255, 0.1)' },
+    backgroundColor: { 'default': 'rgba(255, 255, 255, 0.02)', ':hover': 'rgba(255, 255, 255, 0.04)' },
+    paddingBlock: '0.375rem',
+    paddingLeft: '0.375rem',
+    paddingRight: '0.625rem',
+    transitionProperty: 'border-color, background-color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  combo: { position: 'relative' },
+  editRow: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
+  inputWrap: { position: 'relative' },
+  searchIcon: {
+    pointerEvents: 'none',
+    position: 'absolute',
+    left: '0.625rem',
+    top: '50%',
+    width: '0.75rem',
+    height: '0.75rem',
+    transform: 'translateY(-50%)',
+    color: colors['--color-slate-500'],
+  },
+  searchInput: {
+    'width': '12rem',
+    'borderRadius': '0.375rem',
+    'borderWidth': 1,
+    'borderStyle': 'solid',
+    'borderColor': { 'default': 'rgba(255, 255, 255, 0.08)', ':focus': 'rgba(255, 255, 255, 0.16)' },
+    'backgroundColor': colors['--color-surface-0'],
+    'paddingBlock': '0.375rem',
+    'paddingLeft': '2rem',
+    'paddingRight': '0.75rem',
+    'fontSize': '0.75rem',
+    'lineHeight': '1rem',
+    'color': colors['--color-slate-200'],
+    'outlineStyle': 'none',
+    'transitionProperty': 'border-color',
+    'transitionDuration': '150ms',
+    'transitionTimingFunction': 'cubic-bezier(0.4, 0, 0.2, 1)',
+    '::placeholder': { color: colors['--color-slate-600'] },
+  },
+  closeButton: {
+    borderRadius: '9999px',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingInline: '0.5rem',
+    paddingBlock: '0.25rem',
+    fontSize: 11,
+    fontWeight: 500,
+    color: colors['--color-slate-400'],
+    backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' },
+    transitionProperty: 'background-color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  statusText: { fontSize: 11, color: colors['--color-slate-500'] },
+  statusError: { fontSize: 11, color: colors['--color-rose-300'] },
+  menu: {
+    position: 'absolute',
+    left: 0,
+    bottom: '100%',
+    zIndex: 50,
+    marginBottom: '0.25rem',
+    maxHeight: '16rem',
+    width: '14rem',
+    overflowY: 'auto',
+    borderRadius: '0.5rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: colors['--color-surface-0'],
+    paddingBlock: '0.25rem',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4)',
+  },
+  menuHeader: { paddingInline: '0.75rem', paddingBlock: '0.375rem', fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: colors['--color-slate-600'] },
+  option: {
+    display: 'flex',
+    width: '100%',
+    alignItems: 'center',
+    gap: '0.5rem',
+    paddingInline: '0.75rem',
+    paddingBlock: '0.375rem',
+    textAlign: 'left',
+    fontSize: '0.75rem',
+    lineHeight: '1rem',
+    backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' },
+    transitionProperty: 'background-color, color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  optionActive: { backgroundColor: 'rgba(255, 255, 255, 0.06)', color: colors['--color-white'] },
+  optionInactive: { color: colors['--color-slate-300'] },
+  divider: { marginInline: '0.5rem', marginBlock: '0.25rem', borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: 'rgba(255, 255, 255, 0.06)' },
+  empty: { paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', fontStyle: 'italic', color: colors['--color-slate-600'] },
+  trigger: { display: 'flex', cursor: 'pointer', alignItems: 'center', gap: '0.375rem', backgroundColor: 'transparent', borderWidth: 0, padding: 0 },
+  avatar: {
+    display: 'flex',
+    width: '1rem',
+    height: '1rem',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '9999px',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    fontSize: 8,
+    fontWeight: 700,
+  },
+  avatarNeutralStrong: { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.045)', color: colors['--color-slate-300'] },
+  avatarNeutralMuted: { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.035)', color: colors['--color-slate-400'] },
+  avatarSurface: { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: colors['--color-surface-3'], color: colors['--color-slate-300'] },
+  avatarFallback: { borderColor: 'rgba(100, 116, 139, 0.15)', backgroundColor: 'rgba(100, 116, 139, 0.15)', color: colors['--color-slate-400'] },
+  selectedName: { fontSize: 11, fontWeight: 500, color: colors['--color-slate-300'] },
+})
+
+function avatarStyle(tone: CreateAvatarTone) {
+  if (tone === 'neutralStrong')
+    return styles.avatarNeutralStrong
+  if (tone === 'neutralMuted')
+    return styles.avatarNeutralMuted
+  if (tone === 'surface')
+    return styles.avatarSurface
+  return styles.avatarFallback
+}
 
 export default defineComponent({
   name: 'CreateTicketAssigneeField',
@@ -58,7 +225,7 @@ export default defineComponent({
       assigneeInputRef,
       assigneeSearch,
       flatComboOptions,
-      getAssigneeAvatarClass,
+      getAssigneeAvatarTone,
       getAssigneeInitials,
       handleAssigneeKeydown,
       isEditingAssignee,
@@ -87,28 +254,28 @@ export default defineComponent({
     })
 
     return () => (
-      <div class="min-w-0 flex-1 space-y-2">
-        <label class="flex items-center gap-2 text-sm font-medium text-slate-200">
+      <div {...stylex.attrs(styles.root)}>
+        <label {...stylex.attrs(styles.label)}>
           <span>Assignee</span>
         </label>
         {props.isLocalSpace
           ? (
-              <div class="rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2.5">
-                <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
-                  <span class="rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-300">You</span>
-                  {props.localAssigneeLoading && <span class="text-slate-500">Loading your Jira name...</span>}
+              <div {...stylex.attrs(styles.localPanel)}>
+                <div {...stylex.attrs(styles.localRow)}>
+                  <span {...stylex.attrs(styles.youPill)}>You</span>
+                  {props.localAssigneeLoading && <span {...stylex.attrs(styles.mutedText)}>Loading your Jira name...</span>}
                   {!props.localAssigneeLoading && props.localAssigneeName && <span>{props.localAssigneeName}</span>}
                   {!props.localAssigneeLoading && !props.localAssigneeName && props.localAssigneeError && (
-                    <span class="text-rose-300">Could not load Jira profile</span>
+                    <span {...stylex.attrs(styles.errorText)}>Could not load Jira profile</span>
                   )}
                 </div>
-                <p class="mt-1.5 text-[10px] leading-relaxed text-slate-600">
+                <p {...stylex.attrs(styles.localDescription)}>
                   Local tickets are always assigned to you, using your Jira display name.
                 </p>
                 {props.localAssigneeError && (
                   <button
                     type="button"
-                    class="mt-2 text-[11px] text-slate-400 hover:text-slate-200"
+                    {...stylex.attrs(styles.retryButton)}
                     onClick={() => emit('retryLocalAssignee')}
                   >
                     Retry
@@ -117,13 +284,13 @@ export default defineComponent({
               </div>
             )
           : (
-              <div class="group relative flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.02] py-1.5 pl-1.5 pr-2.5 transition hover:border-white/[0.1] hover:bg-white/[0.04]">
+              <div {...stylex.attrs(styles.picker)}>
                 {isEditingAssignee.value
                   ? (
-                      <div ref={assigneeComboRef} class="relative">
-                        <div class="flex items-center gap-2">
-                          <div class="relative">
-                            <svg class="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <div ref={assigneeComboRef} {...stylex.attrs(styles.combo)}>
+                        <div {...stylex.attrs(styles.editRow)}>
+                          <div {...stylex.attrs(styles.inputWrap)}>
+                            <svg {...stylex.attrs(styles.searchIcon)} fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <circle cx="11" cy="11" r="8" />
                               <path stroke-linecap="round" d="m21 21-4.35-4.35" />
                             </svg>
@@ -133,25 +300,25 @@ export default defineComponent({
                               v-model={assigneeSearch.value}
                               name="create-assignee-search"
                               aria-label="Search assignees"
-                              class="w-48 rounded-md border border-white/[0.08] bg-surface-0 py-1.5 pl-8 pr-3 text-xs text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16]"
+                              {...stylex.attrs(styles.searchInput)}
                               placeholder="Search assignees..."
                               onKeydown={handleAssigneeKeydown}
                             />
                           </div>
                           <button
                             type="button"
-                            class="rounded-full border border-white/[0.08] px-2 py-1 text-[11px] font-medium text-slate-400 transition hover:bg-white/[0.04]"
+                            {...stylex.attrs(styles.closeButton)}
                             onClick={stopEditingAssignee}
                           >
                             x
                           </button>
-                          {props.isFieldLoading && <span class="text-[11px] text-slate-500">Loading...</span>}
-                          {props.fieldError && <span class="text-[11px] text-rose-300">{props.fieldError}</span>}
+                          {props.isFieldLoading && <span {...stylex.attrs(styles.statusText)}>Loading...</span>}
+                          {props.fieldError && <span {...stylex.attrs(styles.statusError)}>{props.fieldError}</span>}
                         </div>
-                        <div class="absolute left-0 bottom-full z-50 mb-1 max-h-64 w-56 overflow-y-auto rounded-lg border border-white/[0.08] bg-surface-0 py-1 shadow-xl shadow-black/40">
+                        <div {...stylex.attrs(styles.menu)}>
                           {recentComboOptions.value.length > 0 && (
                             <>
-                              <div class="px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-600">
+                              <div {...stylex.attrs(styles.menuHeader)}>
                                 Recent
                               </div>
                               {recentComboOptions.value.map((option, i) => (
@@ -159,17 +326,14 @@ export default defineComponent({
                                   key={option.accountId}
                                   type="button"
                                   data-idx={i}
-                                  class={[
-                                    'flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors',
-                                    assigneeHighlightIndex.value === i ? 'bg-white/[0.06] text-white' : 'text-slate-300 hover:bg-white/[0.04]',
-                                  ]}
+                                  {...stylex.attrs(styles.option, assigneeHighlightIndex.value === i ? styles.optionActive : styles.optionInactive)}
                                   onClick={() => selectAssigneeOption(option.accountId)}
                                   onMouseenter={() => (assigneeHighlightIndex.value = i)}
                                 >
                                   {option.displayName}
                                 </button>
                               ))}
-                              <div class="mx-2 my-1 border-t border-white/[0.06]" />
+                              <div {...stylex.attrs(styles.divider)} />
                             </>
                           )}
                           {nonRecentComboOptions.value.length > 0 && nonRecentComboOptions.value.map((option, j) => (
@@ -177,10 +341,7 @@ export default defineComponent({
                               key={option.accountId}
                               type="button"
                               data-idx={recentComboOptions.value.length + j}
-                              class={[
-                                'flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors',
-                                assigneeHighlightIndex.value === recentComboOptions.value.length + j ? 'bg-white/[0.06] text-white' : 'text-slate-300 hover:bg-white/[0.04]',
-                              ]}
+                              {...stylex.attrs(styles.option, assigneeHighlightIndex.value === recentComboOptions.value.length + j ? styles.optionActive : styles.optionInactive)}
                               onClick={() => selectAssigneeOption(option.accountId)}
                               onMouseenter={() => (assigneeHighlightIndex.value = recentComboOptions.value.length + j)}
                             >
@@ -188,17 +349,17 @@ export default defineComponent({
                             </button>
                           ))}
                           {!flatComboOptions.value.length && (
-                            <div class="px-3 py-2 text-xs italic text-slate-600">No matching users</div>
+                            <div {...stylex.attrs(styles.empty)}>No matching users</div>
                           )}
                         </div>
                       </div>
                     )
                   : (
-                      <button type="button" class="flex cursor-pointer items-center gap-1.5" onClick={startEditingAssignee}>
-                        <div class={['flex h-4 w-4 items-center justify-center rounded-full border text-[8px] font-bold', getAssigneeAvatarClass(selectedAssigneeName.value)]}>
+                      <button type="button" {...stylex.attrs(styles.trigger)} onClick={startEditingAssignee}>
+                        <div {...stylex.attrs(styles.avatar, avatarStyle(getAssigneeAvatarTone(selectedAssigneeName.value)))}>
                           {getAssigneeInitials(selectedAssigneeName.value)}
                         </div>
-                        <span class="text-[11px] font-medium text-slate-300">{selectedAssigneeName.value}</span>
+                        <span {...stylex.attrs(styles.selectedName)}>{selectedAssigneeName.value}</span>
                       </button>
                     )}
               </div>

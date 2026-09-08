@@ -66,7 +66,7 @@ describe('ticket TSX components', () => {
         createIssueTypesError: null,
         effectiveParentKey: null,
         getCreateIssueTypeLabel: issueType => issueType,
-        getIssueTypeBadgeClass: () => 'badge',
+        getIssueTypeBadgeTone: () => 'neutral',
         isCreatePending: false,
         isIssueTypeLocked: false,
         isLoadingIssueTypes: false,

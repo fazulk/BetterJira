@@ -1,8 +1,9 @@
 import type { ComputedRef } from 'vue'
+import type { CreateAvatarTone } from './constants'
 import type { JiraAssignableUser } from '@/types/jira'
 import { computed, nextTick, ref } from 'vue'
 import { readLocalStorageStringArray } from '@/utils/browserStorage'
-import { avatarColors } from './constants'
+import { avatarTones } from './constants'
 
 interface AssigneeOption {
   accountId: string
@@ -81,13 +82,13 @@ export function useAssigneePicker(input: AssigneePickerInput) {
     return name.slice(0, 2).toUpperCase()
   }
 
-  function getAssigneeAvatarClass(name: string): string {
+  function getAssigneeAvatarTone(name: string): CreateAvatarTone {
     if (!name || name === 'Unassigned') {
-      return 'bg-slate-500/15 text-slate-400 border-slate-500/15'
+      return 'fallback'
     }
 
     const hash = name.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0)
-    return avatarColors[hash % avatarColors.length] ?? 'bg-slate-500/15 text-slate-400 border-slate-500/15'
+    return avatarTones[hash % avatarTones.length] ?? 'fallback'
   }
 
   function handleAssigneeClickOutside(event: MouseEvent) {
@@ -171,7 +172,7 @@ export function useAssigneePicker(input: AssigneePickerInput) {
     assigneeInputRef,
     assigneeSearch,
     flatComboOptions,
-    getAssigneeAvatarClass,
+    getAssigneeAvatarTone,
     getAssigneeInitials,
     handleAssigneeKeydown,
     isEditingAssignee,

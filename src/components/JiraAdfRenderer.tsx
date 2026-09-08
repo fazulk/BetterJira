@@ -1,6 +1,57 @@
+import type { StyleXStyles } from '@stylexjs/stylex'
 import type { PropType, VNodeChild } from 'vue'
 import type { JiraAdfMark, JiraAdfNode, JiraAttachment } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent, h } from 'vue'
+import { colors, typography } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  root: { display: 'flex', flexDirection: 'column' },
+  rootNested: { gap: '0.5rem' },
+  rootDefault: { gap: '0.75rem' },
+  paragraph: { fontSize: '0.875rem', lineHeight: 1.625, color: colors['--color-slate-400'], margin: 0 },
+  mention: { borderRadius: '0.375rem', backgroundColor: 'rgba(111, 115, 255, 0.1)', paddingInline: '0.25rem', paddingBlock: '0.125rem', color: '#cbd5ff' },
+  text: { overflowWrap: 'break-word' },
+  strong: { fontWeight: 600, color: colors['--color-slate-200'] },
+  emphasis: { fontStyle: 'italic' },
+  underline: { textDecorationLine: 'underline', textUnderlineOffset: '2px' },
+  strike: { textDecorationLine: 'line-through' },
+  inlineCode: {
+    borderRadius: '0.375rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    paddingInline: '0.375rem',
+    paddingBlock: '0.125rem',
+    fontFamily: typography['--font-mono'],
+    fontSize: 13,
+    color: colors['--color-slate-200'],
+  },
+  link: {
+    color: { 'default': colors['--color-slate-200'], ':hover': colors['--color-white'] },
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '3px',
+    textDecorationColor: colors['--color-accent-sage'],
+    textDecorationThickness: '2px',
+    transitionProperty: 'color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  heading1: { fontSize: '1.25rem', lineHeight: 1.375, fontWeight: 600, color: colors['--color-slate-100'] },
+  heading2: { fontSize: '1.125rem', lineHeight: 1.375, fontWeight: 600, color: colors['--color-slate-100'] },
+  heading3: { fontSize: '1rem', lineHeight: 1.375, fontWeight: 600, color: colors['--color-slate-200'] },
+  headingFallback: { fontSize: '0.875rem', lineHeight: 1.625, fontWeight: 500, color: colors['--color-slate-300'] },
+  list: { paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', lineHeight: 1.625, color: colors['--color-slate-400'] },
+  bulletList: { listStyleType: 'disc' },
+  orderedList: { listStyleType: 'decimal' },
+  codeBlock: { overflowX: 'auto', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '0.75rem', paddingBlock: '0.625rem', fontSize: '0.875rem', lineHeight: 1.625, color: colors['--color-slate-300'] },
+  blockquote: { borderLeftWidth: 1, borderLeftStyle: 'solid', borderLeftColor: 'rgba(255, 255, 255, 0.14)', paddingLeft: '1rem', fontSize: '0.875rem', lineHeight: 1.625, color: colors['--color-slate-300'] },
+  mediaStack: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  figure: { overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.025)', margin: 0 },
+  image: { display: 'block', maxHeight: '520px', maxWidth: '100%', objectFit: 'contain' },
+  figcaption: { paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+})
 
 const JiraAdfRenderer = defineComponent({
   name: 'JiraAdfRenderer',
@@ -146,43 +197,31 @@ const JiraAdfRenderer = defineComponent({
       return id ? `@${id}` : ''
     }
 
-    function mentionNodeClass(): string {
-      return 'rounded-md bg-accent-indigo/10 px-1 py-0.5 text-[#cbd5ff]'
-    }
-
     function hasMark(node: JiraAdfNode, type: string): boolean {
       return node.marks?.some(mark => mark.type === type) ?? false
     }
 
-    function textNodeClass(node: JiraAdfNode): string {
-      const classes = ['break-words']
-
-      if (hasMark(node, 'strong'))
-        classes.push('font-semibold', 'text-slate-200')
-      if (hasMark(node, 'em'))
-        classes.push('italic')
-      if (hasMark(node, 'underline'))
-        classes.push('underline', 'underline-offset-2')
-      if (hasMark(node, 'strike'))
-        classes.push('line-through')
-      if (hasMark(node, 'code'))
-        classes.push('rounded-md', 'border', 'border-white/[0.08]', 'bg-white/[0.04]', 'px-1.5', 'py-0.5', 'font-mono', 'text-[13px]', 'text-slate-200')
-
-      if (linkHref(node))
-        classes.push('text-slate-200', 'underline', 'underline-offset-[3px]', 'decoration-[#4cb782]', 'decoration-2', 'transition', 'hover:text-white')
-
-      return classes.join(' ')
+    function textNodeStyles(node: JiraAdfNode): StyleXStyles[] {
+      return [
+        styles.text,
+        hasMark(node, 'strong') ? styles.strong : null,
+        hasMark(node, 'em') ? styles.emphasis : null,
+        hasMark(node, 'underline') ? styles.underline : null,
+        hasMark(node, 'strike') ? styles.strike : null,
+        hasMark(node, 'code') ? styles.inlineCode : null,
+        linkHref(node) ? styles.link : null,
+      ]
     }
 
-    function headingClass(node: JiraAdfNode): string {
+    function headingStyle(node: JiraAdfNode): StyleXStyles {
       const level = node.attrs?.level
       if (level === 1)
-        return 'text-xl font-semibold leading-snug text-slate-100'
+        return styles.heading1
       if (level === 2)
-        return 'text-lg font-semibold leading-snug text-slate-100'
+        return styles.heading2
       if (level === 3)
-        return 'text-base font-semibold leading-snug text-slate-200'
-      return 'text-sm font-medium leading-relaxed text-slate-300'
+        return styles.heading3
+      return styles.headingFallback
     }
 
     function renderTextChild(child: JiraAdfNode, childIndex: number): VNodeChild {
@@ -190,10 +229,10 @@ const JiraAdfRenderer = defineComponent({
       return h(
         href ? 'a' : 'span',
         {
+          ...stylex.attrs(...textNodeStyles(child)),
           href: href ?? undefined,
           target: href ? '_blank' : undefined,
           rel: href ? 'noreferrer' : undefined,
-          class: textNodeClass(child),
           title: href ?? undefined,
           key: nodeKey(child, childIndex),
           onClick: href ? undefined : (event: MouseEvent) => event.stopPropagation(),
@@ -216,7 +255,7 @@ const JiraAdfRenderer = defineComponent({
           return renderTextChild(child, childIndex)
 
         if (child.type === 'mention')
-          return <span key={nodeKey(child, childIndex)} class={mentionNodeClass()}>{mentionText(child)}</span>
+          return <span key={nodeKey(child, childIndex)} {...stylex.attrs(styles.mention)}>{mentionText(child)}</span>
 
         return (
           <JiraAdfRenderer
@@ -247,7 +286,7 @@ const JiraAdfRenderer = defineComponent({
     function renderNode(node: JiraAdfNode, index: number): VNodeChild {
       if (node.type === 'paragraph') {
         return (
-          <p key={nodeKey(node, index)} class="text-sm leading-relaxed text-slate-400">
+          <p key={nodeKey(node, index)} {...stylex.attrs(styles.paragraph)}>
             {renderInlineChildren(node)}
           </p>
         )
@@ -255,7 +294,7 @@ const JiraAdfRenderer = defineComponent({
 
       if (node.type === 'heading') {
         return (
-          <div key={nodeKey(node, index)} class={headingClass(node)}>
+          <div key={nodeKey(node, index)} {...stylex.attrs(headingStyle(node))}>
             {renderInlineChildren(node)}
           </div>
         )
@@ -263,7 +302,7 @@ const JiraAdfRenderer = defineComponent({
 
       if (node.type === 'bulletList') {
         return (
-          <ul key={nodeKey(node, index)} class="list-disc space-y-2 pl-6 text-sm leading-relaxed text-slate-400 marker:text-slate-500">
+          <ul key={nodeKey(node, index)} {...stylex.attrs(styles.list, styles.bulletList)}>
             {childNodes(node).map((child, childIndex) => (
               <li key={nodeKey(child, childIndex)}>
                 {renderNested(childNodes(child))}
@@ -277,7 +316,7 @@ const JiraAdfRenderer = defineComponent({
         return (
           <ol
             key={nodeKey(node, index)}
-            class="list-decimal space-y-2 pl-6 text-sm leading-relaxed text-slate-400 marker:text-slate-500"
+            {...stylex.attrs(styles.list, styles.orderedList)}
             start={getNodeOrder(node)}
           >
             {childNodes(node).map((child, childIndex) => (
@@ -291,7 +330,7 @@ const JiraAdfRenderer = defineComponent({
 
       if (node.type === 'codeBlock') {
         return (
-          <pre key={nodeKey(node, index)} class="overflow-x-auto rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2.5 text-sm leading-relaxed text-slate-300">
+          <pre key={nodeKey(node, index)} {...stylex.attrs(styles.codeBlock)}>
             <code>{childNodes(node).map(child => child.text ?? '').join('')}</code>
           </pre>
         )
@@ -299,7 +338,7 @@ const JiraAdfRenderer = defineComponent({
 
       if (node.type === 'blockquote') {
         return (
-          <blockquote key={nodeKey(node, index)} class="border-l border-white/[0.14] pl-4 text-sm leading-relaxed text-slate-300">
+          <blockquote key={nodeKey(node, index)} {...stylex.attrs(styles.blockquote)}>
             {renderNested(childNodes(node))}
           </blockquote>
         )
@@ -307,7 +346,7 @@ const JiraAdfRenderer = defineComponent({
 
       if (node.type === 'mediaSingle' || node.type === 'mediaGroup') {
         return (
-          <div key={nodeKey(node, index)} class="space-y-2">
+          <div key={nodeKey(node, index)} {...stylex.attrs(styles.mediaStack)}>
             {renderNested(childNodes(node))}
           </div>
         )
@@ -316,13 +355,13 @@ const JiraAdfRenderer = defineComponent({
       if (node.type === 'media') {
         const imageUrl = mediaImageUrl(node)
         return (
-          <figure key={nodeKey(node, index)} class="overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.025]">
+          <figure key={nodeKey(node, index)} {...stylex.attrs(styles.figure)}>
             {imageUrl
               ? (
                   <img
                     src={imageUrl}
                     alt={mediaAltText(node)}
-                    class="block max-h-[520px] max-w-full object-contain"
+                    {...stylex.attrs(styles.image)}
                     loading="lazy"
                     onDblclick={(event) => {
                       event.stopPropagation()
@@ -331,7 +370,7 @@ const JiraAdfRenderer = defineComponent({
                   />
                 )
               : (
-                  <figcaption class="px-3 py-2 text-xs text-slate-500">
+                  <figcaption {...stylex.attrs(styles.figcaption)}>
                     {mediaAltText(node)}
                   </figcaption>
                 )}
@@ -351,7 +390,7 @@ const JiraAdfRenderer = defineComponent({
     }
 
     return () => (
-      <div class={props.nested ? 'space-y-2' : 'space-y-3'}>
+      <div {...stylex.attrs(styles.root, props.nested ? styles.rootNested : styles.rootDefault)}>
         {props.nodes.map(renderNode)}
       </div>
     )

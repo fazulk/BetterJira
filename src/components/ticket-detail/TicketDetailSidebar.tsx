@@ -1,6 +1,7 @@
 import type { PropType } from 'vue'
 import type { JiraTicket } from '@/types/jira'
 import type { TicketDevStatusPullRequestStatus } from '~/shared/devStatus'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, nextTick, reactive, ref, vShow, watch, withDirectives } from 'vue'
 import { Icon } from '#components'
 import LabelPill from '@/components/LabelPill'
@@ -9,6 +10,8 @@ import { useProjectAppearances } from '@/composables/useProjectAppearances'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { useTicketDevStatus } from '@/composables/useTicketDevStatus'
 import { useUpdateTicketLabels } from '@/composables/useUpdateTicketLabels'
+import { uiStyles } from '@/styles/shared'
+import { breakpoints, colors } from '@/styles/tokens.stylex'
 import { buildJiraIssueUrl } from '@/utils/jiraIssueUrl'
 
 interface PropertiesSectionExpose {
@@ -17,12 +20,77 @@ interface PropertiesSectionExpose {
   startEditingStatus: () => void
 }
 
-const PULL_REQUEST_STATUS_CLASSES: Record<TicketDevStatusPullRequestStatus, string> = {
-  OPEN: 'border-sky-400/30 bg-sky-400/10 text-sky-300',
-  MERGED: 'border-purple-400/30 bg-purple-400/10 text-purple-300',
-  DECLINED: 'border-rose-400/30 bg-rose-400/10 text-rose-300',
-  DRAFT: 'border-white/[0.08] bg-white/[0.04] text-slate-400',
-  UNKNOWN: 'border-white/[0.08] bg-white/[0.04] text-slate-400',
+const PULL_REQUEST_STATUS_TONES: Record<TicketDevStatusPullRequestStatus, TicketDevStatusPullRequestStatus> = {
+  OPEN: 'OPEN',
+  MERGED: 'MERGED',
+  DECLINED: 'DECLINED',
+  DRAFT: 'DRAFT',
+  UNKNOWN: 'UNKNOWN',
+}
+
+const styles = stylex.create({
+  aside: { minHeight: 0, borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: colors['--color-issue-detail-bg'], paddingInline: '1rem', paddingBlock: '1rem', [breakpoints.lg]: { overflowY: 'auto', borderTopWidth: 0 } },
+  stack: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
+  quickActions: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.375rem' },
+  iconButton: { display: 'inline-flex', width: '1.75rem', height: '1.75rem', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: { 'default': 'rgba(255, 255, 255, 0.035)', ':hover': 'rgba(255, 255, 255, 0.06)' }, color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-200'] }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  icon: { width: '0.875rem', height: '0.875rem' },
+  successIcon: { color: colors['--color-emerald-400'] },
+  ticketKey: { marginLeft: '0.25rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-slate-500'] },
+  section: { borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '1rem', transitionProperty: 'padding', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  sectionExpanded: { paddingBlock: '1rem' },
+  sectionCollapsed: { paddingBlock: '0.75rem' },
+  sectionButton: { display: 'flex', width: '100%', alignItems: 'center', gap: '0.375rem', borderWidth: 0, backgroundColor: 'transparent', padding: 0, fontSize: '0.875rem', lineHeight: '1.25rem', color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-200'] }, transitionProperty: 'color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  sectionButtonExpanded: { marginBottom: '0.75rem' },
+  chevron: { fontSize: 10, color: colors['--color-slate-600'], transitionProperty: 'transform', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  chevronCollapsed: { transform: 'rotate(-90deg)' },
+  contentStack: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
+  compactStack: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  editStack: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  labelEditor: { display: 'flex', minHeight: '2.25rem', flexWrap: 'wrap', alignItems: 'center', gap: '0.375rem', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.035)', paddingInline: '0.5rem', paddingBlock: '0.375rem' },
+  draftLabel: { display: 'inline-flex', maxWidth: '100%', alignItems: 'center', gap: '0.25rem', borderRadius: '0.75rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.04)', paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: 11, fontWeight: 500, color: colors['--color-slate-200'] },
+  truncate: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  removeLabel: { borderWidth: 0, backgroundColor: 'transparent', padding: 0, color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-200'] }, transitionProperty: 'color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  labelInput: { 'minWidth': '6rem', 'flex': '1', 'borderWidth': 0, 'backgroundColor': 'transparent', 'fontSize': '0.75rem', 'lineHeight': '1rem', 'color': colors['--color-slate-200'], 'outlineStyle': 'none', '::placeholder': { color: colors['--color-slate-600'] } },
+  actionRow: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.375rem' },
+  saveButton: { borderRadius: '0.375rem', borderWidth: 0, backgroundColor: colors['--color-accent-indigo'], paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: 11, fontWeight: 500, color: colors['--color-white'], cursor: { 'default': 'pointer', ':disabled': 'not-allowed' }, opacity: { 'default': 1, ':disabled': 0.6 } },
+  cancelButton: { borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: 11, color: colors['--color-slate-400'], cursor: { 'default': 'pointer', ':disabled': 'not-allowed' }, opacity: { 'default': 1, ':disabled': 0.6 } },
+  error: { fontSize: 11, color: colors['--color-rose-300'] },
+  labelsList: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' },
+  empty: { fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-600'] },
+  addLabelButton: { display: 'inline-flex', width: '1.75rem', height: '1.75rem', alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', borderWidth: 0, backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, fontSize: '0.875rem', color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-300'] }, transitionProperty: 'color, background-color, opacity', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)', cursor: { 'default': 'pointer', ':disabled': 'not-allowed' }, opacity: { 'default': 1, ':disabled': 0.4 } },
+  rowLink: { display: 'flex', width: '100%', minWidth: 0, alignItems: 'center', gap: '0.5rem', borderRadius: '0.375rem', borderWidth: 0, backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, paddingInline: '0.25rem', paddingBlock: '0.375rem', textAlign: 'left', color: colors['--color-slate-500'], transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  rowLinkHoverText: { color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-300'] } },
+  rowIcon: { display: 'flex', width: '1.25rem', height: '1.25rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center' },
+  rowIconColor: (color: string) => ({ color }),
+  projectText: { minWidth: 0, flex: '1' },
+  projectName: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-200'] },
+  devUnavailable: { display: 'flex', alignItems: 'center', gap: '0.5rem', paddingInline: '0.25rem', paddingBlock: '0.375rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  retry: { borderWidth: 0, backgroundColor: 'transparent', padding: 0, fontWeight: 500, color: colors['--color-slate-300'], textUnderlineOffset: '2px', transitionProperty: 'text-decoration-line', transitionDuration: '150ms', textDecorationLine: { 'default': 'none', ':hover': 'underline' } },
+  prLink: { display: 'flex', minWidth: 0, alignItems: 'flex-start', gap: '0.5rem', borderRadius: '0.375rem', paddingInline: '0.25rem', paddingBlock: '0.375rem', textDecorationLine: 'none', backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, transitionProperty: 'background-color', transitionDuration: '150ms' },
+  prContent: { minWidth: 0, flex: '1', display: 'flex', flexDirection: 'column', gap: '0.25rem' },
+  prName: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-200'] },
+  prBranch: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11, color: colors['--color-slate-500'] },
+  statusPill: { marginTop: '0.125rem', display: 'inline-flex', flexShrink: 0, alignItems: 'center', borderRadius: '0.25rem', borderWidth: 1, borderStyle: 'solid', paddingInline: '0.375rem', paddingBlock: '0.125rem', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.025em' },
+  prOpen: { borderColor: 'rgba(56, 189, 248, 0.3)', backgroundColor: 'rgba(56, 189, 248, 0.1)', color: colors['--color-sky-300'] },
+  prMerged: { borderColor: 'rgba(192, 132, 252, 0.3)', backgroundColor: 'rgba(192, 132, 252, 0.1)', color: colors['--color-purple-300'] },
+  prDeclined: { borderColor: 'rgba(251, 113, 133, 0.3)', backgroundColor: 'rgba(251, 113, 133, 0.1)', color: colors['--color-rose-300'] },
+  prNeutral: { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.04)', color: colors['--color-slate-400'] },
+  jiraTypeRow: { display: 'flex', alignItems: 'center' },
+  jiraTypePill: { display: 'inline-flex', maxWidth: '100%', justifySelf: 'flex-start', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-slate-400'] },
+  jiraLink: { display: 'inline-flex', height: '1.75rem', alignItems: 'center', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, paddingInline: '0.625rem', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-200'] }, textDecorationLine: 'none', transitionProperty: 'color, background-color', transitionDuration: '150ms' },
+  peopleRow: { display: 'flex', alignItems: 'flex-start', gap: '0.5rem', paddingInline: '0.125rem' },
+  peopleLabel: { width: '9rem', flexShrink: 0, paddingTop: '0.125rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  peopleValue: { minWidth: 0, fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-300'] },
+})
+
+function pullRequestStatusStyle(status: TicketDevStatusPullRequestStatus) {
+  if (status === 'OPEN')
+    return styles.prOpen
+  if (status === 'MERGED')
+    return styles.prMerged
+  if (status === 'DECLINED')
+    return styles.prDeclined
+  return styles.prNeutral
 }
 
 function normalizeLabels(labels: string[]): string[] {
@@ -248,16 +316,14 @@ export default defineComponent({
       startEditingStatus,
     })
 
-    const sectionButtonClass = 'flex w-full items-center gap-1.5 text-sm text-slate-400 transition hover:text-slate-200'
-
     return () => (
-      <aside class="scrollbar-gutter-stable min-h-0 border-t border-white/[0.06] bg-issue-detail-bg px-4 py-4 lg:overflow-y-auto lg:border-t-0">
-        <div class="space-y-3">
+      <aside {...stylex.attrs(styles.aside, uiStyles.stableScrollbar)}>
+        <div {...stylex.attrs(styles.stack)}>
           {!props.isLocalTicket && (
-            <div class="flex items-center justify-end gap-1.5">
+            <div {...stylex.attrs(styles.quickActions)}>
               <button
                 type="button"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.035] text-slate-500 transition hover:bg-white/[0.06] hover:text-slate-200"
+                {...stylex.attrs(styles.iconButton)}
                 aria-label={`Copy Jira link for ${props.ticket.key}`}
                 title="Copy Jira link"
                 disabled={!jiraUrl.value}
@@ -265,39 +331,39 @@ export default defineComponent({
               >
                 {!copiedUrl.value
                   ? (
-                      <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                      <svg {...stylex.attrs(styles.icon)} fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
                       </svg>
                     )
                   : (
-                      <svg class="h-3.5 w-3.5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                      <svg {...stylex.attrs(styles.icon, styles.successIcon)} fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     )}
               </button>
               <button
                 type="button"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.035] text-slate-500 transition hover:bg-white/[0.06] hover:text-slate-200"
+                {...stylex.attrs(styles.iconButton)}
                 aria-label={`Copy issue ID ${props.ticket.key}`}
                 title="Copy issue ID"
                 onClick={() => void copyTicketKey()}
               >
                 {!copiedKey.value
                   ? (
-                      <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                      <svg {...stylex.attrs(styles.icon)} fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
                         <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
                         <path stroke-linecap="round" d="M8 10h4.5M8 14h8" />
                         <circle cx="16.5" cy="10" r="1.25" fill="currentColor" stroke="none" />
                       </svg>
                     )
                   : (
-                      <svg class="h-3.5 w-3.5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                      <svg {...stylex.attrs(styles.icon, styles.successIcon)} fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     )}
               </button>
-              <span class="ml-1 text-xs font-medium text-slate-500">{props.ticket.key}</span>
+              <span {...stylex.attrs(styles.ticketKey)}>{props.ticket.key}</span>
             </div>
           )}
 
@@ -311,22 +377,22 @@ export default defineComponent({
             onToggle={() => toggleSection('properties')}
           />
 
-          <section class={['rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 transition-[padding]', collapsedSections.labels ? 'py-3' : 'py-4']}>
-            <button type="button" class={[sectionButtonClass, { 'mb-3': !collapsedSections.labels }]} aria-expanded={!collapsedSections.labels} onClick={() => toggleSection('labels')}>
+          <section {...stylex.attrs(styles.section, collapsedSections.labels ? styles.sectionCollapsed : styles.sectionExpanded)}>
+            <button type="button" {...stylex.attrs(styles.sectionButton, collapsedSections.labels ? null : styles.sectionButtonExpanded)} aria-expanded={!collapsedSections.labels} onClick={() => toggleSection('labels')}>
               <span>Labels</span>
-              <span class={['text-[10px] text-slate-600 transition-transform', { '-rotate-90': collapsedSections.labels }]}>▼</span>
+              <span {...stylex.attrs(styles.chevron, collapsedSections.labels ? styles.chevronCollapsed : null)}>▼</span>
             </button>
 
             {withDirectives(
-              <div class="space-y-3">
+              <div {...stylex.attrs(styles.contentStack)}>
                 {isEditingLabels.value
                   ? (
-                      <div class="space-y-2">
-                        <div class="flex min-h-9 flex-wrap items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.035] px-2 py-1.5">
+                      <div {...stylex.attrs(styles.editStack)}>
+                        <div {...stylex.attrs(styles.labelEditor)}>
                           {labelsDraft.value.map(label => (
-                            <span key={label} class="inline-flex max-w-full items-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[11px] font-medium text-slate-200">
-                              <span class="truncate">{label}</span>
-                              <button type="button" class="text-slate-500 transition hover:text-slate-200" aria-label={`Remove label ${label}`} onClick={() => removeLabelDraft(label)}>
+                            <span key={label} {...stylex.attrs(styles.draftLabel)}>
+                              <span {...stylex.attrs(styles.truncate)}>{label}</span>
+                              <button type="button" {...stylex.attrs(styles.removeLabel)} aria-label={`Remove label ${label}`} onClick={() => removeLabelDraft(label)}>
                                 ×
                               </button>
                             </span>
@@ -334,31 +400,31 @@ export default defineComponent({
                           <input
                             ref={labelInputRef}
                             v-model={labelDraft.value}
-                            class="min-w-24 flex-1 bg-transparent text-xs text-slate-200 outline-none placeholder:text-slate-600"
+                            {...stylex.attrs(styles.labelInput)}
                             placeholder="Add label..."
                             disabled={anyLabelsPending.value}
                             onBlur={addLabelDraft}
                             onKeydown={handleLabelInputKeydown}
                           />
                         </div>
-                        <div class="flex flex-wrap items-center gap-1.5">
-                          <button type="button" class="rounded-md bg-accent-indigo px-2 py-1 text-[11px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-60" disabled={anyLabelsPending.value} onClick={() => void saveLabels()}>
+                        <div {...stylex.attrs(styles.actionRow)}>
+                          <button type="button" {...stylex.attrs(styles.saveButton)} disabled={anyLabelsPending.value} onClick={() => void saveLabels()}>
                             {anyLabelsPending.value ? '...' : 'Save'}
                           </button>
-                          <button type="button" class="rounded-md border border-white/[0.08] px-2 py-1 text-[11px] text-slate-400 hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60" disabled={anyLabelsPending.value} onClick={cancelEditingLabels}>
+                          <button type="button" {...stylex.attrs(styles.cancelButton)} disabled={anyLabelsPending.value} onClick={cancelEditingLabels}>
                             Cancel
                           </button>
-                          {labelError.value && <span class="text-[11px] text-rose-300">{labelError.value}</span>}
+                          {labelError.value && <span {...stylex.attrs(styles.error)}>{labelError.value}</span>}
                         </div>
                       </div>
                     )
                   : (
-                      <div class="flex flex-wrap items-center gap-2">
+                      <div {...stylex.attrs(styles.labelsList)}>
                         {detailLabels.value.map(label => <LabelPill key={label} label={label} showDot />)}
-                        {detailLabels.value.length === 0 && <span class="text-sm text-slate-600">No labels</span>}
+                        {detailLabels.value.length === 0 && <span {...stylex.attrs(styles.empty)}>No labels</span>}
                         <button
                           type="button"
-                          class="inline-flex h-7 w-7 items-center justify-center rounded-md text-sm text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-500"
+                          {...stylex.attrs(styles.addLabelButton)}
                           title={canEditLabels.value ? 'Edit labels' : 'Configure Jira credentials to edit labels'}
                           aria-label="Edit labels"
                           disabled={!canEditLabels.value}
@@ -374,10 +440,10 @@ export default defineComponent({
           </section>
 
           {!props.isProjectDetail && (
-            <section class={['rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 transition-[padding]', collapsedSections.project ? 'py-3' : 'py-4']}>
-              <button type="button" class={[sectionButtonClass, { 'mb-3': !collapsedSections.project }]} aria-expanded={!collapsedSections.project} onClick={() => toggleSection('project')}>
+            <section {...stylex.attrs(styles.section, collapsedSections.project ? styles.sectionCollapsed : styles.sectionExpanded)}>
+              <button type="button" {...stylex.attrs(styles.sectionButton, collapsedSections.project ? null : styles.sectionButtonExpanded)} aria-expanded={!collapsedSections.project} onClick={() => toggleSection('project')}>
                 <span>Project</span>
-                <span class={['text-[10px] text-slate-600 transition-transform', { '-rotate-90': collapsedSections.project }]}>▼</span>
+                <span {...stylex.attrs(styles.chevron, collapsedSections.project ? styles.chevronCollapsed : null)}>▼</span>
               </button>
 
               {withDirectives(
@@ -386,28 +452,28 @@ export default defineComponent({
                     ? (
                         <button
                           type="button"
-                          class="flex w-full min-w-0 items-center gap-2 rounded-md px-1 py-1.5 text-left transition hover:bg-white/[0.04]"
+                          {...stylex.attrs(styles.rowLink)}
                           onClick={() => emit('select', detailProjectParent.value!.key)}
                           onMouseenter={() => emit('prefetch', detailProjectParent.value!.key)}
                         >
-                          <span class="flex h-5 w-5 shrink-0 items-center justify-center" style={{ color: getProjectAppearance(detailProjectParent.value.key).color }}>
-                            <Icon name={`lucide:${getProjectAppearance(detailProjectParent.value.key).icon}`} class="h-4 w-4" aria-hidden="true" />
+                          <span {...stylex.attrs(styles.rowIcon, styles.rowIconColor(getProjectAppearance(detailProjectParent.value.key).color))}>
+                            <Icon name={`lucide:${getProjectAppearance(detailProjectParent.value.key).icon}`} {...stylex.attrs(styles.icon)} aria-hidden="true" />
                           </span>
-                          <span class="min-w-0 flex-1">
-                            <span class="block truncate text-sm font-medium text-slate-200">{detailProjectParentLabel.value}</span>
+                          <span {...stylex.attrs(styles.projectText)}>
+                            <span {...stylex.attrs(styles.projectName)}>{detailProjectParentLabel.value}</span>
                           </span>
                         </button>
                       )
                     : (
-                        <button type="button" class="flex w-full min-w-0 items-center gap-2 rounded-md px-1 py-1.5 text-left text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-300">
-                          <span class="flex h-5 w-5 shrink-0 items-center justify-center text-slate-500">
-                            <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+                        <button type="button" {...stylex.attrs(styles.rowLink, styles.rowLinkHoverText)}>
+                          <span {...stylex.attrs(styles.rowIcon)}>
+                            <svg {...stylex.attrs(styles.icon)} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
                               <path stroke-linejoin="round" d="m8 1.8 5.2 3v6L8 13.8l-5.2-3v-6L8 1.8Z" />
                               <path stroke-linejoin="round" d="M2.9 4.9 8 7.8l5.1-2.9M8 7.8v5.8" />
                             </svg>
                           </span>
-                          <span class="min-w-0 flex-1">
-                            <span class="block truncate text-sm font-medium">Add to project</span>
+                          <span {...stylex.attrs(styles.projectText)}>
+                            <span {...stylex.attrs(styles.projectName)}>Add to project</span>
                           </span>
                         </button>
                       )}
@@ -418,32 +484,32 @@ export default defineComponent({
           )}
 
           {(devStatusPullRequests.value.length > 0 || devStatusUnavailable.value) && (
-            <section class={['animate-fade-in rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 transition-[padding]', collapsedSections.development ? 'py-3' : 'py-4']}>
-              <button type="button" class={[sectionButtonClass, { 'mb-3': !collapsedSections.development }]} aria-expanded={!collapsedSections.development} onClick={() => toggleSection('development')}>
+            <section {...stylex.attrs(styles.section, collapsedSections.development ? styles.sectionCollapsed : styles.sectionExpanded, uiStyles.fadeIn)}>
+              <button type="button" {...stylex.attrs(styles.sectionButton, collapsedSections.development ? null : styles.sectionButtonExpanded)} aria-expanded={!collapsedSections.development} onClick={() => toggleSection('development')}>
                 <span>Development</span>
-                <span class={['text-[10px] text-slate-600 transition-transform', { '-rotate-90': collapsedSections.development }]}>▼</span>
+                <span {...stylex.attrs(styles.chevron, collapsedSections.development ? styles.chevronCollapsed : null)}>▼</span>
               </button>
 
               {withDirectives(
-                <div class="space-y-2">
+                <div {...stylex.attrs(styles.compactStack)}>
                   {devStatusUnavailable.value && (
-                    <div class="flex items-center gap-2 px-1 py-1.5 text-xs text-slate-500">
+                    <div {...stylex.attrs(styles.devUnavailable)}>
                       <span>Couldn't load development activity.</span>
-                      <button type="button" class="font-medium text-slate-300 underline-offset-2 transition hover:underline" onClick={() => refetchDevStatus()}>
+                      <button type="button" {...stylex.attrs(styles.retry)} onClick={() => refetchDevStatus()}>
                         Retry
                       </button>
                     </div>
                   )}
                   {devStatusPullRequests.value.map(pullRequest => (
-                    <a key={pullRequest.url} href={pullRequest.url} target="_blank" rel="noopener noreferrer" class="flex min-w-0 items-start gap-2 rounded-md px-1 py-1.5 transition hover:bg-white/[0.04]">
-                      <span class="flex h-5 w-5 shrink-0 items-center justify-center text-slate-500">
-                        <Icon name="lucide:git-pull-request" class="h-4 w-4" aria-hidden="true" />
+                    <a key={pullRequest.url} href={pullRequest.url} target="_blank" rel="noopener noreferrer" {...stylex.attrs(styles.prLink)}>
+                      <span {...stylex.attrs(styles.rowIcon)}>
+                        <Icon name="lucide:git-pull-request" {...stylex.attrs(styles.icon)} aria-hidden="true" />
                       </span>
-                      <span class="min-w-0 flex-1 space-y-1">
-                        <span class="block truncate text-sm font-medium text-slate-200">{pullRequest.name}</span>
-                        {pullRequest.sourceBranch && <span class="block truncate text-[11px] text-slate-500">{pullRequest.sourceBranch}</span>}
+                      <span {...stylex.attrs(styles.prContent)}>
+                        <span {...stylex.attrs(styles.prName)}>{pullRequest.name}</span>
+                        {pullRequest.sourceBranch && <span {...stylex.attrs(styles.prBranch)}>{pullRequest.sourceBranch}</span>}
                       </span>
-                      <span class={['mt-0.5 inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide', PULL_REQUEST_STATUS_CLASSES[pullRequest.status]]}>
+                      <span {...stylex.attrs(styles.statusPill, pullRequestStatusStyle(PULL_REQUEST_STATUS_TONES[pullRequest.status]))}>
                         {pullRequest.status}
                       </span>
                     </a>
@@ -454,44 +520,44 @@ export default defineComponent({
             </section>
           )}
 
-          <section class={['rounded-lg border border-white/[0.06] bg-white/[0.025] px-4 transition-[padding]', collapsedSections.jira ? 'py-3' : 'py-4']}>
-            <button type="button" class={[sectionButtonClass, { 'mb-3': !collapsedSections.jira }]} aria-expanded={!collapsedSections.jira} onClick={() => toggleSection('jira')}>
+          <section {...stylex.attrs(styles.section, collapsedSections.jira ? styles.sectionCollapsed : styles.sectionExpanded)}>
+            <button type="button" {...stylex.attrs(styles.sectionButton, collapsedSections.jira ? null : styles.sectionButtonExpanded)} aria-expanded={!collapsedSections.jira} onClick={() => toggleSection('jira')}>
               <span>Jira</span>
-              <span class={['text-[10px] text-slate-600 transition-transform', { '-rotate-90': collapsedSections.jira }]}>▼</span>
+              <span {...stylex.attrs(styles.chevron, collapsedSections.jira ? styles.chevronCollapsed : null)}>▼</span>
             </button>
 
             {withDirectives(
-              <div class="space-y-2 text-sm">
+              <div {...stylex.attrs(styles.compactStack)}>
                 {detailJiraTypeLabel.value && (
-                  <div class="flex items-center">
-                    <span class="inline-flex max-w-full justify-self-start rounded-md border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-xs font-medium text-slate-400">
-                      <span class="truncate">{detailJiraTypeLabel.value}</span>
+                  <div {...stylex.attrs(styles.jiraTypeRow)}>
+                    <span {...stylex.attrs(styles.jiraTypePill)}>
+                      <span {...stylex.attrs(styles.truncate)}>{detailJiraTypeLabel.value}</span>
                     </span>
                   </div>
                 )}
                 {!props.isLocalTicket && jiraUrl.value && (
-                  <a href={jiraUrl.value} target="_blank" rel="noopener noreferrer" class="inline-flex h-7 items-center rounded-md border border-white/[0.08] px-2.5 text-xs text-slate-400 transition hover:bg-white/[0.04] hover:text-slate-200">
+                  <a href={jiraUrl.value} target="_blank" rel="noopener noreferrer" {...stylex.attrs(styles.jiraLink)}>
                     Open in Jira
                   </a>
                 )}
                 {hasWorkflowPeople.value && (
-                  <div class="space-y-2">
+                  <div {...stylex.attrs(styles.compactStack)}>
                     {detailApprovers.value && (
-                      <div class="flex items-start gap-2 px-0.5">
-                        <span class="w-36 shrink-0 pt-0.5 text-xs text-slate-500">Approvers</span>
-                        <span class="min-w-0 text-xs text-slate-300">{detailApprovers.value.join(', ')}</span>
+                      <div {...stylex.attrs(styles.peopleRow)}>
+                        <span {...stylex.attrs(styles.peopleLabel)}>Approvers</span>
+                        <span {...stylex.attrs(styles.peopleValue)}>{detailApprovers.value.join(', ')}</span>
                       </div>
                     )}
                     {detailTestedBy.value && (
-                      <div class="flex items-start gap-2 px-0.5">
-                        <span class="w-36 shrink-0 pt-0.5 text-xs text-slate-500">Tested by</span>
-                        <span class="min-w-0 text-xs text-slate-300">{detailTestedBy.value}</span>
+                      <div {...stylex.attrs(styles.peopleRow)}>
+                        <span {...stylex.attrs(styles.peopleLabel)}>Tested by</span>
+                        <span {...stylex.attrs(styles.peopleValue)}>{detailTestedBy.value}</span>
                       </div>
                     )}
                     {detailApprovedToProductionBy.value && (
-                      <div class="flex items-start gap-2 px-0.5">
-                        <span class="w-36 shrink-0 pt-0.5 text-xs text-slate-500">Approved to production by</span>
-                        <span class="min-w-0 text-xs text-slate-300">{detailApprovedToProductionBy.value}</span>
+                      <div {...stylex.attrs(styles.peopleRow)}>
+                        <span {...stylex.attrs(styles.peopleLabel)}>Approved to production by</span>
+                        <span {...stylex.attrs(styles.peopleValue)}>{detailApprovedToProductionBy.value}</span>
                       </div>
                     )}
                   </div>

@@ -1,7 +1,73 @@
 import type { PropType } from 'vue'
+import type { CreatePriorityTone } from '@/features/create-ticket/constants'
 import type { CreateFieldOption } from '@/features/create-ticket/types'
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent, ref } from 'vue'
 import { priorityConfig } from '@/features/create-ticket/constants'
+import { colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  root: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  label: { display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-200'] },
+  controlRow: { position: 'relative', display: 'flex', alignItems: 'center', gap: '0.375rem' },
+  controlGroup: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
+  select: {
+    borderRadius: '0.375rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':focus': 'rgba(255, 255, 255, 0.16)' },
+    backgroundColor: colors['--color-surface-0'],
+    paddingInline: '0.625rem',
+    paddingBlock: '0.375rem',
+    fontSize: '0.75rem',
+    lineHeight: '1rem',
+    color: colors['--color-slate-200'],
+    outlineStyle: 'none',
+    transitionProperty: 'border-color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  selectedPriority: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    borderRadius: '0.375rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    paddingInline: '0.625rem',
+    paddingBlock: '0.375rem',
+  },
+  dot: {
+    width: '0.375rem',
+    height: '0.375rem',
+    borderRadius: '9999px',
+  },
+  highestDot: { backgroundColor: colors['--color-rose-400'] },
+  highDot: { backgroundColor: colors['--color-orange-400'] },
+  mediumDot: { backgroundColor: colors['--color-amber-400'] },
+  lowDot: { backgroundColor: colors['--color-sky-400'] },
+  lowestDot: { backgroundColor: colors['--color-slate-400'] },
+  fallbackDot: { backgroundColor: colors['--color-slate-500'] },
+  priorityName: { fontSize: 11, fontWeight: 500, color: colors['--color-slate-400'] },
+  helper: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  error: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-rose-300'] },
+})
+
+function priorityDotStyle(tone: CreatePriorityTone) {
+  if (tone === 'highest')
+    return styles.highestDot
+  if (tone === 'high')
+    return styles.highDot
+  if (tone === 'medium')
+    return styles.mediumDot
+  if (tone === 'low')
+    return styles.lowDot
+  if (tone === 'lowest')
+    return styles.lowestDot
+  return styles.fallbackDot
+}
 
 function getSelectValue(event: Event): string {
   const target = event.target
@@ -49,18 +115,18 @@ export default defineComponent({
     expose({ focus })
 
     return () => (
-      <div class="space-y-2">
-        <label for="create-field-priority" class="flex items-center gap-2 text-sm font-medium text-slate-200">
+      <div {...stylex.attrs(styles.root)}>
+        <label for="create-field-priority" {...stylex.attrs(styles.label)}>
           <span>Priority</span>
         </label>
-        <div class="group relative flex items-center gap-1.5">
-          <div class="flex items-center gap-2">
+        <div {...stylex.attrs(styles.controlRow)}>
+          <div {...stylex.attrs(styles.controlGroup)}>
             <select
               id="create-field-priority"
               ref={prioritySelectRef}
               name="create-priority"
               value={props.priorityValue}
-              class="rounded-md border border-white/[0.08] bg-surface-0 px-2.5 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]"
+              {...stylex.attrs(styles.select)}
               disabled={props.isCreatePending || props.isFieldLoading}
               onChange={event => emit('update:priority', getSelectValue(event))}
             >
@@ -70,14 +136,14 @@ export default defineComponent({
                 </option>
               ))}
             </select>
-            <div class="flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5">
-              <span class={['h-1.5 w-1.5 rounded-full', priorityConfig[props.priorityName]?.bg || 'bg-slate-500']} />
-              <span class="text-[11px] font-medium text-slate-400">{props.priorityName}</span>
+            <div {...stylex.attrs(styles.selectedPriority)}>
+              <span {...stylex.attrs(styles.dot, priorityDotStyle(priorityConfig[props.priorityName]?.tone ?? 'fallback'))} />
+              <span {...stylex.attrs(styles.priorityName)}>{props.priorityName}</span>
             </div>
           </div>
         </div>
-        {props.isFieldLoading && <p class="text-xs text-slate-500">Loading priority options...</p>}
-        {!props.isFieldLoading && props.fieldError && <p class="text-xs text-rose-300">{props.fieldError}</p>}
+        {props.isFieldLoading && <p {...stylex.attrs(styles.helper)}>Loading priority options...</p>}
+        {!props.isFieldLoading && props.fieldError && <p {...stylex.attrs(styles.error)}>{props.fieldError}</p>}
       </div>
     )
   },

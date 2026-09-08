@@ -1,6 +1,56 @@
 import type { PropType } from 'vue'
+import type { IssueTypeBadgeTone } from '@/features/create-ticket/issueTypePolicy'
 import type { JiraCreateIssueType } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent } from 'vue'
+import { colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  root: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
+  label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.14em', color: colors['--color-slate-500'] },
+  localPill: {
+    display: 'inline-flex',
+    borderRadius: '0.375rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.035)',
+    paddingInline: '0.625rem',
+    paddingBlock: '0.375rem',
+    fontSize: '0.75rem',
+    lineHeight: '1rem',
+    fontWeight: 500,
+    color: colors['--color-slate-300'],
+  },
+  message: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  error: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-rose-300'] },
+  options: { display: 'flex', flexWrap: 'wrap', gap: '0.5rem' },
+  optionButton: {
+    borderRadius: '0.375rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    paddingInline: '0.625rem',
+    paddingBlock: '0.375rem',
+    fontSize: '0.75rem',
+    lineHeight: '1rem',
+    fontWeight: 500,
+    transitionProperty: 'opacity',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  neutralBadge: {
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.035)',
+    color: colors['--color-slate-300'],
+  },
+  inactiveOption: { opacity: { 'default': 0.6, ':hover': 1 } },
+})
+
+function badgeToneStyle(tone: IssueTypeBadgeTone) {
+  if (tone === 'neutral')
+    return styles.neutralBadge
+  return styles.neutralBadge
+}
 
 export default defineComponent({
   name: 'CreateTicketSubtypeSelector',
@@ -37,8 +87,8 @@ export default defineComponent({
       type: Function as PropType<(issueType: JiraCreateIssueType) => string>,
       required: true,
     },
-    getIssueTypeBadgeClass: {
-      type: Function as PropType<(issueType: JiraCreateIssueType) => string>,
+    getIssueTypeBadgeTone: {
+      type: Function as PropType<(issueType: JiraCreateIssueType) => IssueTypeBadgeTone>,
       required: true,
     },
     selectedIssueType: {
@@ -53,36 +103,35 @@ export default defineComponent({
     return () => (
       props.isLocalSpace
         ? (
-            <div class="space-y-1.5">
-              <p class="text-[11px] uppercase tracking-[0.14em] text-slate-500">Subtype</p>
-              <div class="inline-flex rounded-md border border-white/[0.08] bg-white/[0.035] px-2.5 py-1.5 text-xs font-medium text-slate-300">
+            <div {...stylex.attrs(styles.root)}>
+              <p {...stylex.attrs(styles.label)}>Subtype</p>
+              <div {...stylex.attrs(styles.localPill)}>
                 Task
               </div>
             </div>
           )
         : (
-            <div class="space-y-1.5">
-              <p class="text-[11px] uppercase tracking-[0.14em] text-slate-500">Subtype</p>
+            <div {...stylex.attrs(styles.root)}>
+              <p {...stylex.attrs(styles.label)}>Subtype</p>
               {props.effectiveParentKey && props.isLoadingIssueTypes && (
-                <p class="text-xs text-slate-500">Loading issue types available for this parent...</p>
+                <p {...stylex.attrs(styles.message)}>Loading issue types available for this parent...</p>
               )}
               {!(props.effectiveParentKey && props.isLoadingIssueTypes) && props.createIssueTypesError && (
-                <p class="text-xs text-rose-300">{props.createIssueTypesError}</p>
+                <p {...stylex.attrs(styles.error)}>{props.createIssueTypesError}</p>
               )}
               {!(props.effectiveParentKey && props.isLoadingIssueTypes) && !props.createIssueTypesError && props.issueTypeOptions.length === 0 && (
-                <p class="text-xs text-slate-500">No issue types are available for this parent.</p>
+                <p {...stylex.attrs(styles.message)}>No issue types are available for this parent.</p>
               )}
-              <div class="flex flex-wrap gap-2">
+              <div {...stylex.attrs(styles.options)}>
                 {props.issueTypeOptions.map(issueType => (
                   <button
                     key={issueType}
                     type="button"
-                    class={[
-                      'rounded-md border px-2.5 py-1.5 text-xs font-medium transition',
-                      props.selectedIssueType === issueType
-                        ? props.getIssueTypeBadgeClass(issueType)
-                        : `${props.getIssueTypeBadgeClass(issueType)} opacity-60 hover:opacity-100`,
-                    ]}
+                    {...stylex.attrs(
+                      styles.optionButton,
+                      badgeToneStyle(props.getIssueTypeBadgeTone(issueType)),
+                      props.selectedIssueType === issueType ? null : styles.inactiveOption,
+                    )}
                     disabled={props.isIssueTypeLocked || props.isCreatePending}
                     onClick={() => emit('update:selectedIssueType', issueType)}
                   >

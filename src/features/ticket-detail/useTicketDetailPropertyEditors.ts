@@ -19,27 +19,30 @@ interface TicketDetailPropertyEditorsInput {
   ticketKey: Ref<string | null>
 }
 
-export const priorityConfig: Record<string, { color: string, bg: string }> = {
-  Highest: { color: 'text-red-400', bg: 'bg-red-400' },
-  High: { color: 'text-orange-400', bg: 'bg-orange-400' },
-  Medium: { color: 'text-yellow-400', bg: 'bg-yellow-400' },
-  Low: { color: 'text-sky-400', bg: 'bg-sky-400' },
-  Lowest: { color: 'text-slate-400', bg: 'bg-slate-400' },
+export type DetailPriorityTone = 'highest' | 'high' | 'medium' | 'low' | 'lowest' | 'fallback'
+export type DetailAvatarTone = 'fallback' | 'neutral' | 'amber' | 'emerald' | 'rose' | 'sky'
+
+export const priorityConfig: Record<string, { tone: DetailPriorityTone }> = {
+  Highest: { tone: 'highest' },
+  High: { tone: 'high' },
+  Medium: { tone: 'medium' },
+  Low: { tone: 'low' },
+  Lowest: { tone: 'lowest' },
 }
 
-const avatarColors = [
-  'bg-white/[0.045] text-slate-300 border-white/[0.08]',
-  'bg-amber-500/20 text-amber-300 border-amber-500/20',
-  'bg-emerald-500/20 text-emerald-300 border-emerald-500/20',
-  'bg-rose-500/20 text-rose-300 border-rose-500/20',
-  'bg-sky-500/20 text-sky-300 border-sky-500/20',
+const avatarTones: DetailAvatarTone[] = [
+  'neutral',
+  'amber',
+  'emerald',
+  'rose',
+  'sky',
 ]
 
-function getAssigneeAvatarColor(name: string | undefined) {
+function getAssigneeAvatarTone(name: string | undefined): DetailAvatarTone {
   if (!name || name === 'Unassigned')
-    return 'bg-slate-500/15 text-slate-400 border-slate-500/15'
+    return 'fallback'
   const hash = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-  return avatarColors[hash % avatarColors.length]
+  return avatarTones[hash % avatarTones.length] ?? 'neutral'
 }
 
 function getAssigneeInitials(name: string | undefined) {
@@ -176,7 +179,7 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
   const localAssigneeDatalistId = computed(() => `local-assignee-dl-${input.ticketKey.value ?? 'none'}`)
   const anyPriorityPending = computed(() => updatePriorityMutation.isPending.value)
   const anyAssigneePending = computed(() => updateAssigneeMutation.isPending.value)
-  const avatarColor = computed(() => getAssigneeAvatarColor(input.ticket.value?.assignee))
+  const avatarTone = computed(() => getAssigneeAvatarTone(input.ticket.value?.assignee))
   const initials = computed(() => getAssigneeInitials(input.ticket.value?.assignee))
 
   async function startEditingAssignee() {
@@ -458,7 +461,7 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
     assigneeHighlightIndex,
     assigneeInputRef,
     assigneeSearch,
-    avatarColor,
+    avatarTone,
     cancelEditingAssignee,
     cancelEditingPriority,
     cancelEditingTeam,

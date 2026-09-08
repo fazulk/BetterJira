@@ -1,15 +1,136 @@
 import type { PropType } from 'vue'
 import type { JiraAdfDocument } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, nextTick, onBeforeUnmount, ref, Teleport, Transition, watch } from 'vue'
 import JiraDescriptionEditor from '@/components/JiraDescriptionEditor'
 import { useAiSettings } from '@/composables/useAiSettings'
 import { useGenerateAiDescription } from '@/composables/useGenerateAiDescription'
+import { breakpoints, colors } from '@/styles/tokens.stylex'
 import { getProviderLabel } from '~/shared/ai'
 import { coerceDescriptionToAdf } from '~/shared/jiraAdf'
 
 interface DescriptionEditorExpose {
   focusEditor: () => void
 }
+
+const styles = stylex.create({
+  backdrop: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 50,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingInline: '1rem',
+    paddingBlock: '2rem',
+    backdropFilter: 'blur(4px)',
+  },
+  dialog: {
+    display: 'flex',
+    width: '100%',
+    maxWidth: '56rem',
+    maxHeight: 'calc(100vh - 4rem)',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    borderRadius: '0.5rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: colors['--color-surface-0'],
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4)',
+  },
+  header: { display: 'flex', minHeight: '3rem', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem' },
+  titleTrail: { display: 'flex', minWidth: 0, alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  glyph: { display: 'inline-flex', width: '1.25rem', height: '1.25rem', alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', fontSize: 11, color: colors['--color-slate-400'] },
+  dividerText: { color: colors['--color-slate-700'] },
+  ticketKey: { fontWeight: 500, color: colors['--color-slate-300'] },
+  iconButton: {
+    display: 'inline-flex',
+    width: '1.75rem',
+    height: '1.75rem',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '0.375rem',
+    borderWidth: 0,
+    color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-200'] },
+    backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.05)' },
+    transitionProperty: 'color, background-color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    cursor: { 'default': 'pointer', ':disabled': 'not-allowed' },
+    opacity: { 'default': 1, ':disabled': 0.5 },
+  },
+  closeIcon: { width: '0.875rem', height: '0.875rem' },
+  contentGrid: {
+    display: 'grid',
+    minWidth: 0,
+    minHeight: '360px',
+    flex: '1',
+    gridTemplateColumns: '1fr',
+    overflow: 'hidden',
+    [breakpoints.lg]: { gridTemplateColumns: 'minmax(0,1fr) 20rem' },
+  },
+  editorPane: { display: 'flex', minWidth: 0, minHeight: 0, flex: '1', flexDirection: 'column', overflow: 'hidden', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem', paddingBlock: '0.75rem', [breakpoints.lg]: { borderBottomWidth: 0, borderRightWidth: 1, borderRightStyle: 'solid', borderRightColor: 'rgba(255, 255, 255, 0.06)' } },
+  editorHeading: { minWidth: 0, marginBottom: '0.75rem' },
+  ticketTitle: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 15, fontWeight: 500, color: colors['--color-slate-100'], margin: 0 },
+  subtitle: { marginTop: '0.125rem', fontSize: 12, color: colors['--color-slate-600'], marginBottom: 0 },
+  editorFrame: { minHeight: 0, flex: '1', overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.015)' },
+  sidePane: { display: 'flex', minWidth: 0, flexDirection: 'column', overflowY: 'auto', paddingInline: '1rem', paddingBlock: '0.75rem' },
+  settingsCard: { marginBottom: '1rem', overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.015)' },
+  settingsRow: { display: 'grid', gridTemplateColumns: '5.5rem minmax(0,1fr)', alignItems: 'center', gap: '0.75rem', paddingInline: '0.75rem', paddingBlock: '0.5rem' },
+  settingsRowBorder: { borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.05)' },
+  settingsLabel: { fontSize: 12, color: colors['--color-slate-600'] },
+  settingsValue: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, color: colors['--color-slate-300'] },
+  instructionLabel: { marginBottom: '0.5rem', fontSize: 12, fontWeight: 500, color: colors['--color-slate-400'] },
+  textarea: {
+    'minHeight': '112px',
+    'width': '100%',
+    'resize': 'vertical',
+    'borderRadius': '0.375rem',
+    'borderWidth': 1,
+    'borderStyle': 'solid',
+    'borderColor': { 'default': 'rgba(255, 255, 255, 0.08)', ':focus': 'rgba(255, 255, 255, 0.16)' },
+    'backgroundColor': { 'default': 'rgba(255, 255, 255, 0.025)', ':focus': 'rgba(255, 255, 255, 0.04)' },
+    'paddingInline': '0.75rem',
+    'paddingBlock': '0.5rem',
+    'fontSize': 13,
+    'lineHeight': '1.25rem',
+    'color': colors['--color-slate-300'],
+    'outlineStyle': 'none',
+    'transitionProperty': 'border-color, background-color',
+    'transitionDuration': '150ms',
+    'transitionTimingFunction': 'cubic-bezier(0.4, 0, 0.2, 1)',
+    '::placeholder': { color: colors['--color-slate-600'] },
+  },
+  error: { marginTop: '0.75rem', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(244, 63, 94, 0.2)', backgroundColor: 'rgba(244, 63, 94, 0.1)', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: 1.625, color: colors['--color-rose-200'] },
+  generateButton: {
+    marginTop: '0.75rem',
+    display: 'inline-flex',
+    height: '2rem',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '0.375rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: { 'default': 'rgba(255, 255, 255, 0.04)', ':hover': 'rgba(255, 255, 255, 0.07)' },
+    paddingInline: '0.75rem',
+    fontSize: 13,
+    fontWeight: 500,
+    color: colors['--color-slate-200'],
+    transitionProperty: 'background-color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    cursor: { 'default': 'pointer', ':disabled': 'not-allowed' },
+    opacity: { 'default': 1, ':disabled': 0.5 },
+  },
+  footer: { display: 'flex', minHeight: '3rem', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem' },
+  footerHint: { fontSize: 11, color: colors['--color-slate-600'] },
+  footerActions: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
+  cancelButton: { display: 'inline-flex', height: '1.75rem', alignItems: 'center', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', paddingInline: '0.625rem', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-200'] }, backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)', cursor: { 'default': 'pointer', ':disabled': 'not-allowed' }, opacity: { 'default': 1, ':disabled': 0.5 } },
+  applyButton: { display: 'inline-flex', height: '1.75rem', alignItems: 'center', borderRadius: '0.375rem', borderWidth: 0, backgroundColor: { 'default': colors['--color-accent-indigo'], ':hover': 'rgba(111, 115, 255, 0.9)' }, paddingInline: '0.625rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-white'], transitionProperty: 'background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)', cursor: { 'default': 'pointer', ':disabled': 'not-allowed' }, opacity: { 'default': 1, ':disabled': 0.6 } },
+})
 
 export default defineComponent({
   name: 'AiDescriptionModal',
@@ -123,35 +244,35 @@ export default defineComponent({
       <Teleport to="body">
         <Transition name="fade">
           {props.open && (
-            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-8 backdrop-blur-sm" onClick={handleBackdropClick}>
-              <div class="flex max-h-[calc(100vh-4rem)] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-white/[0.08] bg-surface-0 shadow-xl shadow-black/40">
-                <div class="flex min-h-12 items-center justify-between gap-4 border-b border-white/[0.06] px-4">
-                  <div class="flex min-w-0 items-center gap-2 text-xs text-slate-500">
-                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-md border border-white/[0.08] text-[11px] text-slate-400">*</span>
+            <div {...stylex.attrs(styles.backdrop)} onClick={handleBackdropClick}>
+              <div {...stylex.attrs(styles.dialog)}>
+                <div {...stylex.attrs(styles.header)}>
+                  <div {...stylex.attrs(styles.titleTrail)}>
+                    <span {...stylex.attrs(styles.glyph)}>*</span>
                     <span>Improve description</span>
-                    <span class="text-slate-700">/</span>
-                    <span class="font-medium text-slate-300">{props.ticketKey}</span>
+                    <span {...stylex.attrs(styles.dividerText)}>/</span>
+                    <span {...stylex.attrs(styles.ticketKey)}>{props.ticketKey}</span>
                   </div>
                   <button
                     type="button"
-                    class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    {...stylex.attrs(styles.iconButton)}
                     disabled={props.isSaving}
                     aria-label="Close"
                     onClick={closeModal}
                   >
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <svg {...stylex.attrs(styles.closeIcon)} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                       <path stroke-linecap="round" d="M4.25 4.25l7.5 7.5M11.75 4.25l-7.5 7.5" />
                     </svg>
                   </button>
                 </div>
 
-                <div class="grid min-h-[360px] min-w-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_20rem]">
-                  <div class="flex min-w-0 flex-1 flex-col overflow-hidden border-b border-white/[0.06] px-4 py-3 lg:border-b-0 lg:border-r">
-                    <div class="mb-3 min-w-0">
-                      <h2 class="truncate text-[15px] font-medium text-slate-100">{props.ticketTitle || props.ticketKey}</h2>
-                      <p class="mt-0.5 text-[12px] text-slate-600">Proposed description</p>
+                <div {...stylex.attrs(styles.contentGrid)}>
+                  <div {...stylex.attrs(styles.editorPane)}>
+                    <div {...stylex.attrs(styles.editorHeading)}>
+                      <h2 {...stylex.attrs(styles.ticketTitle)}>{props.ticketTitle || props.ticketKey}</h2>
+                      <p {...stylex.attrs(styles.subtitle)}>Proposed description</p>
                     </div>
-                    <div class="min-h-0 flex-1 overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.015]">
+                    <div {...stylex.attrs(styles.editorFrame)}>
                       <JiraDescriptionEditor
                         ref={proposedDescriptionEditorRef}
                         modelValue={proposedDescription.value}
@@ -161,35 +282,35 @@ export default defineComponent({
                     </div>
                   </div>
 
-                  <aside class="flex min-w-0 flex-col overflow-y-auto px-4 py-3">
-                    <div class="mb-4 overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.015]">
-                      <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 border-b border-white/[0.05] px-3 py-2">
-                        <span class="text-[12px] text-slate-600">Provider</span>
-                        <span class="truncate text-[13px] text-slate-300">{getProviderLabel(aiSettings.value.provider)}</span>
+                  <aside {...stylex.attrs(styles.sidePane)}>
+                    <div {...stylex.attrs(styles.settingsCard)}>
+                      <div {...stylex.attrs(styles.settingsRow, styles.settingsRowBorder)}>
+                        <span {...stylex.attrs(styles.settingsLabel)}>Provider</span>
+                        <span {...stylex.attrs(styles.settingsValue)}>{getProviderLabel(aiSettings.value.provider)}</span>
                       </div>
-                      <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 px-3 py-2">
-                        <span class="text-[12px] text-slate-600">Model</span>
-                        <span class="truncate text-[13px] text-slate-300">{aiSettings.value.model}</span>
+                      <div {...stylex.attrs(styles.settingsRow)}>
+                        <span {...stylex.attrs(styles.settingsLabel)}>Model</span>
+                        <span {...stylex.attrs(styles.settingsValue)}>{aiSettings.value.model}</span>
                       </div>
                     </div>
 
-                    <label for="ai-description-instruction" class="mb-2 text-[12px] font-medium text-slate-400">Instruction</label>
+                    <label for="ai-description-instruction" {...stylex.attrs(styles.instructionLabel)}>Instruction</label>
                     <textarea
                       id="ai-description-instruction"
                       v-model={promptText.value}
-                      class="min-h-[112px] w-full resize-y rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[13px] leading-5 text-slate-300 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.04]"
+                      {...stylex.attrs(styles.textarea)}
                       placeholder="Describe how the description should change..."
                     />
 
                     {generationError.value && (
-                      <p class="mt-3 rounded-md border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs leading-relaxed text-rose-200">
+                      <p {...stylex.attrs(styles.error)}>
                         {generationError.value}
                       </p>
                     )}
 
                     <button
                       type="button"
-                      class="mt-3 inline-flex h-8 items-center justify-center rounded-md border border-white/[0.1] bg-white/[0.04] px-3 text-[13px] font-medium text-slate-200 transition hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-50"
+                      {...stylex.attrs(styles.generateButton)}
                       disabled={!canGenerate.value}
                       onClick={() => void generateDescription()}
                     >
@@ -198,13 +319,13 @@ export default defineComponent({
                   </aside>
                 </div>
 
-                <div class="flex min-h-12 items-center justify-between gap-3 border-t border-white/[0.06] px-4">
-                  <div class="text-[11px] text-slate-600">Edit the proposed description before applying it.</div>
-                  <div class="flex items-center gap-2">
-                    <button type="button" class="inline-flex h-7 items-center rounded-md border border-white/[0.08] px-2.5 text-xs text-slate-400 transition hover:bg-white/[0.04] hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-50" disabled={props.isSaving} onClick={closeModal}>
+                <div {...stylex.attrs(styles.footer)}>
+                  <div {...stylex.attrs(styles.footerHint)}>Edit the proposed description before applying it.</div>
+                  <div {...stylex.attrs(styles.footerActions)}>
+                    <button type="button" {...stylex.attrs(styles.cancelButton)} disabled={props.isSaving} onClick={closeModal}>
                       Cancel
                     </button>
-                    <button type="button" class="inline-flex h-7 items-center rounded-md bg-accent-indigo px-2.5 text-xs font-medium text-white transition hover:bg-accent-indigo/90 disabled:cursor-not-allowed disabled:opacity-60" disabled={props.isSaving} onClick={confirmChanges}>
+                    <button type="button" {...stylex.attrs(styles.applyButton)} disabled={props.isSaving} onClick={confirmChanges}>
                       {props.isSaving ? 'Saving...' : 'Apply'}
                     </button>
                   </div>

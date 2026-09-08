@@ -236,7 +236,7 @@ describe('ticket detail description autosave', () => {
     const wrapper = mountComponent(FULL_TICKET, true)
     await nextTick()
 
-    await wrapper.find('.relative').trigger('focusin')
+    await wrapper.find('[data-description-editor-shell]').trigger('focusin')
     await emitEditorDoc(emptyParagraphDoc())
     await vi.advanceTimersByTimeAsync(3000)
 

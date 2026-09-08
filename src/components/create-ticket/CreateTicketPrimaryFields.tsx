@@ -1,6 +1,72 @@
 import type { PropType } from 'vue'
 import type { CreateFieldOption, HardcodedCreateFieldDefinition, HardcodedCreateFieldKey } from '@/features/create-ticket/types'
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent } from 'vue'
+import { colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  root: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
+  field: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
+  label: { display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-200'] },
+  required: { fontSize: '0.75rem', lineHeight: '1rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: colors['--color-rose-300'] },
+  titleInput: {
+    'width': '100%',
+    'borderRadius': '0.375rem',
+    'borderWidth': 1,
+    'borderStyle': 'solid',
+    'borderColor': { 'default': 'transparent', ':focus': 'rgba(255, 255, 255, 0.08)' },
+    'backgroundColor': { 'default': 'transparent', ':focus': 'rgba(255, 255, 255, 0.02)' },
+    'paddingInline': '0.25rem',
+    'paddingBlock': '0.375rem',
+    'fontSize': '1.25rem',
+    'lineHeight': '1.75rem',
+    'fontWeight': 500,
+    'color': colors['--color-slate-100'],
+    'outlineStyle': 'none',
+    'transitionProperty': 'border-color, background-color',
+    'transitionDuration': '150ms',
+    'transitionTimingFunction': 'cubic-bezier(0.4, 0, 0.2, 1)',
+    '::placeholder': { color: colors['--color-slate-600'] },
+  },
+  descriptionTextarea: {
+    'width': '100%',
+    'resize': 'vertical',
+    'borderRadius': '0.375rem',
+    'borderWidth': 1,
+    'borderStyle': 'solid',
+    'borderColor': { 'default': 'transparent', ':focus': 'rgba(255, 255, 255, 0.08)' },
+    'backgroundColor': { 'default': 'transparent', ':focus': 'rgba(255, 255, 255, 0.02)' },
+    'paddingInline': '0.25rem',
+    'paddingBlock': '0.375rem',
+    'fontSize': '0.875rem',
+    'lineHeight': '1.5rem',
+    'color': colors['--color-slate-300'],
+    'outlineStyle': 'none',
+    'transitionProperty': 'border-color, background-color',
+    'transitionDuration': '150ms',
+    'transitionTimingFunction': 'cubic-bezier(0.4, 0, 0.2, 1)',
+    '::placeholder': { color: colors['--color-slate-600'] },
+  },
+  input: {
+    width: '100%',
+    borderRadius: '0.5rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':focus': 'rgba(255, 255, 255, 0.16)' },
+    backgroundColor: 'rgba(255, 255, 255, 0.025)',
+    paddingInline: '0.75rem',
+    paddingBlock: '0.5rem',
+    fontSize: '0.875rem',
+    lineHeight: '1.25rem',
+    color: colors['--color-slate-200'],
+    outlineStyle: 'none',
+    transitionProperty: 'border-color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  helper: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  error: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-rose-300'] },
+})
 
 export default defineComponent({
   name: 'CreateTicketPrimaryFields',
@@ -45,11 +111,11 @@ export default defineComponent({
       const error = props.getCreateFieldError(field.key)
 
       return (
-        <div key={field.key} class="space-y-1.5">
+        <div key={field.key} {...stylex.attrs(styles.field)}>
           {field.key !== 'summary' && field.key !== 'description' && (
-            <label for={fieldId} class="flex items-center gap-2 text-sm font-medium text-slate-200">
+            <label for={fieldId} {...stylex.attrs(styles.label)}>
               <span>{field.label}</span>
-              {field.required && <span class="text-xs uppercase tracking-[0.12em] text-rose-300">Required</span>}
+              {field.required && <span {...stylex.attrs(styles.required)}>Required</span>}
             </label>
           )}
 
@@ -60,7 +126,7 @@ export default defineComponent({
               aria-label="Issue title"
               value={props.getTextValue(field.key)}
               type="text"
-              class="w-full rounded-md border border-transparent bg-transparent px-1 py-1.5 text-xl font-medium text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-white/[0.08] focus:bg-white/[0.02]"
+              {...stylex.attrs(styles.titleInput)}
               placeholder="Issue title"
               disabled={props.isCreatePending}
               onInput={event => props.updateFieldValue(field.key, props.getInputValue(event))}
@@ -74,7 +140,7 @@ export default defineComponent({
               aria-label="Issue description"
               value={props.getTextValue(field.key)}
               rows={4}
-              class="w-full resize-y rounded-md border border-transparent bg-transparent px-1 py-1.5 text-sm leading-6 text-slate-300 outline-none transition placeholder:text-slate-600 focus:border-white/[0.08] focus:bg-white/[0.02]"
+              {...stylex.attrs(styles.descriptionTextarea)}
               placeholder="Add description..."
               disabled={props.isCreatePending}
               onInput={event => props.updateFieldValue(field.key, props.getInputValue(event))}
@@ -86,7 +152,7 @@ export default defineComponent({
               id={fieldId}
               value={props.getTextValue(field.key)}
               type="date"
-              class="w-full rounded-lg border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-white/[0.16]"
+              {...stylex.attrs(styles.input)}
               disabled={props.isCreatePending}
               onInput={event => props.updateFieldValue(field.key, props.getInputValue(event))}
             />
@@ -96,7 +162,7 @@ export default defineComponent({
             <select
               id={fieldId}
               value={props.getTextValue(field.key)}
-              class="w-full rounded-lg border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-white/[0.16]"
+              {...stylex.attrs(styles.input)}
               disabled={props.isCreatePending || loading}
               onChange={event => props.updateFieldValue(field.key, props.getInputValue(event))}
             >
@@ -109,20 +175,20 @@ export default defineComponent({
           )}
 
           {loading && (
-            <p class="text-xs text-slate-500">
+            <p {...stylex.attrs(styles.helper)}>
               Loading
               {field.label.toLowerCase()}
               {' '}
               options...
             </p>
           )}
-          {!loading && error && <p class="text-xs text-rose-300">{error}</p>}
+          {!loading && error && <p {...stylex.attrs(styles.error)}>{error}</p>}
         </div>
       )
     }
 
     return () => (
-      <div class="space-y-3">
+      <div {...stylex.attrs(styles.root)}>
         {props.fields.map(renderField)}
       </div>
     )

@@ -1,7 +1,121 @@
 import type { PropType } from 'vue'
 import type { JiraTicket } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent } from 'vue'
 import { useParentPicker } from '@/features/create-ticket/useParentPicker'
+import { colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  root: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
+  label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.14em', color: colors['--color-slate-500'] },
+  panel: {
+    position: 'relative',
+    borderRadius: '0.5rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':hover': 'rgba(255, 255, 255, 0.12)' },
+    backgroundColor: 'rgba(255, 255, 255, 0.025)',
+    paddingInline: '0.75rem',
+    paddingBlock: '0.5rem',
+    transitionProperty: 'border-color, background-color, opacity',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  panelEditing: { borderColor: 'rgba(255, 255, 255, 0.14)', backgroundColor: 'rgba(255, 255, 255, 0.035)' },
+  panelLocked: { cursor: 'not-allowed', borderColor: 'rgba(255, 255, 255, 0.04)', backgroundColor: 'rgba(255, 255, 255, 0.015)', color: colors['--color-slate-500'], opacity: 0.6 },
+  panelPending: { opacity: 0.7 },
+  editStack: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  inputWrap: { position: 'relative' },
+  searchIcon: {
+    pointerEvents: 'none',
+    position: 'absolute',
+    left: '0.75rem',
+    top: '50%',
+    width: '0.875rem',
+    height: '0.875rem',
+    transform: 'translateY(-50%)',
+    color: colors['--color-slate-500'],
+  },
+  searchInput: {
+    'width': '100%',
+    'borderRadius': '0.375rem',
+    'borderWidth': 1,
+    'borderStyle': 'solid',
+    'borderColor': { 'default': 'rgba(255, 255, 255, 0.08)', ':focus': 'rgba(255, 255, 255, 0.16)' },
+    'backgroundColor': colors['--color-surface-0'],
+    'paddingBlock': '0.5rem',
+    'paddingLeft': '2.25rem',
+    'paddingRight': '0.75rem',
+    'fontSize': '0.875rem',
+    'lineHeight': '1.25rem',
+    'color': colors['--color-slate-200'],
+    'outlineStyle': 'none',
+    'transitionProperty': 'border-color',
+    'transitionDuration': '150ms',
+    'transitionTimingFunction': 'cubic-bezier(0.4, 0, 0.2, 1)',
+    '::placeholder': { color: colors['--color-slate-600'] },
+  },
+  menu: {
+    maxHeight: '14rem',
+    overflowY: 'auto',
+    borderRadius: '0.5rem',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: colors['--color-surface-0'],
+    paddingBlock: '0.25rem',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
+  },
+  option: {
+    display: 'flex',
+    width: '100%',
+    alignItems: 'center',
+    gap: '0.5rem',
+    paddingInline: '0.75rem',
+    paddingBlock: '0.5rem',
+    textAlign: 'left',
+    fontSize: '0.75rem',
+    lineHeight: '1rem',
+    backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' },
+    transitionProperty: 'background-color, color',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  optionTopAligned: { alignItems: 'flex-start' },
+  optionActive: { backgroundColor: 'rgba(255, 255, 255, 0.06)', color: colors['--color-white'] },
+  optionInactive: { color: colors['--color-slate-300'] },
+  keyPill: {
+    marginTop: '0.125rem',
+    flexShrink: 0,
+    borderRadius: '9999px',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    paddingInline: '0.375rem',
+    paddingBlock: '0.125rem',
+    fontSize: 10,
+    color: colors['--color-slate-500'],
+  },
+  optionSummary: { minWidth: 0, fontSize: '0.75rem', lineHeight: '1.25rem' },
+  empty: { paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', fontStyle: 'italic', color: colors['--color-slate-600'] },
+  trigger: {
+    display: 'flex',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.75rem',
+    textAlign: 'left',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    padding: 0,
+  },
+  triggerText: { minWidth: 0 },
+  selectedLabel: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-200'] },
+  selectedHelp: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  chevron: { width: '1rem', height: '1rem', flexShrink: 0, color: colors['--color-slate-500'] },
+  lockedHelp: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+})
 
 export default defineComponent({
   name: 'CreateTicketParentPicker',
@@ -87,22 +201,22 @@ export default defineComponent({
 
     return () => (
       props.supportedParentType && (
-        <div class="space-y-1.5">
-          <label class="text-[11px] uppercase tracking-[0.14em] text-slate-500">{props.filteredLabel}</label>
+        <div {...stylex.attrs(styles.root)}>
+          <label {...stylex.attrs(styles.label)}>{props.filteredLabel}</label>
           <div
             ref={parentComboRef}
-            class={[
-              'relative rounded-lg border border-white/[0.08] bg-white/[0.025] px-3 py-2 transition',
-              isEditingParent.value ? 'border-white/[0.14] bg-white/[0.035]' : 'hover:border-white/[0.12]',
-              props.parentLocked ? 'cursor-not-allowed border-white/[0.04] bg-white/[0.015] text-slate-500 opacity-60' : '',
-              props.isCreatePending ? 'opacity-70' : '',
-            ]}
+            {...stylex.attrs(
+              styles.panel,
+              isEditingParent.value ? styles.panelEditing : null,
+              props.parentLocked ? styles.panelLocked : null,
+              props.isCreatePending ? styles.panelPending : null,
+            )}
           >
             {isEditingParent.value
               ? (
-                  <div class="space-y-2">
-                    <div class="relative">
-                      <svg class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <div {...stylex.attrs(styles.editStack)}>
+                    <div {...stylex.attrs(styles.inputWrap)}>
+                      <svg {...stylex.attrs(styles.searchIcon)} fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <circle cx="11" cy="11" r="8" />
                         <path stroke-linecap="round" d="m21 21-4.35-4.35" />
                       </svg>
@@ -111,19 +225,16 @@ export default defineComponent({
                         v-model={parentSearch.value}
                         name="create-parent-search"
                         aria-label={`Search ${getSupportedParentTypeLabel()}s`}
-                        class="w-full rounded-md border border-white/[0.08] bg-surface-0 py-2 pl-9 pr-3 text-sm text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16]"
+                        {...stylex.attrs(styles.searchInput)}
                         placeholder={`Search ${getSupportedParentTypeLabel()}s...`}
                         onKeydown={handleParentKeydown}
                       />
                     </div>
-                    <div class="max-h-56 overflow-y-auto rounded-lg border border-white/[0.08] bg-surface-0 py-1 shadow-xl shadow-black/30">
+                    <div {...stylex.attrs(styles.menu)}>
                       <button
                         type="button"
                         data-parent-idx="0"
-                        class={[
-                          'flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors',
-                          parentHighlightIndex.value === 0 ? 'bg-white/[0.06] text-white' : 'text-slate-300 hover:bg-white/[0.04]',
-                        ]}
+                        {...stylex.attrs(styles.option, parentHighlightIndex.value === 0 ? styles.optionActive : styles.optionInactive)}
                         onClick={() => selectParentOption(null)}
                         onMouseenter={() => (parentHighlightIndex.value = 0)}
                       >
@@ -134,19 +245,16 @@ export default defineComponent({
                           key={ticket.key}
                           type="button"
                           data-parent-idx={index + 1}
-                          class={[
-                            'flex w-full items-start gap-2 px-3 py-2 text-left transition-colors',
-                            parentHighlightIndex.value === index + 1 ? 'bg-white/[0.06] text-white' : 'text-slate-300 hover:bg-white/[0.04]',
-                          ]}
+                          {...stylex.attrs(styles.option, styles.optionTopAligned, parentHighlightIndex.value === index + 1 ? styles.optionActive : styles.optionInactive)}
                           onClick={() => selectParentOption(ticket.key)}
                           onMouseenter={() => (parentHighlightIndex.value = index + 1)}
                         >
-                          <span class="mt-0.5 shrink-0 rounded-full border border-white/[0.08] bg-white/[0.03] px-1.5 py-0.5 text-[10px] text-slate-500">{ticket.key}</span>
-                          <span class="min-w-0 text-xs leading-5">{ticket.summary}</span>
+                          <span {...stylex.attrs(styles.keyPill)}>{ticket.key}</span>
+                          <span {...stylex.attrs(styles.optionSummary)}>{ticket.summary}</span>
                         </button>
                       ))}
                       {filteredParentOptions.value.length === 0 && (
-                        <div class="px-3 py-2 text-xs italic text-slate-600">
+                        <div {...stylex.attrs(styles.empty)}>
                           No matching
                           {' '}
                           {getSupportedParentTypeLabel()}
@@ -159,24 +267,24 @@ export default defineComponent({
               : (
                   <button
                     type="button"
-                    class="flex w-full items-center justify-between gap-3 text-left"
+                    {...stylex.attrs(styles.trigger)}
                     disabled={props.parentLocked || props.isCreatePending}
                     onClick={startEditingParent}
                   >
-                    <div class="min-w-0">
-                      <div class="truncate text-sm text-slate-200">{getSelectedParentLabel()}</div>
-                      <div class="text-xs text-slate-500">
+                    <div {...stylex.attrs(styles.triggerText)}>
+                      <div {...stylex.attrs(styles.selectedLabel)}>{getSelectedParentLabel()}</div>
+                      <div {...stylex.attrs(styles.selectedHelp)}>
                         {props.effectiveParentKey ? `Change ${getSupportedParentTypeLabel()}` : `Choose ${getSupportedParentArticleLabel()} or leave empty`}
                       </div>
                     </div>
-                    <svg class="h-4 w-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg {...stylex.attrs(styles.chevron)} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
                 )}
           </div>
           {props.parentLocked && props.effectiveParentKey && (
-            <p class="text-xs text-slate-500">Parent is fixed for this create flow.</p>
+            <p {...stylex.attrs(styles.lockedHelp)}>Parent is fixed for this create flow.</p>
           )}
         </div>
       )

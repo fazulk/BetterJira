@@ -1,7 +1,24 @@
 import type { PropType } from 'vue'
 import type { JiraTicket } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent } from 'vue'
 import StatusIcon from '@/components/StatusIcon'
+import { breakpoints, colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  section: { marginBottom: '2rem' },
+  header: { marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  title: { fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-slate-400'], margin: 0 },
+  action: { borderRadius: '0.375rem', borderWidth: 0, backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-200'] }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  list: { overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.015)' },
+  row: { display: 'flex', width: '100%', alignItems: 'center', gap: '0.75rem', borderWidth: 0, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.05)', backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.035)' }, color: { 'default': colors['--color-slate-300'], ':hover': colors['--color-slate-100'] }, paddingInline: '0.75rem', paddingBlock: '0.625rem', textAlign: 'left' },
+  lastRow: { borderBottomWidth: 0 },
+  key: { width: '5rem', flexShrink: 0, fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  summary: { minWidth: 0, flex: '1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.875rem', lineHeight: '1.25rem', color: 'currentColor' },
+  points: { width: '3.5rem', flexShrink: 0, textAlign: 'right', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  status: { display: { default: 'none', [breakpoints.md]: 'inline' }, flexShrink: 0, fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-600'] },
+  empty: { display: 'flex', minHeight: '3rem', width: '100%', alignItems: 'center', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255, 255, 255, 0.08)', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-600'] },
+})
 
 export default defineComponent({
   name: 'TicketDetailChildren',
@@ -34,12 +51,12 @@ export default defineComponent({
   },
   setup(props, { emit }) {
     return () => (
-      <section class="mb-8">
-        <div class="mb-2 flex items-center justify-between">
-          <h2 class="text-xs font-medium text-slate-400">{props.sectionLabel}</h2>
+      <section {...stylex.attrs(styles.section)}>
+        <div {...stylex.attrs(styles.header)}>
+          <h2 {...stylex.attrs(styles.title)}>{props.sectionLabel}</h2>
           <button
             type="button"
-            class="rounded-md px-2 py-1 text-xs text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-200"
+            {...stylex.attrs(styles.action)}
             onClick={() => emit('create', props.ticketKey)}
           >
             {props.actionLabel}
@@ -47,27 +64,27 @@ export default defineComponent({
         </div>
         {props.childTickets.length
           ? (
-              <div class="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.015]">
-                {props.childTickets.map(child => (
+              <div {...stylex.attrs(styles.list)}>
+                {props.childTickets.map((child, index) => (
                   <button
                     key={child.key}
-                    class="group flex w-full items-center gap-3 border-b border-white/[0.05] px-3 py-2.5 text-left last:border-b-0 hover:bg-white/[0.035]"
+                    {...stylex.attrs(styles.row, index === props.childTickets.length - 1 ? styles.lastRow : null)}
                     onClick={() => emit('select', child.key)}
                     onMouseenter={() => emit('prefetch', child.key)}
                   >
                     <StatusIcon status={child.status} statusCategory={child.statusCategory} size={16} />
-                    <span class="w-20 shrink-0 text-xs text-slate-500">{child.key}</span>
-                    <span class="min-w-0 flex-1 truncate text-sm text-slate-300 group-hover:text-slate-100">{child.summary}</span>
-                    <span class="w-14 shrink-0 text-right text-xs text-slate-500">
+                    <span {...stylex.attrs(styles.key)}>{child.key}</span>
+                    <span {...stylex.attrs(styles.summary)}>{child.summary}</span>
+                    <span {...stylex.attrs(styles.points)}>
                       {child.storyPoints !== undefined ? `${child.storyPoints} pts` : '–'}
                     </span>
-                    <span class="hidden shrink-0 text-xs text-slate-600 md:inline">{child.status}</span>
+                    <span {...stylex.attrs(styles.status)}>{child.status}</span>
                   </button>
                 ))}
               </div>
             )
           : (
-              <div class="flex min-h-12 w-full items-center rounded-lg border border-dashed border-white/[0.08] px-3 py-2 text-sm text-slate-600">
+              <div {...stylex.attrs(styles.empty)}>
                 <span>{props.emptyLabel}</span>
               </div>
             )}

@@ -1,5 +1,6 @@
 import type { PropType } from 'vue'
 import type { JiraTicket } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, defineComponent, onMounted, onUnmounted, ref } from 'vue'
 import { Icon } from '#components'
@@ -21,6 +22,8 @@ import { usePinnedTickets } from '@/composables/usePinnedTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { useToast } from '@/composables/useToast'
 import { getTeamViewId } from '@/features/ticket-list/helpers'
+import { uiStyles } from '@/styles/shared'
+import { breakpoints, colors } from '@/styles/tokens.stylex'
 import { buildJiraIssueUrl } from '@/utils/jiraIssueUrl'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
 import { getAssistantActionLabel } from '~/shared/assistant'
@@ -45,6 +48,33 @@ interface TicketDetailSidebarExpose {
   startEditingPriority: () => void
   startEditingStatus: () => void
 }
+
+const styles = stylex.create({
+  shell: { minHeight: '100%', backgroundColor: colors['--color-issue-detail-bg'], [breakpoints.lg]: { display: 'flex', height: '100%', minHeight: 0, flexDirection: 'column' } },
+  loadedShell: { minHeight: '100%', backgroundColor: colors['--color-issue-detail-bg'], [breakpoints.lg]: { display: 'flex', height: '100%', minHeight: 0, flexDirection: 'column' } },
+  topBar: { position: 'sticky', top: 0, zIndex: 20, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: colors['--color-issue-detail-bg'], backdropFilter: 'blur(8px)', [breakpoints.lg]: { position: 'static', flexShrink: 0 } },
+  topBarInner: { display: 'flex', minHeight: '3rem', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', paddingInline: '1.5rem', paddingBlock: '0.5rem' },
+  crumbText: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  crumbSeparator: { flexShrink: 0, color: '#6f727b' },
+  crumbButton: { flexShrink: 0, borderRadius: '0.25rem', borderWidth: 0, backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, paddingInline: '0.25rem', paddingBlock: '0.125rem', color: '#f0f1f4', transitionProperty: 'background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  crumbSummaryButton: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' },
+  pinButton: { display: 'flex', width: '1.5rem', height: '1.5rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', borderWidth: 0, backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, color: { 'default': '#8f9198', ':hover': '#f0f1f4' }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  pinButtonPinned: { color: { 'default': colors['--color-accent-amber'], ':hover': colors['--color-accent-amber'] } },
+  pinIcon: { fontSize: 14, lineHeight: 1 },
+  layout: { display: 'grid', minHeight: 'calc(100vh - 3rem)', gridTemplateColumns: '1fr', backgroundColor: colors['--color-issue-detail-bg'], [breakpoints.lg]: { minHeight: 0, flex: '1', gridTemplateColumns: 'minmax(0,1fr) 19rem', overflow: 'hidden' } },
+  main: { minWidth: 0, paddingInline: '1.5rem', paddingBlock: '2rem', [breakpoints.lg]: { overflowY: 'auto', paddingInline: '2.5rem' } },
+  content: { marginInline: 'auto', maxWidth: '48rem' },
+  assistantButton: { position: 'fixed', right: '1rem', bottom: '1rem', zIndex: 40, display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: { 'default': 'rgba(255, 255, 255, 0.1)', ':hover': 'rgba(255, 255, 255, 0.2)' }, backgroundColor: { 'default': '#16171b', ':hover': '#1c1d22' }, paddingInline: '1rem', paddingBlock: '0.625rem', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-100'], boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', transitionProperty: 'color, border-color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  assistantIcon: { width: '1rem', height: '1rem', color: colors['--color-accent-indigo'] },
+  centeredMessage: { display: 'flex', alignItems: 'center', justifyContent: 'center', paddingBlock: '5rem' },
+  errorMessage: { fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-rose-300'] },
+  loadingStack: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' },
+  spinner: { width: '1.25rem', height: '1.25rem', borderRadius: '9999px', borderWidth: 2, borderStyle: 'solid', borderColor: colors['--color-slate-700'], borderTopColor: colors['--color-accent-indigo'], animationName: stylex.keyframes({ to: { transform: 'rotate(360deg)' } }), animationDuration: '1s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' },
+  loadingText: { fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-600'] },
+  previewBackdrop: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.9)', padding: '2rem', backdropFilter: 'blur(4px)' },
+  previewClose: { position: 'absolute', right: '1.25rem', top: '1.25rem', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.12)', backgroundColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':hover': 'rgba(255, 255, 255, 0.14)' }, paddingInline: '0.75rem', paddingBlock: '0.375rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: { 'default': colors['--color-slate-200'], ':hover': colors['--color-white'] }, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)', transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  previewImage: { width: 'auto', height: 'auto', maxWidth: 'calc(100vw - 4rem)', maxHeight: 'calc(100vh - 5rem)', borderRadius: '0.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)' },
+})
 
 export default defineComponent({
   name: 'TicketDetail',
@@ -312,12 +342,12 @@ export default defineComponent({
 
       return (
         props.ticketKey && props.mode === 'inline' && (
-          <div class="min-h-full bg-issue-detail-bg lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+          <div {...stylex.attrs(styles.shell)}>
             {currentTicket
               ? (
-                  <div class="min-h-full animate-fade-in bg-issue-detail-bg lg:flex lg:h-full lg:min-h-0 lg:flex-col">
-                    <div class="sticky top-0 z-20 border-b border-white/[0.06] bg-issue-detail-bg backdrop-blur lg:static lg:shrink-0">
-                      <div class="flex min-h-12 items-center justify-between gap-4 px-6 py-2">
+                  <div {...stylex.attrs(styles.loadedShell, uiStyles.fadeIn)}>
+                    <div {...stylex.attrs(styles.topBar)}>
+                      <div {...stylex.attrs(styles.topBarInner)}>
                         {detailSpaceAppearance.value && (
                           <ViewHeaderBreadcrumb
                             icon={detailSpaceAppearance.value.icon}
@@ -327,21 +357,21 @@ export default defineComponent({
                             {{
                               default: () => (
                                 <>
-                                  <span class="min-w-0 truncate">{detailBreadcrumbSpace.value}</span>
-                                  <span class="shrink-0 text-[#6f727b]">›</span>
+                                  <span {...stylex.attrs(styles.crumbText)}>{detailBreadcrumbSpace.value}</span>
+                                  <span {...stylex.attrs(styles.crumbSeparator)}>›</span>
                                   <button
                                     type="button"
-                                    class="shrink-0 rounded px-1 py-0.5 text-[#f0f1f4] transition hover:bg-white/[0.04]"
+                                    {...stylex.attrs(styles.crumbButton)}
                                     onClick={() => emit('navigateView', detailBreadcrumbViewId.value)}
                                   >
                                     {detailBreadcrumbRoot.value}
                                   </button>
                                   {currentTicket.parent && (
                                     <>
-                                      <span class="shrink-0 text-[#6f727b]">›</span>
+                                      <span {...stylex.attrs(styles.crumbSeparator)}>›</span>
                                       <button
                                         type="button"
-                                        class="shrink-0 rounded px-1 py-0.5 text-[#f0f1f4] transition hover:bg-white/[0.04]"
+                                        {...stylex.attrs(styles.crumbButton)}
                                         onClick={() => emit('select', currentTicket.parent!.key)}
                                         onMouseenter={() => prefetchTicket(currentTicket.parent!.key)}
                                       >
@@ -349,24 +379,21 @@ export default defineComponent({
                                       </button>
                                     </>
                                   )}
-                                  <span class="shrink-0 text-[#6f727b]">›</span>
+                                  <span {...stylex.attrs(styles.crumbSeparator)}>›</span>
                                   <button
                                     type="button"
-                                    class="min-w-0 truncate rounded px-1 py-0.5 text-left text-[#f0f1f4] transition hover:bg-white/[0.04]"
+                                    {...stylex.attrs(styles.crumbButton, styles.crumbSummaryButton)}
                                     onClick={() => emit('select', currentTicket.key)}
                                   >
                                     {currentTicket.summary}
                                   </button>
                                   <button
                                     type="button"
-                                    class={[
-                                      'flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition hover:bg-white/[0.04] hover:text-[#f0f1f4]',
-                                      ticketIsPinned.value ? 'text-[#d7a543] hover:text-[#d7a543]' : 'text-[#8f9198]',
-                                    ]}
+                                    {...stylex.attrs(styles.pinButton, ticketIsPinned.value ? styles.pinButtonPinned : null)}
                                     aria-label={ticketIsPinned.value ? `Unpin ${currentTicket.key}` : `Pin ${currentTicket.key}`}
                                     onClick={() => togglePinnedTicket(currentTicket.key)}
                                   >
-                                    <span class="text-[14px] leading-none">★</span>
+                                    <span {...stylex.attrs(styles.pinIcon)}>★</span>
                                   </button>
                                 </>
                               ),
@@ -376,9 +403,9 @@ export default defineComponent({
                       </div>
                     </div>
 
-                    <div class="grid min-h-[calc(100vh-3rem)] grid-cols-1 bg-issue-detail-bg lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_19rem] lg:overflow-hidden">
-                      <main class="scrollbar-gutter-stable min-w-0 px-6 py-8 lg:overflow-y-auto lg:px-10">
-                        <div class="mx-auto max-w-3xl">
+                    <div {...stylex.attrs(styles.layout)}>
+                      <main {...stylex.attrs(styles.main, uiStyles.stableScrollbar)}>
+                        <div {...stylex.attrs(styles.content)}>
                           <TicketDetailHeader
                             ref={ticketHeaderRef}
                             childTickets={childTickets.value}
@@ -432,10 +459,10 @@ export default defineComponent({
                     {showAssistantButton.value && (
                       <button
                         type="button"
-                        class="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-white/[0.1] bg-[#16171b] px-4 py-2.5 text-sm font-medium text-slate-100 shadow-2xl shadow-black/50 transition hover:border-white/[0.2] hover:bg-[#1c1d22]"
+                        {...stylex.attrs(styles.assistantButton)}
                         onClick={() => assistantPanel.openForTicket(currentTicket.key, currentTicket.summary)}
                       >
-                        <Icon name="lucide:sparkles" class="h-4 w-4 text-accent-indigo" aria-hidden="true" />
+                        <Icon name="lucide:sparkles" {...stylex.attrs(styles.assistantIcon)} aria-hidden="true" />
                         {assistantActionLabel.value}
                       </button>
                     )}
@@ -443,22 +470,22 @@ export default defineComponent({
                 )
               : detailQueryError.value
                 ? (
-                    <div class="flex items-center justify-center py-20 text-sm text-rose-300">
+                    <div {...stylex.attrs(styles.centeredMessage, styles.errorMessage)}>
                       Failed to load ticket details.
                     </div>
                   )
                 : (
-                    <div class="flex items-center justify-center py-20">
-                      <div class="flex flex-col items-center gap-3">
-                        <div class="h-5 w-5 animate-spin rounded-full border-2 border-slate-700 border-t-accent-indigo" />
-                        <span class="text-xs text-slate-600">Loading ticket</span>
+                    <div {...stylex.attrs(styles.centeredMessage)}>
+                      <div {...stylex.attrs(styles.loadingStack)}>
+                        <div {...stylex.attrs(styles.spinner)} />
+                        <span {...stylex.attrs(styles.loadingText)}>Loading ticket</span>
                       </div>
                     </div>
                   )}
 
             {imagePreview.value && (
               <div
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-8 backdrop-blur-sm"
+                {...stylex.attrs(styles.previewBackdrop)}
                 role="dialog"
                 aria-modal="true"
                 aria-label="Image preview"
@@ -466,7 +493,7 @@ export default defineComponent({
               >
                 <button
                   type="button"
-                  class="absolute right-5 top-5 rounded-full border border-white/[0.12] bg-white/[0.08] px-3 py-1.5 text-xs font-medium text-slate-200 shadow-lg backdrop-blur transition hover:bg-white/[0.14] hover:text-white"
+                  {...stylex.attrs(styles.previewClose)}
                   onClick={(event) => {
                     event.stopPropagation()
                     closeImagePreview()
@@ -477,8 +504,7 @@ export default defineComponent({
                 <img
                   src={imagePreview.value.src}
                   alt={imagePreview.value.alt}
-                  class="h-auto w-auto rounded-lg shadow-2xl"
-                  style="max-width: calc(100vw - 4rem); max-height: calc(100vh - 5rem);"
+                  {...stylex.attrs(styles.previewImage)}
                   onClick={event => event.stopPropagation()}
                 />
               </div>

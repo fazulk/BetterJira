@@ -1,9 +1,11 @@
 import type { PropType } from 'vue'
 import type { JiraAdfDocument, JiraAdfNode, JiraAttachment, JiraTicket } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, nextTick, onUnmounted, ref, watch } from 'vue'
 import JiraDescriptionEditor from '@/components/JiraDescriptionEditor'
 import { useUpdateTicketDescription } from '@/composables/useUpdateTicketDescription'
 import { useUploadTicketAttachment } from '@/composables/useUploadTicketAttachment'
+import { colors } from '@/styles/tokens.stylex'
 import { adfToPlainText, coerceDescriptionToAdf, isSupportedEditorAdf } from '~/shared/jiraAdf'
 import { isLocalTicketKey } from '~/shared/localTickets'
 
@@ -16,6 +18,29 @@ interface DescriptionEditorExpose {
 
 const DESCRIPTION_SAVE_DEBOUNCE_MS = 3000
 const DESCRIPTION_SAVED_MESSAGE_MS = 3000
+const pulse = stylex.keyframes({ '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.5 } })
+
+const styles = stylex.create({
+  section: { marginBottom: '2rem', paddingTop: '0.5rem' },
+  stack: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
+  shell: { position: 'relative' },
+  saveMessage: { pointerEvents: 'none', position: 'absolute', right: '0.75rem', top: '3.75rem', zIndex: 10, borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(13, 14, 16, 0.9)', paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: 11, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)' },
+  saveMessageNeutral: { color: colors['--color-slate-500'] },
+  saveMessageError: { color: colors['--color-rose-300'] },
+  hiddenUntilLoaded: { visibility: 'hidden' },
+  loadingOverlay: { position: 'absolute', inset: 0, zIndex: 10, display: 'flex', minHeight: '240px', flexDirection: 'column', gap: '0.5rem' },
+  toolbarSkeletonSpace: { height: '2.75rem', flexShrink: 0 },
+  skeleton: { display: 'flex', flexDirection: 'column', gap: '0.875rem', animationName: pulse, animationDuration: '2s', animationTimingFunction: 'cubic-bezier(0.4, 0, 0.6, 1)', animationIterationCount: 'infinite' },
+  skeletonGroup: { display: 'flex', flexDirection: 'column', gap: '0.625rem' },
+  skeletonLine: { height: '0.75rem', borderRadius: '0.125rem', backgroundColor: 'rgba(255, 255, 255, 0.06)' },
+  skeletonLine94: { width: '94%' },
+  skeletonLine88: { width: '88%', backgroundColor: 'rgba(255, 255, 255, 0.05)' },
+  skeletonLine42: { width: '42%', backgroundColor: 'rgba(255, 255, 255, 0.045)' },
+  skeletonLine96: { width: '96%', backgroundColor: 'rgba(255, 255, 255, 0.05)' },
+  skeletonLine81: { width: '81%', backgroundColor: 'rgba(255, 255, 255, 0.045)' },
+  skeletonLine57: { width: '57%', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+  unsupportedNotice: { borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(245, 158, 11, 0.2)', backgroundColor: 'rgba(245, 158, 11, 0.1)', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-amber-200'] },
+})
 
 function adfSignature(doc: JiraAdfDocument | null): string {
   return JSON.stringify(doc)
@@ -334,8 +359,8 @@ export default defineComponent({
       return ''
     })
 
-    const descriptionSaveMessageClass = computed(() => (
-      descriptionSaveStatus.value === 'error' || descriptionHasFailedImageUpload.value ? 'text-rose-300' : 'text-slate-500'
+    const descriptionSaveMessageIsError = computed(() => (
+      descriptionSaveStatus.value === 'error' || descriptionHasFailedImageUpload.value
     ))
 
     onUnmounted(() => {
@@ -349,26 +374,24 @@ export default defineComponent({
     })
 
     return () => (
-      <section class="mb-8 pt-2">
-        <div class="space-y-3">
+      <section {...stylex.attrs(styles.section)}>
+        <div {...stylex.attrs(styles.stack)}>
           <div
             ref={descriptionEditorShellRef}
-            class="relative"
+            data-description-editor-shell
+            {...stylex.attrs(styles.shell)}
             onFocusin={handleDescriptionFocusIn}
             onFocusout={handleDescriptionFocusOut}
             onKeydown={handleDescriptionKeydown}
           >
             {descriptionSaveMessage.value && (
               <span
-                class={[
-                  'pointer-events-none absolute right-3 z-10 rounded-md border border-white/[0.06] bg-surface-1/90 px-2 py-1 text-[11px] shadow-lg backdrop-blur top-[3.75rem]',
-                  descriptionSaveMessageClass.value,
-                ]}
+                {...stylex.attrs(styles.saveMessage, descriptionSaveMessageIsError.value ? styles.saveMessageError : styles.saveMessageNeutral)}
               >
                 {descriptionSaveMessage.value}
               </span>
             )}
-            <div class={{ invisible: !props.detailLoaded }}>
+            <div {...stylex.attrs(props.detailLoaded ? null : styles.hiddenUntilLoaded)}>
               <JiraDescriptionEditor
                 ref={descriptionEditorRef}
                 modelValue={descriptionDraft.value}
@@ -384,30 +407,30 @@ export default defineComponent({
             </div>
             {!props.detailLoaded && (
               <div
-                class="absolute inset-0 z-10 flex min-h-[240px] flex-col space-y-2"
+                {...stylex.attrs(styles.loadingOverlay)}
                 role="status"
                 aria-live="polite"
                 aria-label="Loading description"
               >
-                <div class="h-11 shrink-0" aria-hidden="true" />
-                <div class="animate-pulse space-y-3.5" aria-hidden="true">
-                  <div class="space-y-2.5">
-                    <div class="h-3 rounded-sm bg-white/[0.06]" />
-                    <div class="h-3 w-[94%] rounded-sm bg-white/[0.06]" />
-                    <div class="h-3 w-[88%] rounded-sm bg-white/[0.05]" />
-                    <div class="h-3 w-[42%] rounded-sm bg-white/[0.045]" />
+                <div {...stylex.attrs(styles.toolbarSkeletonSpace)} aria-hidden="true" />
+                <div {...stylex.attrs(styles.skeleton)} aria-hidden="true">
+                  <div {...stylex.attrs(styles.skeletonGroup)}>
+                    <div {...stylex.attrs(styles.skeletonLine)} />
+                    <div {...stylex.attrs(styles.skeletonLine, styles.skeletonLine94)} />
+                    <div {...stylex.attrs(styles.skeletonLine, styles.skeletonLine88)} />
+                    <div {...stylex.attrs(styles.skeletonLine, styles.skeletonLine42)} />
                   </div>
-                  <div class="space-y-2.5">
-                    <div class="h-3 w-[96%] rounded-sm bg-white/[0.05]" />
-                    <div class="h-3 w-[81%] rounded-sm bg-white/[0.045]" />
-                    <div class="h-3 w-[57%] rounded-sm bg-white/[0.04]" />
+                  <div {...stylex.attrs(styles.skeletonGroup)}>
+                    <div {...stylex.attrs(styles.skeletonLine, styles.skeletonLine96)} />
+                    <div {...stylex.attrs(styles.skeletonLine, styles.skeletonLine81)} />
+                    <div {...stylex.attrs(styles.skeletonLine, styles.skeletonLine57)} />
                   </div>
                 </div>
               </div>
             )}
           </div>
           {descriptionHasUnsupportedContent.value && descriptionEditorActive.value && (
-            <div class="rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            <div {...stylex.attrs(styles.unsupportedNotice)}>
               This description uses Jira formatting the editor cannot edit yet. Unsupported items are preserved unless you delete their placeholder.
             </div>
           )}
