@@ -9,7 +9,7 @@ import type { JiraAdfDocument } from '@/types/jira'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import JiraDescriptionEditor from '@/components/JiraDescriptionEditor.vue'
+import JiraDescriptionEditor from '@/components/JiraDescriptionEditor'
 
 function adfDoc(text: string): JiraAdfDocument {
   return {

@@ -13,7 +13,7 @@ import type { JiraAdfDocument, JiraTicket } from '@/types/jira'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, watch } from 'vue'
-import TicketDetailDescription from '@/components/ticket-detail/TicketDetailDescription.vue'
+import TicketDetailDescription from '@/components/ticket-detail/TicketDetailDescription'
 
 const harness = vi.hoisted(() => ({
   emitters: [] as Array<(event: string, ...args: unknown[]) => void>,
@@ -21,7 +21,7 @@ const harness = vi.hoisted(() => ({
   mutateAsync: vi.fn(),
 }))
 
-vi.mock('@/components/JiraDescriptionEditor.vue', () => ({
+vi.mock('@/components/JiraDescriptionEditor', () => ({
   default: defineComponent({
     name: 'JiraDescriptionEditor',
     props: {
@@ -132,7 +132,7 @@ describe('ticket detail description autosave', () => {
     const wrapper = mountComponent(PARTIAL_TICKET, false)
 
     // User presses `d` / clicks into the description before the detail lands.
-    wrapper.vm.focusDescriptionEditor()
+    ;(wrapper.vm as unknown as { focusDescriptionEditor: () => void }).focusDescriptionEditor()
     await nextTick()
 
     // Detail fetch resolves with the real description.

@@ -8,7 +8,7 @@ import type { JiraAdfDocument, JiraTicket } from '@/types/jira'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import TicketDetailDescription from '@/components/ticket-detail/TicketDetailDescription.vue'
+import TicketDetailDescription from '@/components/ticket-detail/TicketDetailDescription'
 
 const mutateAsync = vi.fn()
 
