@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ActiveFilterChip } from '@/features/ticket-list/types'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import SpaceIconPicker from './SpaceIconPicker.vue'
+import SpaceIconPicker from './SpaceIconPicker'
 
 const props = defineProps<{
   name: string

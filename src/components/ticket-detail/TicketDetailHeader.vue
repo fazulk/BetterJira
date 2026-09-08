@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { JiraTicket } from '@/types/jira'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
-import ProjectIconPickerButton from '@/components/ProjectIconPickerButton.vue'
+import ProjectIconPickerButton from '@/components/ProjectIconPickerButton'
 import { useUpdateTicketTitle } from '@/composables/useUpdateTicketTitle'
 import { getStatusGroup } from '@/types/jira'
 

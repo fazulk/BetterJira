@@ -1,0 +1,10 @@
+.update-banner-enter-active,
+.update-banner-leave-active {
+  transition: all 180ms ease;
+}
+
+.update-banner-enter-from,
+.update-banner-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}

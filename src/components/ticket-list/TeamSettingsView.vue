@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
-import SpaceIconPicker from '../SpaceIconPicker.vue'
+import SpaceIconPicker from '../SpaceIconPicker'
 
 const props = defineProps<{
   spaceKey: string
