@@ -87,10 +87,7 @@ export default defineComponent({
                       {formatCycleDateRange(props.cycle)}
                       {remaining.value !== null && (
                         <span>
-                          {' '}
-                          ·
-                          {remaining.value}
-                          d left
+                          {` · ${remaining.value}d left`}
                         </span>
                       )}
                     </>

@@ -247,8 +247,7 @@ export default defineComponent({
             {props.showUpdated === true && updatedLabel.value && <span class="hidden sm:inline">{updatedLabel.value}</span>}
             {props.showDue === true && dueLabel.value && (
               <span class="hidden sm:inline">
-                Due
-                {dueLabel.value}
+                {`Due ${dueLabel.value}`}
               </span>
             )}
           </span>

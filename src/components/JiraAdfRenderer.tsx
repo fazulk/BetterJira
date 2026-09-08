@@ -198,7 +198,7 @@ const JiraAdfRenderer = defineComponent({
           key: nodeKey(child, childIndex),
           onClick: href ? undefined : (event: MouseEvent) => event.stopPropagation(),
         },
-        () => textParts(child.text).map((part, partIndex) => (
+        textParts(child.text).map((part, partIndex) => (
           <span key={`${nodeKey(child, childIndex)}-${partIndex}`}>
             {partIndex > 0 && <br />}
             {part}
