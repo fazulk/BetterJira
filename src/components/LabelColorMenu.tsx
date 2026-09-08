@@ -11,7 +11,7 @@ const styles = stylex.create({
   label: { marginTop: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600, color: colors['--color-slate-100'] },
   palette: { display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '0.5rem' },
   swatch: { display: 'flex', width: '2rem', height: '2rem', alignItems: 'center', justifyContent: 'center', borderRadius: '1rem', borderWidth: 1, borderStyle: 'solid', scale: { 'default': null, ':hover': '105%' }, filter: { 'default': null, ':hover': 'brightness(1.25)' }, transitionProperty: 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)' },
-  swatchColor: (background: string, color: string) => ({ backgroundColor: background, borderColor: color, color }),
+  swatchColor: (background: string, color: string) => ({ backgroundColor: { default: background }, borderColor: { default: color }, color }),
   selected: { boxShadow: '0 0 0 2px #11131a, 0 0 0 4px rgba(255,255,255,0.7)' },
   dot: { width: '0.75rem', height: '0.75rem', borderRadius: '9999px', backgroundColor: 'currentColor' },
   custom: { marginTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', borderRadius: '1rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-300'] },

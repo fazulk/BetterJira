@@ -1,8 +1,6 @@
 import type { JiraCreateIssueType } from '@/types/jira'
 import { getLinearIssueSubtype } from '@/types/jira'
 
-export type IssueTypeBadgeTone = 'neutral'
-
 export function getAllowedIssueTypesForParent(parentIssueType: string | null): JiraCreateIssueType[] {
   if (!parentIssueType) {
     return ['Story', 'Task', 'Bug', 'Feature']
@@ -71,19 +69,6 @@ export function canIssueTypeUseParent(childIssueType: string, parentIssueType: s
   }
 
   return false
-}
-
-export function getIssueTypeBadgeTone(issueType: JiraCreateIssueType): IssueTypeBadgeTone {
-  const normalizedType = issueType.toLowerCase()
-  if (normalizedType.includes('bug'))
-    return 'neutral'
-  if (normalizedType.includes('epic'))
-    return 'neutral'
-  if (normalizedType.includes('story'))
-    return 'neutral'
-  if (normalizedType.includes('sub'))
-    return 'neutral'
-  return 'neutral'
 }
 
 export function getCreateIssueTypeLabel(issueType: JiraCreateIssueType): string {

@@ -93,7 +93,7 @@ const styles = stylex.create({
 const dotDelays = ['0ms', '160ms', '320ms']
 
 const dynamicStyles = stylex.create({
-  animationDelay: (delay: string) => ({ animationDelay: delay }),
+  animationDelay: (delay: string) => ({ animationDelay: { default: delay } }),
 })
 
 export default defineComponent({

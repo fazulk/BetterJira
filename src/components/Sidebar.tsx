@@ -26,7 +26,6 @@ const styles = stylex.create({
   createButton: { display: 'flex', height: '1.75rem', width: '1.75rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', backgroundColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':hover': 'rgba(255, 255, 255, 0.12)' }, color: { 'default': '#d7d8dc', ':hover': '#f0f1f4' } },
   iconMd: { height: '1rem', width: '1rem' },
   iconSm: { height: '0.875rem', width: '0.875rem' },
-  iconXs: { height: '0.75rem', width: '0.75rem' },
   scroll: { flex: '1', overflowY: 'auto', paddingInline: '0.5rem', paddingBottom: '0.75rem' },
   nav: { display: 'flex', flexDirection: 'column', gap: '1.25rem' },
   compactSection: { display: 'flex', flexDirection: 'column', gap: '0.125rem' },
@@ -36,7 +35,14 @@ const styles = stylex.create({
   navInactive: { color: { 'default': '#a9abb3', ':hover': '#e6e7ea' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.045)' } },
   navMutedInactive: { color: { 'default': '#8f9198', ':hover': '#d7d8dc' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.045)' } },
   navSubButton: { height: '1.5rem', fontSize: 12 },
-  navIcon: { height: '0.875rem', width: '0.875rem', flexShrink: 0, color: '#8f9198' },
+  navIcon: { height: '0.875rem', width: '0.875rem', flexShrink: 0 },
+  mutedIcon: { color: '#8f9198' },
+  triageIconWrap: { display: 'flex', height: '0.875rem', width: '0.875rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: 'currentColor' },
+  triageIcon: { height: '0.625rem', width: '0.625rem' },
+  cycleRow: { paddingInline: 0, gap: 0 },
+  cycleMainButton: { gap: '0.5rem' },
+  cycleParentActive: { backgroundColor: 'rgba(255, 255, 255, 0.055)', color: '#f0f1f4' },
+  nestedItems: { paddingTop: '0.125rem' },
   count: { fontSize: 11, color: '#6f727b' },
   sectionToggle: { display: 'flex', height: '1.5rem', width: '100%', alignItems: 'center', justifyContent: 'space-between', borderRadius: '0.375rem', paddingInline: '0.5rem', textAlign: 'left', fontSize: 12, fontWeight: 500, color: { 'default': '#777a83', ':hover': '#b9bbc3' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.045)' }, transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
   chevron: { height: '0.75rem', width: '0.75rem', transitionProperty: 'transform', transitionDuration: '200ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
@@ -175,7 +181,7 @@ export default defineComponent({
                   {...stylex.attrs(styles.navButton, nav.isActiveView(item.id) ? styles.navActive : styles.navInactive, props.collapsed ? styles.centered : null)}
                   onClick={() => nav.selectView(item.id)}
                 >
-                  <Icon name={item.icon === 'inbox' ? 'lucide:inbox' : 'lucide:scan'} {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
+                  <Icon name={item.icon === 'inbox' ? 'lucide:inbox' : 'lucide:scan'} {...stylex.attrs(styles.navIcon, styles.mutedIcon)} aria-hidden="true" />
                   {!props.collapsed && <span {...stylex.attrs(styles.label)}>{item.label}</span>}
                   {!props.collapsed && item.count !== undefined && item.count > 0 && <span {...stylex.attrs(styles.count)}>{item.count}</span>}
                 </button>
@@ -192,7 +198,7 @@ export default defineComponent({
                   <div {...stylex.attrs(styles.collapseInner, nav.workspaceExpanded ? styles.collapseInnerOpen : null, styles.footerStack)}>
                     {nav.workspaceItems.map(item => (
                       <button key={item.id} type="button" {...stylex.attrs(styles.navButton, nav.isActiveView(item.id) ? styles.navActive : styles.navInactive)} onClick={() => nav.selectView(item.id)}>
-                        <Icon name={item.icon === 'initiative' ? 'lucide:flag' : item.icon === 'project' ? 'lucide:box' : item.icon === 'view' ? 'lucide:layers' : 'lucide:circle-dashed'} {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
+                        <Icon name={item.icon === 'initiative' ? 'lucide:flag' : item.icon === 'project' ? 'lucide:box' : item.icon === 'view' ? 'lucide:layers' : 'lucide:circle-dashed'} {...stylex.attrs(styles.navIcon, styles.mutedIcon)} aria-hidden="true" />
                         <span {...stylex.attrs(styles.label)}>{item.label}</span>
                       </button>
                     ))}
@@ -284,10 +290,10 @@ export default defineComponent({
                     </div>
 
                     <div {...stylex.attrs(styles.collapse, styles.teamNested, nav.isTeamExpanded(team.key) ? styles.collapseOpen : styles.collapseClosed)} inert={!nav.isTeamExpanded(team.key)}>
-                      <div {...stylex.attrs(styles.collapseInner, nav.isTeamExpanded(team.key) ? styles.collapseInnerOpen : null, styles.compactSection)}>
+                      <div {...stylex.attrs(styles.collapseInner, nav.isTeamExpanded(team.key) ? styles.collapseInnerOpen : null, styles.compactSection, styles.nestedItems)}>
                         <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, navButtonStyles(nav.isActiveView(nav.getTeamViewId(team.key, 'triage'))))} onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'triage'))}>
-                          <span {...stylex.attrs(styles.ticketIconWrap)} aria-hidden="true">
-                            <Icon name="lucide:arrow-left-right" {...stylex.attrs(styles.iconXs)} />
+                          <span {...stylex.attrs(styles.triageIconWrap)} aria-hidden="true">
+                            <Icon name="lucide:arrow-left-right" {...stylex.attrs(styles.triageIcon)} />
                           </span>
                           <span {...stylex.attrs(styles.label)}>Triage</span>
                           {team.triageCount > 0 && <span>{team.triageCount}</span>}
@@ -298,8 +304,8 @@ export default defineComponent({
                         </button>
                         {team.key !== LOCAL_SPACE_KEY && (
                           <div>
-                            <div {...stylex.attrs(styles.navButton, styles.navSubButton, nav.isTeamCyclesView(team.key) ? styles.teamRowActive : styles.navMutedInactive)}>
-                              <button type="button" {...stylex.attrs(styles.teamMainButton)} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'directory'))}>
+                            <div {...stylex.attrs(styles.navButton, styles.navSubButton, styles.cycleRow, nav.isTeamCyclesView(team.key) ? styles.cycleParentActive : styles.navMutedInactive)}>
+                              <button type="button" {...stylex.attrs(styles.teamMainButton, styles.cycleMainButton)} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'directory'))}>
                                 <Icon name="lucide:circle-play" {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
                                 <span {...stylex.attrs(styles.label)}>Cycles</span>
                               </button>
@@ -317,7 +323,7 @@ export default defineComponent({
                               </button>
                             </div>
                             <div {...stylex.attrs(styles.collapse, styles.cycleNested, nav.isCycleSectionExpanded(team.key) ? styles.collapseOpen : styles.collapseClosed)} inert={!nav.isCycleSectionExpanded(team.key)}>
-                              <div {...stylex.attrs(styles.collapseInner, nav.isCycleSectionExpanded(team.key) ? styles.collapseInnerOpen : null)}>
+                              <div {...stylex.attrs(styles.collapseInner, nav.isCycleSectionExpanded(team.key) ? styles.collapseInnerOpen : null, styles.nestedItems)}>
                                 <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, nav.isCycleCurrentView(team.key) ? styles.cycleActive : styles.navMutedInactive)} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'current'))}>Current</button>
                                 <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, nav.isCycleUpcomingView(team.key) ? styles.cycleActive : styles.navMutedInactive)} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'upcoming'))}>Upcoming</button>
                                 <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, nav.isCyclePreviousView(team.key) ? styles.cycleActive : styles.navMutedInactive)} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'previous'))}>Previous</button>

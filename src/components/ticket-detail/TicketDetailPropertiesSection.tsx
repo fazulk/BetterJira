@@ -28,6 +28,7 @@ const styles = stylex.create({
   chevronCollapsed: { transform: 'rotate(-90deg)' },
   list: { display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.875rem', lineHeight: '1.25rem' },
   row: { display: 'flex', alignItems: 'center', borderRadius: '0.375rem', paddingInline: '0.25rem', paddingBlock: '0.5rem' },
+  rowGap: { gap: '0.5rem' },
   rowStart: { alignItems: 'flex-start', gap: '0.75rem' },
   editStack: { minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' },
   selectInput: { 'width': '100%', 'borderRadius': '0.375rem', 'borderWidth': 1, 'borderStyle': 'solid', 'borderColor': { 'default': 'rgba(255, 255, 255, 0.08)', ':focus': 'rgba(255, 255, 255, 0.16)' }, 'backgroundColor': 'rgba(255, 255, 255, 0.035)', 'paddingInline': '0.5rem', 'paddingBlock': '0.375rem', 'fontSize': '0.75rem', 'lineHeight': '1rem', 'color': colors['--color-slate-200'], 'outlineStyle': 'none', 'transitionProperty': 'border-color', 'transitionDuration': '150ms', 'transitionTimingFunction': 'cubic-bezier(0.4, 0, 0.2, 1)', '::placeholder': { color: colors['--color-slate-600'] } },
@@ -514,7 +515,7 @@ export default defineComponent({
             </div>
 
             {props.ticket.storyPoints !== undefined && (
-              <div {...stylex.attrs(styles.row)}>
+              <div {...stylex.attrs(styles.row, styles.rowGap)}>
                 <svg {...stylex.attrs(styles.icon)} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 11.5l3-3 2 2 5-6" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 4.5h3v3" />

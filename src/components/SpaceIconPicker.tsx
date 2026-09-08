@@ -12,7 +12,7 @@ const styles = stylex.create({
   tab: { display: 'inline-block', borderBottomWidth: 2, borderBottomStyle: 'solid', borderBottomColor: '#5e6ad2', paddingBottom: '0.5rem', fontSize: 13, fontWeight: 500, color: '#f0f1f4' },
   palette: { display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255,255,255,0.06)', padding: '0.75rem' },
   swatch: { display: 'flex', width: '1.75rem', height: '1.75rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', scale: { 'default': null, ':hover': '110%' }, transitionProperty: 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)' },
-  background: (color: string) => ({ backgroundColor: color }),
+  background: (color: string) => ({ backgroundColor: { default: color } }),
   check: { width: '0.875rem', height: '0.875rem', color: '#fff' },
   checkShadow: { filter: 'drop-shadow(0 1px 2px rgb(0 0 0 / 0.1)) drop-shadow(0 1px 1px rgb(0 0 0 / 0.06))' },
   separator: { marginInline: '0.125rem', height: '1.5rem', width: 1, flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.1)' },

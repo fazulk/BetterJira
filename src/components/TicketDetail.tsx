@@ -50,9 +50,9 @@ interface TicketDetailSidebarExpose {
 }
 
 const styles = stylex.create({
-  shell: { minHeight: '100%', backgroundColor: colors['--color-issue-detail-bg'], [breakpoints.lg]: { display: 'flex', height: '100%', minHeight: 0, flexDirection: 'column' } },
-  loadedShell: { minHeight: '100%', backgroundColor: colors['--color-issue-detail-bg'], [breakpoints.lg]: { display: 'flex', height: '100%', minHeight: 0, flexDirection: 'column' } },
-  topBar: { position: 'sticky', top: 0, zIndex: 20, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: colors['--color-issue-detail-bg'], backdropFilter: 'blur(8px)', [breakpoints.lg]: { position: 'static', flexShrink: 0 } },
+  shell: { minHeight: { default: '100%', [breakpoints.lg]: 0 }, backgroundColor: colors['--color-issue-detail-bg'], display: { [breakpoints.lg]: 'flex' }, height: { [breakpoints.lg]: '100%' }, flexDirection: { [breakpoints.lg]: 'column' } },
+  loadedShell: { minHeight: { default: '100%', [breakpoints.lg]: 0 }, backgroundColor: colors['--color-issue-detail-bg'], display: { [breakpoints.lg]: 'flex' }, height: { [breakpoints.lg]: '100%' }, flexDirection: { [breakpoints.lg]: 'column' } },
+  topBar: { position: { default: 'sticky', [breakpoints.lg]: 'static' }, top: 0, zIndex: 20, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: colors['--color-issue-detail-bg'], backdropFilter: 'blur(8px)', flexShrink: { [breakpoints.lg]: 0 } },
   topBarInner: { display: 'flex', minHeight: '3rem', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', paddingInline: '1.5rem', paddingBlock: '0.5rem' },
   crumbText: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   crumbSeparator: { flexShrink: 0, color: '#6f727b' },
@@ -61,8 +61,8 @@ const styles = stylex.create({
   pinButton: { display: 'flex', width: '1.5rem', height: '1.5rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', borderWidth: 0, backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, color: { 'default': '#8f9198', ':hover': '#f0f1f4' }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
   pinButtonPinned: { color: { 'default': colors['--color-accent-amber'], ':hover': colors['--color-accent-amber'] } },
   pinIcon: { fontSize: 14, lineHeight: 1 },
-  layout: { display: 'grid', minHeight: 'calc(100vh - 3rem)', gridTemplateColumns: '1fr', backgroundColor: colors['--color-issue-detail-bg'], [breakpoints.lg]: { minHeight: 0, flex: '1', gridTemplateColumns: 'minmax(0,1fr) 19rem', overflow: 'hidden' } },
-  main: { minWidth: 0, paddingInline: '1.5rem', paddingBlock: '2rem', [breakpoints.lg]: { overflowY: 'auto', paddingInline: '2.5rem' } },
+  layout: { display: 'grid', minHeight: { default: 'calc(100vh - 3rem)', [breakpoints.lg]: 0 }, gridTemplateColumns: { default: '1fr', [breakpoints.lg]: 'minmax(0,1fr) 19rem' }, backgroundColor: colors['--color-issue-detail-bg'], flex: { [breakpoints.lg]: '1' }, overflow: { [breakpoints.lg]: 'hidden' } },
+  main: { minWidth: 0, paddingInline: { default: '1.5rem', [breakpoints.lg]: '2.5rem' }, paddingBlock: '2rem', overflowY: { [breakpoints.lg]: 'auto' } },
   content: { marginInline: 'auto', maxWidth: '48rem' },
   assistantButton: { position: 'fixed', right: '1rem', bottom: '1rem', zIndex: 40, display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: { 'default': 'rgba(255, 255, 255, 0.1)', ':hover': 'rgba(255, 255, 255, 0.2)' }, backgroundColor: { 'default': '#16171b', ':hover': '#1c1d22' }, paddingInline: '1rem', paddingBlock: '0.625rem', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-100'], boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', transitionProperty: 'color, border-color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
   assistantIcon: { width: '1rem', height: '1rem', color: colors['--color-accent-indigo'] },

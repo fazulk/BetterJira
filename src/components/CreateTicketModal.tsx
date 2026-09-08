@@ -20,7 +20,7 @@ import { useJiraCurrentUser } from '@/composables/useJiraCurrentUser'
 import { usePriorities } from '@/composables/usePriorities'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { HARDCODED_CREATE_FIELDS } from '@/features/create-ticket/constants'
-import { getAllowedIssueTypesForParent, getCreateIssueTypeLabel, getIssueTypeBadgeTone } from '@/features/create-ticket/issueTypePolicy'
+import { getAllowedIssueTypesForParent, getCreateIssueTypeLabel } from '@/features/create-ticket/issueTypePolicy'
 import { useCreateFieldOptions } from '@/features/create-ticket/useCreateFieldOptions'
 import { useCreateTicketDerivedState } from '@/features/create-ticket/useCreateTicketDerivedState'
 import { useCreateTicketFieldValues } from '@/features/create-ticket/useCreateTicketFieldValues'
@@ -76,17 +76,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: '1rem',
   },
-  responsiveControls: {
-    display: 'grid',
-    gap: '0.75rem',
-    borderTopWidth: 1,
-    borderTopStyle: 'solid',
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-    paddingTop: '1rem',
-    [breakpoints.md]: {
-      gridTemplateColumns: 'minmax(0,1fr) auto',
-    },
-  },
+  responsiveControls: { display: 'grid', gap: '0.75rem', borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: 'rgba(255, 255, 255, 0.06)', paddingTop: '1rem', gridTemplateColumns: { [breakpoints.md]: 'minmax(0,1fr) auto' } },
   secondaryFields: {
     display: 'flex',
     flexDirection: 'column',
@@ -405,7 +395,6 @@ export default defineComponent({
                       createIssueTypesError={createIssueTypesError.value}
                       effectiveParentKey={effectiveParentKey.value}
                       getCreateIssueTypeLabel={getCreateIssueTypeLabel}
-                      getIssueTypeBadgeTone={getIssueTypeBadgeTone}
                       isCreatePending={isCreatePending.value}
                       isIssueTypeLocked={issueTypeLocked.value}
                       isLoadingIssueTypes={createIssueTypesQuery.isLoading.value}

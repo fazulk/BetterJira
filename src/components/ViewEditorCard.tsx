@@ -9,7 +9,7 @@ const styles = stylex.create({
   root: { position: 'relative', marginInline: '0.375rem', marginBottom: '0.375rem', flexShrink: 0, borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.035)' },
   header: { display: 'flex', minHeight: '6.25rem', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', paddingInline: '0.75rem', paddingBlock: '0.75rem' },
   mainGroup: { display: 'flex', minWidth: 0, flex: '1', alignItems: 'flex-start', gap: '0.75rem' },
-  iconButton: (backgroundColor: string) => ({ marginTop: '0.125rem', display: 'flex', height: '2rem', width: '2rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', backgroundColor, color: 'white', filter: { ':hover': 'brightness(1.1)' }, transitionProperty: 'filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }),
+  iconButton: (backgroundColor: string) => ({ marginTop: '0.125rem', display: 'flex', height: '2rem', width: '2rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', backgroundColor: { default: backgroundColor }, color: 'white', filter: { ':hover': 'brightness(1.1)' }, transitionProperty: 'filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }),
   mainIcon: { height: '1.25rem', width: '1.25rem' },
   picker: { position: 'absolute', left: '0.75rem', top: '3rem', zIndex: 50 },
   fields: { minWidth: 0, flex: '1' },

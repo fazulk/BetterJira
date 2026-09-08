@@ -26,7 +26,7 @@ const MAX_VISIBLE_LABELS = 3
 const styles = stylex.create({
   row: { position: 'relative', display: 'grid', minHeight: '3rem', width: '100%', cursor: 'default', alignItems: 'center', gap: '0.5rem', paddingInline: '1rem', paddingBlock: '0.625rem', textAlign: 'left', color: '#d6d7dc', transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
   rowSelected: { color: '#f0f1f4' },
-  rowGrid: (gridTemplateColumns: string) => ({ gridTemplateColumns }),
+  rowGrid: (gridTemplateColumns: string) => ({ gridTemplateColumns: { default: gridTemplateColumns } }),
   issueKey: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, color: '#8f9198' },
   statusCell: { display: 'flex', height: '1rem', width: '1rem', alignItems: 'center', justifyContent: 'center' },
   summaryCell: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },

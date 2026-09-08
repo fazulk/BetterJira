@@ -10,7 +10,7 @@ import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON } from '~/shared/settings'
 const styles = stylex.create({
   root: { position: 'relative', flexShrink: 0 },
   trigger: { display: 'flex', width: '2.25rem', height: '2.25rem', alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', color: '#fff', filter: { 'default': null, ':hover': 'brightness(1.1)' }, transitionProperty: 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)' },
-  color: (color: string) => ({ backgroundColor: color }),
+  color: (color: string) => ({ backgroundColor: { default: color } }),
   icon: { width: '1.25rem', height: '1.25rem' },
   popover: { position: 'absolute', left: 0, top: '2.75rem', zIndex: 50 },
   reset: { marginTop: '0.25rem', width: '100%', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255,255,255,0.08)', backgroundColor: { 'default': '#16181d', ':hover': 'rgba(255,255,255,0.06)' }, paddingInline: '0.75rem', paddingBlock: '0.5rem', textAlign: 'left', fontSize: 12, color: { 'default': '#aeb0b7', ':hover': '#f0f1f4' }, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', transitionProperty: 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)' },

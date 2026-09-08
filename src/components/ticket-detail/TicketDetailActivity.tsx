@@ -5,6 +5,7 @@ import { computed, defineComponent, nextTick, ref } from 'vue'
 import { useAddTicketMessage } from '@/composables/useAddTicketMessage'
 import { useJiraActivity } from '@/composables/useJiraMessages'
 import { useUpdateTicketWatching } from '@/composables/useUpdateTicketWatching'
+import { uiStyles } from '@/styles/shared'
 import { colors } from '@/styles/tokens.stylex'
 
 type AvatarTone = 'fallback' | 'neutral' | 'amber' | 'emerald' | 'rose' | 'sky'
@@ -389,7 +390,7 @@ export default defineComponent({
               )
             : activityTimelineItems.value.length
               ? (
-                  <div {...stylex.attrs(styles.timeline)}>
+                  <div {...stylex.attrs(styles.timeline, uiStyles.fadeIn)}>
                     {activityTimelineItems.value.map((activityItem, activityIndex) => (
                       activityItem.kind === 'history'
                         ? (
@@ -439,7 +440,7 @@ export default defineComponent({
                   </div>
                 )
               : (
-                  <div {...stylex.attrs(styles.empty)}>
+                  <div {...stylex.attrs(styles.empty, uiStyles.fadeIn)}>
                     No activity yet.
                   </div>
                 )}

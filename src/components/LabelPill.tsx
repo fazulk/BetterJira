@@ -27,7 +27,7 @@ const styles = stylex.create({
     fontSize: '0.75rem',
   },
   dense: { paddingBlock: '0.25rem', fontSize: 11 },
-  dot: (color: string) => ({ width: '0.5rem', height: '0.5rem', flexShrink: 0, borderRadius: '9999px', backgroundColor: color }),
+  dot: (color: string) => ({ width: '0.5rem', height: '0.5rem', flexShrink: 0, borderRadius: '9999px', backgroundColor: { default: color } }),
   text: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
 })
 

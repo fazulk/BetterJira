@@ -8,14 +8,14 @@ import { uiStyles } from '@/styles/shared'
 
 const styles = stylex.create({
   root: { minHeight: 0, flex: '1', overflowY: 'auto' },
-  header: (gridTemplateColumns: string) => ({ display: 'grid', gridTemplateColumns, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem', paddingBlock: '0.5rem', fontSize: 12, color: '#777a83' }),
+  header: (gridTemplateColumns: string) => ({ display: 'grid', gridTemplateColumns: { default: gridTemplateColumns }, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem', paddingBlock: '0.5rem', fontSize: 12, color: '#777a83' }),
   sectionHeader: { display: 'flex', height: '2rem', alignItems: 'center', gap: '0.5rem', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '1rem', fontSize: 12, fontWeight: 500, color: '#aeb0b7' },
   sectionButton: { display: 'flex', minWidth: 0, flex: '1', alignItems: 'center', gap: '0.5rem', textAlign: 'left', color: { 'default': null, ':hover': '#d7d8dc' } },
   chevron: { width: '0.75rem', height: '0.75rem', flexShrink: 0, color: '#777a83', transitionProperty: 'transform', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
   collapsedChevron: { transform: 'rotate(-90deg)' },
   sectionLabel: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   sectionCount: { color: '#6f727b' },
-  row: (gridTemplateColumns: string) => ({ display: 'grid', minHeight: '3rem', width: '100%', alignItems: 'center', gap: 0, paddingInline: '1rem', paddingBlock: '0.5rem', textAlign: 'left', gridTemplateColumns }),
+  row: (gridTemplateColumns: string) => ({ display: 'grid', minHeight: '3rem', width: '100%', alignItems: 'center', gap: 0, paddingInline: '1rem', paddingBlock: '0.5rem', textAlign: 'left', gridTemplateColumns: { default: gridTemplateColumns } }),
   projectCell: { minWidth: 0, paddingRight: '1rem' },
   projectNameRow: { display: 'flex', minWidth: 0, alignItems: 'center', gap: '0.5rem', fontSize: 13, fontWeight: 500, color: '#e6e7ea' },
   projectIcon: (color: string) => ({ width: '0.875rem', height: '0.875rem', flexShrink: 0, color }),

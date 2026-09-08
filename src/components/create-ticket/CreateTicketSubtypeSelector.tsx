@@ -1,5 +1,4 @@
 import type { PropType } from 'vue'
-import type { IssueTypeBadgeTone } from '@/features/create-ticket/issueTypePolicy'
 import type { JiraCreateIssueType } from '@/types/jira'
 import * as stylex from '@stylexjs/stylex'
 import { defineComponent } from 'vue'
@@ -9,6 +8,7 @@ const styles = stylex.create({
   root: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
   label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.14em', color: colors['--color-slate-500'] },
   localPill: {
+    alignSelf: 'flex-start',
     display: 'inline-flex',
     borderRadius: '0.375rem',
     borderWidth: 1,
@@ -46,12 +46,6 @@ const styles = stylex.create({
   inactiveOption: { opacity: { 'default': 0.6, ':hover': 1 } },
 })
 
-function badgeToneStyle(tone: IssueTypeBadgeTone) {
-  if (tone === 'neutral')
-    return styles.neutralBadge
-  return styles.neutralBadge
-}
-
 export default defineComponent({
   name: 'CreateTicketSubtypeSelector',
   props: {
@@ -85,10 +79,6 @@ export default defineComponent({
     },
     getCreateIssueTypeLabel: {
       type: Function as PropType<(issueType: JiraCreateIssueType) => string>,
-      required: true,
-    },
-    getIssueTypeBadgeTone: {
-      type: Function as PropType<(issueType: JiraCreateIssueType) => IssueTypeBadgeTone>,
       required: true,
     },
     selectedIssueType: {
@@ -129,7 +119,7 @@ export default defineComponent({
                     type="button"
                     {...stylex.attrs(
                       styles.optionButton,
-                      badgeToneStyle(props.getIssueTypeBadgeTone(issueType)),
+                      styles.neutralBadge,
                       props.selectedIssueType === issueType ? null : styles.inactiveOption,
                     )}
                     disabled={props.isIssueTypeLocked || props.isCreatePending}

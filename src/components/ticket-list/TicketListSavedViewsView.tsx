@@ -7,10 +7,10 @@ import { uiStyles } from '@/styles/shared'
 
 const styles = stylex.create({
   root: { minHeight: 0, flex: '1', overflowY: 'auto' },
-  header: (gridTemplateColumns: string) => ({ display: 'grid', gridTemplateColumns, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem', paddingBlock: '0.5rem', fontSize: 12, color: '#777a83' }),
-  row: (gridTemplateColumns: string) => ({ display: 'grid', minHeight: '3rem', width: '100%', alignItems: 'center', paddingInline: '1rem', paddingBlock: '0.5rem', textAlign: 'left', gridTemplateColumns }),
+  header: (gridTemplateColumns: string) => ({ display: 'grid', gridTemplateColumns: { default: gridTemplateColumns }, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem', paddingBlock: '0.5rem', fontSize: 12, color: '#777a83' }),
+  row: (gridTemplateColumns: string) => ({ display: 'grid', minHeight: '3rem', width: '100%', alignItems: 'center', paddingInline: '1rem', paddingBlock: '0.5rem', textAlign: 'left', gridTemplateColumns: { default: gridTemplateColumns } }),
   nameCell: { display: 'flex', minWidth: 0, alignItems: 'center', gap: '0.75rem', paddingRight: '1rem' },
-  iconBox: (backgroundColor: string) => ({ display: 'flex', height: '1.75rem', width: '1.75rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', backgroundColor, color: 'white' }),
+  iconBox: (backgroundColor: string) => ({ display: 'flex', height: '1.75rem', width: '1.75rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', backgroundColor: { default: backgroundColor }, color: 'white' }),
   icon: { height: '1rem', width: '1rem' },
   text: { minWidth: 0 },
   title: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 500, color: '#e6e7ea' },

@@ -9,7 +9,7 @@ const styles = stylex.create({
   root: { minHeight: 0, flex: '1', overflowY: 'auto' },
   content: { marginInline: 'auto', width: '100%', maxWidth: '48rem', paddingInline: '2rem', paddingBlock: '2.5rem' },
   header: { position: 'relative', display: 'flex', alignItems: 'center', gap: '1rem' },
-  iconButton: (backgroundColor: string) => ({ display: 'flex', height: '3.5rem', width: '3.5rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.75rem', backgroundColor, color: 'white', filter: { ':hover': 'brightness(1.1)' }, transitionProperty: 'filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }),
+  iconButton: (backgroundColor: string) => ({ display: 'flex', height: '3.5rem', width: '3.5rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.75rem', backgroundColor: { default: backgroundColor }, color: 'white', filter: { ':hover': 'brightness(1.1)' }, transitionProperty: 'filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }),
   icon: { fontSize: '32px', lineHeight: 1 },
   initial: { fontSize: 28, fontWeight: 600, lineHeight: 1 },
   title: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 28, fontWeight: 600, color: '#f0f1f4' },

@@ -33,7 +33,14 @@ for (const file of files) {
     continue
   }
   // Compile definitions only: no Vite server, bundles, or output assets.
-  await Reflect.apply(transform, undefined, [source, file])
+  const result: unknown = await Reflect.apply(transform, undefined, [source, file])
+  if (result && typeof result === 'object' && 'code' in result && typeof result.code === 'string') {
+    // attrs() currently kebab-cases custom properties, which must remain case-sensitive.
+    const mixedCaseVariable = result.code.match(/"(--[^\n"A-Z]*[A-Z][^\n"]*)"\s*:/)
+    if (mixedCaseVariable) {
+      throw new Error(`${file}: ${mixedCaseVariable[1]} cannot be serialized safely by stylex.attrs(). Put the dynamic value inside a default condition.`)
+    }
+  }
   checked += 1
 }
 console.log(`StyleX definitions compile in ${checked} source files.`)

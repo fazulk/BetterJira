@@ -29,7 +29,7 @@ const PULL_REQUEST_STATUS_TONES: Record<TicketDevStatusPullRequestStatus, Ticket
 }
 
 const styles = stylex.create({
-  aside: { minHeight: 0, borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: colors['--color-issue-detail-bg'], paddingInline: '1rem', paddingBlock: '1rem', [breakpoints.lg]: { overflowY: 'auto', borderTopWidth: 0 } },
+  aside: { minHeight: 0, borderTopWidth: { default: 1, [breakpoints.lg]: 0 }, borderTopStyle: 'solid', borderTopColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: colors['--color-issue-detail-bg'], paddingInline: '1rem', paddingBlock: '1rem', overflowY: { [breakpoints.lg]: 'auto' } },
   stack: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
   quickActions: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.375rem' },
   iconButton: { display: 'inline-flex', width: '1.75rem', height: '1.75rem', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: { 'default': 'rgba(255, 255, 255, 0.035)', ':hover': 'rgba(255, 255, 255, 0.06)' }, color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-200'] }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },

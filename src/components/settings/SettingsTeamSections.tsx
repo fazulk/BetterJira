@@ -72,7 +72,7 @@ const styles = stylex.create({
 
 const dynamicStyles = stylex.create({
   menuPosition: (left: number, top: number) => ({ left, top }),
-  backgroundColor: (color: string) => ({ backgroundColor: color }),
+  backgroundColor: (color: string) => ({ backgroundColor: { default: color } }),
 })
 
 function normalizeHexInput(value: string): string | null {
