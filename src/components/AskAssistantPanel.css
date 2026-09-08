@@ -1,0 +1,14 @@
+.assistant-thinking-dot {
+  animation: assistant-thinking 1.2s ease-in-out infinite;
+}
+
+@keyframes assistant-thinking {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-thinking-dot {
+    animation: none;
+  }
+}
