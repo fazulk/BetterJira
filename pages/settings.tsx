@@ -1,5 +1,5 @@
 import { defineComponent } from 'vue'
-import SettingsPage from '@/components/SettingsPage.vue'
+import SettingsPage from '@/components/SettingsPage'
 
 definePageMeta({ key: 'settings' })
 

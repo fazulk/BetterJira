@@ -1,7 +1,7 @@
 <script lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import AssistantMarkdown from '@/components/AssistantMarkdown.vue'
-import AssistantSkillPicker from '@/components/AssistantSkillPicker.vue'
+import AssistantMarkdown from '@/components/AssistantMarkdown'
+import AssistantSkillPicker from '@/components/AssistantSkillPicker'
 import { createAssistantChatState, useAssistantChat } from '@/composables/useAssistantChat'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 import { useAssistantSkills } from '@/composables/useAssistantSkills'
