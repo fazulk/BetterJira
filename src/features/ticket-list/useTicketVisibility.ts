@@ -39,8 +39,7 @@ export function useTicketVisibility(deps: UseTicketVisibilityDeps) {
       if (cycleFilter.match === 'none')
         return false
       if (cycleFilter.match === 'current') {
-        return ticket.inCurrentSprint
-          || Boolean(cycleFilter.sprintId && (ticket.sprints ?? []).some(sprint => sprint.id === cycleFilter.sprintId))
+        return Boolean(cycleFilter.sprintId && (ticket.sprints ?? []).some(sprint => sprint.id === cycleFilter.sprintId))
       }
       return (ticket.sprints ?? []).some(sprint => sprint.id === cycleFilter.sprintId)
     }

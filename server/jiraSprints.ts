@@ -6,6 +6,7 @@ import {
   isCycleBoardType,
   nextCycleName,
 } from '../shared/cycles'
+import { LOCAL_SPACE_KEY } from '../shared/localTickets'
 import { getSpaceProjectKey } from '../shared/settings'
 import { isRecord } from '../shared/typeGuards'
 import { ValidationError } from './errors'
@@ -13,7 +14,6 @@ import { broadcast } from './events'
 import { jiraFetch } from './jiraClient'
 import { getTicket } from './jiraIssueQueries'
 import { getAppSettings, updateAppSettings } from './settings'
-import { LOCAL_SPACE_KEY } from '../shared/localTickets'
 
 const AGILE_BASE_PATH = '/rest/agile/1.0'
 const MAX_CLOSED_CYCLES = 20
@@ -41,7 +41,7 @@ export async function getSpaceCycles(spaceKey: string): Promise<SpaceCyclesPaylo
     }
     persistSpaceBoardId(space.key, board.id)
     const cycles = await listBoardCycles(board.id)
-    return toPayload(space.key, projectKey, board, boards, cycles)
+    return toPayload(space.key, projectKey, board, boards, cycles, space.currentSprintId)
   }
 
   if (!boundBoard) {
@@ -53,7 +53,7 @@ export async function getSpaceCycles(spaceKey: string): Promise<SpaceCyclesPaylo
   }
 
   const cycles = await listBoardCycles(boundBoard.id)
-  return toPayload(space.key, projectKey, boundBoard, boards, cycles)
+  return toPayload(space.key, projectKey, boundBoard, boards, cycles, space.currentSprintId)
 }
 
 export async function setSpaceBoard(spaceKey: string, boardId: number): Promise<SpaceCyclesPayload> {
@@ -70,6 +70,22 @@ export async function setSpaceBoard(spaceKey: string, boardId: number): Promise<
 
   persistSpaceBoardId(space.key, boardId)
   return getSpaceCycles(space.key)
+}
+
+export async function setCurrentSprint(spaceKey: string, sprintId: string | null): Promise<SpaceCyclesPayload> {
+  const payload = await getSpaceCycles(spaceKey)
+  if (!payload.board) {
+    throw new ValidationError('Bind a board before choosing the current sprint.')
+  }
+  if (sprintId !== null && !payload.cycles.some(cycle => cycle.id === sprintId && cycle.state === 'active')) {
+    throw new ValidationError('Choose an active sprint on this team’s board.')
+  }
+  updateAppSettings({
+    spaces: getAppSettings().spaces.map(space => space.key === payload.spaceKey
+      ? { ...space, currentSprintId: sprintId ?? undefined }
+      : space),
+  })
+  return toPayload(payload.spaceKey, payload.projectKey, payload.board, payload.boards, payload.cycles, sprintId ?? undefined)
 }
 
 export async function createUpcomingCycle(spaceKey: string, name?: string): Promise<SpaceCyclesPayload> {
@@ -337,7 +353,7 @@ function findSpace(spaceKey: string) {
 function persistSpaceBoardId(spaceKey: string, boardId: number): void {
   const spaces = getAppSettings().spaces.map(space => (
     space.key === spaceKey
-      ? { ...space, boardId }
+      ? { ...space, boardId, currentSprintId: space.boardId === boardId ? space.currentSprintId : undefined }
       : space
   ))
   updateAppSettings({ spaces })
@@ -356,8 +372,9 @@ function toPayload(
   board: CycleBoard,
   boards: CycleBoard[],
   cycles: Cycle[],
+  currentSprintId?: string,
 ): SpaceCyclesPayload {
-  const { current, upcoming, previous } = classifyCycles(cycles)
+  const { current, upcoming, previous } = classifyCycles(cycles, currentSprintId)
   return {
     spaceKey,
     projectKey,
@@ -368,6 +385,7 @@ function toPayload(
     upcoming,
     previous,
     needsBoardPicker: false,
+    currentSprintId: current?.id === currentSprintId ? currentSprintId : undefined,
   }
 }
 

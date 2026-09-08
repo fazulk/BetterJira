@@ -6,6 +6,7 @@ import {
   completeSpaceCycle,
   createSpaceCycle,
   fetchSpaceCycles,
+  setSpaceCurrentSprint,
   setSpaceCycleBoard,
   startSpaceCycle,
 } from '@/api/cycles'
@@ -57,6 +58,11 @@ export function useSpaceCycles(spaceKey: ComputedRef<string | null>) {
     onSuccess: applyPayload,
   })
 
+  const currentSprintMutation = useMutation({
+    mutationFn: (sprintId: string | null) => setSpaceCurrentSprint(spaceKey.value as string, sprintId),
+    onSuccess: applyPayload,
+  })
+
   function cycleById(cycleId: string | null | undefined): Cycle | null {
     if (!cycleId) {
       return null
@@ -80,11 +86,13 @@ export function useSpaceCycles(spaceKey: ComputedRef<string | null>) {
       || startMutation.isPending.value
       || completeMutation.isPending.value
       || setBoardMutation.isPending.value
+      || currentSprintMutation.isPending.value
     )),
     cycleById,
     createCycle: (name?: string) => createMutation.mutateAsync(name),
     startCycle: (sprintId: string) => startMutation.mutateAsync(sprintId),
     completeCycle: (sprintId: string) => completeMutation.mutateAsync(sprintId),
+    setCurrentSprint: (sprintId: string | null) => currentSprintMutation.mutateAsync(sprintId),
     setBoard: (boardId: number) => setBoardMutation.mutateAsync(boardId),
   }
 }

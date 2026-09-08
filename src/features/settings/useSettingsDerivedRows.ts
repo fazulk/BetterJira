@@ -97,8 +97,6 @@ export function useSettingsDerivedRows(input: SettingsDerivedRowsInput) {
 
   const activeIssueCount = computed(() => enabledTickets.value.filter(ticket => getStatusGroup(ticket.statusCategory) !== 'done').length)
   const triageIssueCount = computed(() => enabledTickets.value.filter(ticket => getStatusGroup(ticket.statusCategory) === 'new').length)
-  const backlogIssueCount = computed(() => enabledTickets.value.filter(ticket => !ticket.inCurrentSprint && getStatusGroup(ticket.statusCategory) !== 'done').length)
-  const currentSprintIssueCount = computed(() => enabledTickets.value.filter(ticket => ticket.inCurrentSprint && getStatusGroup(ticket.statusCategory) !== 'done').length)
 
   const teamWorkflowRows = computed<SettingsDetailRow[]>(() => [
     { label: 'Workflow statuses', value: formatCount(teamStatusRows.value.length, 'status', 'statuses'), detail: 'Loaded from Jira and grouped into Linear-style Todo, In progress, and Done categories.' },
@@ -108,11 +106,6 @@ export function useSettingsDerivedRows(input: SettingsDerivedRowsInput) {
   const teamTriageRows = computed<SettingsDetailRow[]>(() => [
     { label: 'Triage source', value: formatCount(triageIssueCount.value, 'issue', 'issues'), detail: 'Issues in Jira Todo status categories appear in team triage views.' },
     { label: 'Routing', value: 'By team', detail: 'Jira spaces define the Linear-style team boundary for intake and issue views.' },
-  ])
-  const teamCycleRows = computed<SettingsDetailRow[]>(() => [
-    { label: 'Source of truth', value: 'Jira sprints', detail: 'Cycles are a Linear-style view of the Scrum board bound to this team. Creating, starting, and completing writes through to Jira.' },
-    { label: 'Current cycle', value: formatCount(currentSprintIssueCount.value, 'issue', 'issues'), detail: 'Issues in the active Jira sprint on the bound board.' },
-    { label: 'Backlog', value: formatCount(backlogIssueCount.value, 'issue', 'issues'), detail: 'Active issues outside the current Jira sprint.' },
   ])
   const teamAiRows = computed<SettingsDetailRow[]>(() => [
     { label: 'Provider', value: getProviderLabel(input.aiSettings.value.provider), detail: input.aiSettings.value.model },
@@ -135,7 +128,7 @@ export function useSettingsDerivedRows(input: SettingsDerivedRowsInput) {
     if (input.activeSettingsSection.value === 'team-triage')
       return 'How intake-like issue views are derived from Jira data.'
     if (input.activeSettingsSection.value === 'team-cycles')
-      return 'Jira sprints presented as Linear-style cycles. Bind a Scrum board from the team’s Cycles directory if the project has more than one.'
+      return 'Choose the Jira board and current sprint for each team.'
     if (input.activeSettingsSection.value === 'team-ai')
       return 'Assistant capabilities available in this first pass.'
     return ''
@@ -145,8 +138,6 @@ export function useSettingsDerivedRows(input: SettingsDerivedRowsInput) {
       return teamWorkflowRows.value
     if (input.activeSettingsSection.value === 'team-triage')
       return teamTriageRows.value
-    if (input.activeSettingsSection.value === 'team-cycles')
-      return teamCycleRows.value
     if (input.activeSettingsSection.value === 'team-ai')
       return teamAiRows.value
     return []

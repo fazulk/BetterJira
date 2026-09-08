@@ -34,6 +34,14 @@ describe('classifyCycles', () => {
     })
   })
 
+  it('honors an active override and falls back when it is closed or missing', () => {
+    const first = makeCycle({ id: '1', state: 'active' })
+    const second = makeCycle({ id: '2', state: 'active' })
+    expect(classifyCycles([first, second], '2').current).toEqual(second)
+    expect(classifyCycles([first, { ...second, state: 'closed' }], '2').current).toEqual(first)
+    expect(classifyCycles([first], 'missing').current).toEqual(first)
+  })
+
   it('returns nulls when there is no active or future sprint', () => {
     const past = makeCycle({ id: '1', state: 'closed' })
     expect(classifyCycles([past])).toEqual({
@@ -75,6 +83,15 @@ describe('resolveClassifiedCycles', () => {
       name: previous.name,
       state: 'closed',
     })
+  })
+
+  it('does not resurrect ticket-derived active sprints when board data has no current sprint', () => {
+    expect(resolveClassifiedCycles({
+      cycles: [],
+      current: null,
+      upcoming: null,
+      previous: null,
+    }, [{ sprints: [{ id: '9', name: 'Stale sprint', state: 'active' }] }]).current).toBeNull()
   })
 
   it('keeps payload current ahead of ticket-derived sprints', () => {
@@ -205,9 +222,10 @@ describe('assignedCycleFromTicket', () => {
 })
 
 describe('ticketBelongsToCycle', () => {
-  it('treats the active sprint as current even when only inCurrentSprint is set', () => {
+  it('requires membership in the specific active sprint', () => {
     const active = makeCycle({ id: '9', state: 'active' })
-    expect(ticketBelongsToCycle({ inCurrentSprint: true }, active)).toBe(true)
+    expect(ticketBelongsToCycle({ inCurrentSprint: true }, active)).toBe(false)
+    expect(ticketBelongsToCycle({ inCurrentSprint: true, sprints: [{ id: '8' }] }, active)).toBe(false)
     expect(ticketBelongsToCycle({ inCurrentSprint: false, sprints: [{ id: '9' }] }, active)).toBe(true)
     expect(ticketBelongsToCycle({ inCurrentSprint: false }, active)).toBe(false)
   })

@@ -27,6 +27,7 @@ export interface SpaceCyclesPayload {
   upcoming: Cycle | null
   previous: Cycle | null
   needsBoardPicker: boolean
+  currentSprintId?: string
 }
 
 export interface CycleProgress {
@@ -58,13 +59,14 @@ export function emptySpaceCycles(spaceKey: string, projectKey = ''): SpaceCycles
   }
 }
 
-export function classifyCycles(cycles: readonly Cycle[]): {
+export function classifyCycles(cycles: readonly Cycle[], currentSprintId?: string): {
   current: Cycle | null
   upcoming: Cycle | null
   previous: Cycle | null
 } {
   return {
-    current: cycles.find(cycle => cycle.state === 'active') ?? null,
+    current: cycles.find(cycle => cycle.id === currentSprintId && cycle.state === 'active')
+      ?? cycles.find(cycle => cycle.state === 'active') ?? null,
     upcoming: pickUpcomingCycle(cycles.filter(cycle => cycle.state === 'future')),
     previous: pickPreviousCycle(cycles.filter(cycle => cycle.state === 'closed')),
   }
@@ -111,7 +113,7 @@ export function resolveClassifiedCycles(
   const classified = classifyCycles(cycles)
   return {
     cycles,
-    current: payload.current ?? classified.current,
+    current: payload.current,
     upcoming: payload.upcoming ?? classified.upcoming,
     previous: payload.previous ?? classified.previous,
   }
@@ -135,7 +137,7 @@ function mergeCycleLists(primary: readonly Cycle[], extra: readonly Cycle[]): Cy
           ...existing,
           ...cycle,
           name: cycle.name || existing.name,
-          state: preferCycleState(existing.state, cycle.state),
+          state: cycle.state,
         }
       : cycle)
   }
@@ -231,11 +233,7 @@ export function ticketBelongsToCycle(
   ticket: { inCurrentSprint: boolean, sprints?: ReadonlyArray<{ id: string }> },
   cycle: Pick<Cycle, 'id' | 'state'>,
 ): boolean {
-  const inNamedSprint = (ticket.sprints ?? []).some(sprint => sprint.id === cycle.id)
-  if (cycle.state === 'active') {
-    return ticket.inCurrentSprint || inNamedSprint
-  }
-  return inNamedSprint
+  return (ticket.sprints ?? []).some(sprint => sprint.id === cycle.id)
 }
 
 export function assignedCycleFromTicket(ticket: {

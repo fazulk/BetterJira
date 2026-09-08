@@ -121,7 +121,7 @@ describe('current-view visibility predicates', () => {
 
     const inSprint = makeTicket({ key: 'ENG-1', inCurrentSprint: true, sprints: [{ id: '9', name: 'Sprint 9' }] })
     const upcoming = makeTicket({ key: 'ENG-2', sprints: [{ id: '10', name: 'Sprint 10' }] })
-    const other = makeTicket({ key: 'ENG-3' })
+    const other = makeTicket({ key: 'ENG-3', inCurrentSprint: true, sprints: [{ id: '11', name: 'Other active sprint' }] })
 
     expect(visibility.filterTicketsForCurrentView([inSprint, upcoming, other]).map(ticket => ticket.key)).toEqual(['ENG-1'])
 

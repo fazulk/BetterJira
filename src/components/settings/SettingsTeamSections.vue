@@ -2,6 +2,7 @@
 import type { StatusLane } from '@/composables/useStatusPreferences'
 import type { TeamStatusSettingsRow } from '@/features/settings/settingsTypes'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import SettingsCyclesSection from '@/components/settings/SettingsCyclesSection.vue'
 import StatusIcon from '@/components/StatusIcon.vue'
 import { getStatusLaneLabel, useStatusPreferences } from '@/composables/useStatusPreferences'
 import { useSettingsPageContext } from '@/features/settings/settingsPageContext'
@@ -434,7 +435,8 @@ onBeforeUnmount(() => {
       </p>
     </div>
 
-    <div class="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]">
+    <SettingsCyclesSection v-if="activeSettingsSection === 'team-cycles'" />
+    <div v-else class="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]">
       <div
         v-for="row in constrainedSettingsRows"
         :key="row.label"

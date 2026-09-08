@@ -25,6 +25,7 @@ const settingsNavigationGroups: SettingsNavigationGroup[] = [
     items: [
       { id: 'workspace', label: 'Jira connection', description: 'Credentials' },
       { id: 'team-statuses', label: 'Statuses', description: 'Colors and order' },
+      { id: 'team-cycles', label: 'Cycles', description: 'Team boards and current sprint' },
     ],
   },
   {

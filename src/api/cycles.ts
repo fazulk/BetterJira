@@ -1,5 +1,5 @@
-import type { SpaceCyclesPayload } from '~/shared/cycles'
 import type { JiraTicket } from '@/types/jira'
+import type { SpaceCyclesPayload } from '~/shared/cycles'
 import { apiFetch } from '@/api/http'
 
 export function fetchSpaceCycles(spaceKey: string): Promise<SpaceCyclesPayload> {
@@ -34,6 +34,13 @@ export function completeSpaceCycle(spaceKey: string, sprintId: string): Promise<
 
 export function updateTicketSprint(key: string, sprintId: string | null): Promise<JiraTicket> {
   return apiFetch(['tickets', key, 'sprint'], 'Failed to update cycle', {
+    method: 'PUT',
+    json: { sprintId },
+  })
+}
+
+export function setSpaceCurrentSprint(spaceKey: string, sprintId: string | null): Promise<SpaceCyclesPayload> {
+  return apiFetch(['spaces', spaceKey, 'cycles', 'current'], 'Failed to set current sprint', {
     method: 'PUT',
     json: { sprintId },
   })

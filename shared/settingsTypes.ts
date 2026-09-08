@@ -20,6 +20,7 @@ export interface AppSpaceSetting {
   teamFilter?: AppSpaceTeamFilter
   /** Jira Agile board used for this team's cycles. */
   boardId?: number
+  currentSprintId?: string
 }
 
 export interface JiraConnectionSettings {

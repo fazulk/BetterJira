@@ -8,10 +8,10 @@ import { useAssistantChat } from '@/composables/useAssistantChat'
 import { useAssistantPanel } from '@/composables/useAssistantPanel'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 import { useAssistantSkills } from '@/composables/useAssistantSkills'
-import { getAssistantActionLabel, getAssistantProviderLabel } from '~/shared/assistant'
+import { getAssistantActionLabel, getAssistantProviderLabel, getAssistantReasoningLabel } from '~/shared/assistant'
 import { isLocalTicketKey } from '~/shared/localTickets'
 
-const { settings, isProviderAvailable } = useAssistantSettings()
+const { settings, availableModels, isProviderAvailable } = useAssistantSettings()
 const queryClient = useQueryClient()
 const {
   minimized,
@@ -51,6 +51,8 @@ const selectedSkillIds = ref<string[]>([])
 
 const actionLabel = computed(() => getAssistantActionLabel(settings.value.provider))
 const providerLabel = computed(() => getAssistantProviderLabel(settings.value.provider))
+const modelLabel = computed(() => availableModels.value.find(model => model.id === settings.value.model)?.label ?? settings.value.model)
+const reasoningLabel = computed(() => `${getAssistantReasoningLabel(settings.value.reasoning)} reasoning`)
 const providerAvailable = computed(() => isProviderAvailable(settings.value.provider))
 const hasConversation = computed(() => messages.value.length > 0)
 
@@ -99,7 +101,7 @@ function handleKeydown(event: KeyboardEvent): void {
   <div
     class="fixed bottom-4 right-4 z-40 flex flex-col overflow-hidden rounded-xl border border-white/[0.1] bg-[#16171b] shadow-2xl shadow-black/50 transition-all"
     :class="[
-      minimized ? 'h-12' : expanded ? 'h-[80vh]' : 'h-[32rem]',
+      minimized ? 'h-12' : expanded ? 'h-[80vh] max-h-[calc(100dvh-2rem)]' : 'h-[32rem] max-h-[calc(100dvh-2rem)]',
       expanded ? 'w-[40rem] max-w-[calc(100vw-2rem)]' : 'w-[24rem] max-w-[calc(100vw-2rem)]',
     ]"
   >
@@ -149,6 +151,17 @@ function handleKeydown(event: KeyboardEvent): void {
     </div>
 
     <template v-if="!minimized">
+      <div class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-white/[0.06] px-3 py-2 text-[11px] text-slate-400">
+        <span class="flex min-w-0 items-center gap-1.5" :title="`Model: ${modelLabel}`">
+          <Icon name="lucide:cpu" class="h-3 w-3 shrink-0" aria-hidden="true" />
+          <span class="truncate">{{ modelLabel }}</span>
+        </span>
+        <span class="flex items-center gap-1.5">
+          <Icon name="lucide:brain" class="h-3 w-3 shrink-0" aria-hidden="true" />
+          {{ reasoningLabel }}
+        </span>
+      </div>
+
       <!-- Messages -->
       <div ref="scrollRef" class="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-4">
         <div v-if="!hasConversation" class="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
@@ -170,13 +183,13 @@ function handleKeydown(event: KeyboardEvent): void {
           :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
         >
           <div
-            class="max-w-[85%] break-words rounded-lg px-3 py-2 text-[13px] leading-relaxed"
+            class="break-words rounded-lg px-3 py-2 text-[13px] leading-relaxed"
             :class="message.role === 'user'
-              ? 'whitespace-pre-wrap bg-accent-indigo/90 text-white'
-              : 'bg-white/[0.05] text-slate-200'"
+              ? 'max-w-[85%] whitespace-pre-wrap bg-accent-indigo/90 text-white'
+              : 'min-w-0 max-w-full text-slate-200'"
           >
             <AssistantMarkdown v-if="message.role === 'assistant' && message.content" :content="message.content" />
-            <template v-else>
+            <template v-else-if="message.role === 'user'">
               <span
                 v-for="skill in message.skills ?? []"
                 :key="skill.name"
@@ -184,14 +197,20 @@ function handleKeydown(event: KeyboardEvent): void {
               >
                 <Icon name="lucide:box" class="h-3 w-3" aria-hidden="true" />{{ skill.name }}
               </span>
-              {{ message.content || (message.pending ? '…' : '') }}
+              {{ message.content }}
             </template>
+            <div
+              v-if="message.role === 'assistant' && message.pending && isStreaming"
+              role="status"
+              class="flex items-center gap-2.5 py-1 text-xs text-slate-400"
+              :class="message.content ? 'mt-3' : ''"
+            >
+              <span class="flex h-5 shrink-0 items-center gap-1 text-accent-indigo" aria-hidden="true">
+                <span v-for="dot in 3" :key="dot" class="assistant-thinking-dot h-1.5 w-1.5 rounded-full bg-current" :style="{ animationDelay: `${(dot - 1) * 160}ms` }" />
+              </span>
+              <span class="min-w-0 break-words">{{ statusText || (message.content ? 'Responding…' : `${providerLabel} is thinking…`) }}</span>
+            </div>
           </div>
-        </div>
-
-        <div v-if="statusText" class="flex items-center gap-2 text-xs text-slate-500">
-          <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-accent-indigo" />
-          <span class="truncate">{{ statusText }}</span>
         </div>
 
         <p v-if="errorText" class="rounded-md border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
@@ -219,6 +238,7 @@ function handleKeydown(event: KeyboardEvent): void {
             <textarea
               v-model="draft"
               rows="1"
+              aria-label="Message the assistant"
               :placeholder="`Ask ${providerLabel}…`"
               class="max-h-32 min-h-[1.5rem] flex-1 resize-none bg-transparent text-[13px] text-slate-200 outline-none placeholder:text-slate-600"
               @keydown="handleKeydown"
@@ -248,3 +268,20 @@ function handleKeydown(event: KeyboardEvent): void {
     </template>
   </div>
 </template>
+
+<style scoped>
+.assistant-thinking-dot {
+  animation: assistant-thinking 1.2s ease-in-out infinite;
+}
+
+@keyframes assistant-thinking {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-thinking-dot {
+    animation: none;
+  }
+}
+</style>

@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { AssistantChatMessage, AssistantMessageSkill } from '~/shared/assistant'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { streamAssistantChat } from '@/api/assistant'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 
@@ -91,7 +91,7 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
       content: trimmed,
       ...(hasSkills ? { skills } : {}),
     })
-    const assistantMessage: AssistantTranscriptMessage = { id: state.nextId++, role: 'assistant', content: '', pending: true }
+    const assistantMessage = reactive<AssistantTranscriptMessage>({ id: state.nextId++, role: 'assistant', content: '', pending: true })
     messages.value.push(assistantMessage)
 
     const requestMessages: AssistantChatMessage[] = messages.value

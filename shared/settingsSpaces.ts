@@ -27,6 +27,7 @@ function withAppearance(
   color: string | undefined,
   teamFilter?: AppSpaceTeamFilter,
   boardId?: number,
+  currentSprintId?: string,
 ): AppSpaceSetting {
   return {
     ...base,
@@ -34,6 +35,7 @@ function withAppearance(
     ...(color ? { color } : {}),
     ...(teamFilter ? { teamFilter } : {}),
     ...(boardId ? { boardId } : {}),
+    ...(currentSprintId ? { currentSprintId } : {}),
   }
 }
 
@@ -59,6 +61,7 @@ function normalizeSpaceSetting(value: unknown): AppSpaceSetting | null {
     normalizeSpaceColor(recordValue.color),
     normalizeSpaceTeamFilter(recordValue.teamFilter),
     normalizeBoardId(recordValue.boardId),
+    typeof recordValue.currentSprintId === 'string' ? recordValue.currentSprintId.trim() || undefined : undefined,
   )
 }
 
@@ -116,6 +119,7 @@ export function reconcileSpaceSettings(spaces: AppSpaceSetting[]): AppSpaceSetti
         space.color,
         space.teamFilter,
         space.boardId,
+        space.currentSprintId,
       ))
       continue
     }
@@ -130,6 +134,7 @@ export function reconcileSpaceSettings(spaces: AppSpaceSetting[]): AppSpaceSetti
       existingSpace.color ?? space.color,
       existingSpace.teamFilter ?? space.teamFilter,
       existingSpace.boardId ?? space.boardId,
+      existingSpace.currentSprintId ?? space.currentSprintId,
     ))
   }
 

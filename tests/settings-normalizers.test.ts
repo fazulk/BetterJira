@@ -184,6 +184,7 @@ describe('normalizeAppSettings space normalization', () => {
           color: ' #AABBCC ',
           teamFilter: { projectKey: 'abc', teamId: ' t1 ' },
           boardId: '84',
+          currentSprintId: ' 123 ',
         },
         // Duplicate key: first entry wins on name/icon; enabled is OR-ed.
         { key: 'abc', enabled: false, icon: 'star' },
@@ -205,6 +206,7 @@ describe('normalizeAppSettings space normalization', () => {
         color: '#aabbcc',
         teamFilter: { projectKey: 'ABC', teamId: 't1' },
         boardId: 84,
+        currentSprintId: '123',
       },
       { key: 'ZED', name: '', enabled: true },
     ])

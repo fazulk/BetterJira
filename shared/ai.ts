@@ -71,6 +71,10 @@ export const AI_MODEL_CATALOG: Record<AiProvider, AiModelOption[]> = {
   ],
   codex: [
     { id: 'default', label: 'Codex configured default', provider: 'codex' },
+    { id: 'gpt-6-astra', label: 'GPT-6.0 Astra', provider: 'codex' },
+    { id: 'gpt-5.6-terra', label: 'GPT-5.6 Terra', provider: 'codex' },
+    { id: 'gpt-5.6-sol', label: 'GPT-5.6 Sol', provider: 'codex' },
+    { id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', provider: 'codex' },
     { id: 'gpt-5.5', label: 'GPT-5.5', provider: 'codex' },
     { id: 'gpt-5.4', label: 'GPT-5.4', provider: 'codex' },
     { id: 'gpt-5.1-codex', label: 'GPT-5.1 Codex', provider: 'codex' },

@@ -10,6 +10,7 @@ import {
   completeCycle,
   createUpcomingCycle,
   getSpaceCycles,
+  setCurrentSprint,
   setSpaceBoard,
   startCycle,
 } from './jiraSprints'
@@ -47,6 +48,16 @@ export async function handleCycleApiRoute(
       return badRequestResponse('boardId must be a positive integer.')
     }
     const payload = await setSpaceBoard(spaceKey, boardId)
+    return Response.json(payload, { headers: API_HEADERS })
+  }
+
+  if (segments.length === 4 && segments[2] === 'cycles' && segments[3] === 'current' && method === 'PUT') {
+    const body = await readBody<unknown>(event)
+    const sprintId = isRecord(body) ? body.sprintId : undefined
+    if (sprintId !== null && (typeof sprintId !== 'string' || !sprintId.trim())) {
+      return badRequestResponse('sprintId must be a non-empty string or null.')
+    }
+    const payload = await setCurrentSprint(spaceKey, typeof sprintId === 'string' ? sprintId.trim() : null)
     return Response.json(payload, { headers: API_HEADERS })
   }
 
