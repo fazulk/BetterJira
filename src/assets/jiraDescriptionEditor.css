@@ -35,6 +35,25 @@
   margin-bottom: 0;
 }
 
+.jira-description-editor .ProseMirror :is(h1, h2, h3) {
+  font-weight: 600;
+  line-height: 1.375;
+  color: var(--color-slate-100);
+}
+
+.jira-description-editor .ProseMirror h1 {
+  font-size: 1.25rem;
+}
+
+.jira-description-editor .ProseMirror h2 {
+  font-size: 1.125rem;
+}
+
+.jira-description-editor .ProseMirror h3 {
+  font-size: 1rem;
+  color: var(--color-slate-200);
+}
+
 .jira-description-editor .ProseMirror a {
   color: #d7d8dc;
   text-decoration-line: underline;
