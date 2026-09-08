@@ -8,7 +8,7 @@ export default defineComponent({
   name: 'CyclePlanningHeader',
   props: {
     cycle: {
-      type: Object as PropType<Cycle | null>,
+      type: [Object, null] as PropType<Cycle | null>,
       required: true,
     },
     kind: {

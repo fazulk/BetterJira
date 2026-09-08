@@ -11,7 +11,6 @@ const JiraAdfRenderer = defineComponent({
     },
     nested: {
       type: Boolean,
-      default: false,
     },
     attachments: {
       type: Array as PropType<JiraAttachment[]>,

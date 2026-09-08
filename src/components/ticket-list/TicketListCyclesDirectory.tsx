@@ -21,7 +21,7 @@ export default defineComponent({
       required: true,
     },
     errorMessage: {
-      type: String as PropType<string | null>,
+      type: [String, null] as PropType<string | null>,
       required: true,
     },
   },

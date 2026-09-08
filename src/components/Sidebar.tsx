@@ -16,7 +16,7 @@ export default defineComponent({
       required: true,
     },
     selectedKey: {
-      type: String as PropType<string | null>,
+      type: [String, null] as PropType<string | null>,
       required: true,
     },
     collapsed: {

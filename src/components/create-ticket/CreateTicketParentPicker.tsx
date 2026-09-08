@@ -3,11 +3,6 @@ import type { JiraTicket } from '@/types/jira'
 import { computed, defineComponent } from 'vue'
 import { useParentPicker } from '@/features/create-ticket/useParentPicker'
 
-function getInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'CreateTicketParentPicker',
   props: {
@@ -113,12 +108,11 @@ export default defineComponent({
                       </svg>
                       <input
                         ref={parentInputRef}
-                        value={parentSearch.value}
+                        v-model={parentSearch.value}
                         name="create-parent-search"
                         aria-label={`Search ${getSupportedParentTypeLabel()}s`}
                         class="w-full rounded-md border border-white/[0.08] bg-surface-0 py-2 pl-9 pr-3 text-sm text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16]"
                         placeholder={`Search ${getSupportedParentTypeLabel()}s...`}
-                        onInput={event => (parentSearch.value = getInputValue(event))}
                         onKeydown={handleParentKeydown}
                       />
                     </div>

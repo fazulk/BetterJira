@@ -25,11 +25,6 @@ const PULL_REQUEST_STATUS_CLASSES: Record<TicketDevStatusPullRequestStatus, stri
   UNKNOWN: 'border-white/[0.08] bg-white/[0.04] text-slate-400',
 }
 
-function getInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
 function normalizeLabels(labels: string[]): string[] {
   const nextLabels: string[] = []
   const seen = new Set<string>()
@@ -338,11 +333,10 @@ export default defineComponent({
                           ))}
                           <input
                             ref={labelInputRef}
-                            value={labelDraft.value}
+                            v-model={labelDraft.value}
                             class="min-w-24 flex-1 bg-transparent text-xs text-slate-200 outline-none placeholder:text-slate-600"
                             placeholder="Add label..."
                             disabled={anyLabelsPending.value}
-                            onInput={event => (labelDraft.value = getInputValue(event))}
                             onBlur={addLabelDraft}
                             onKeydown={handleLabelInputKeydown}
                           />

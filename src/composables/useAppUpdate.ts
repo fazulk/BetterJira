@@ -9,7 +9,7 @@ function getDismissedState() {
 }
 
 /**
- * Registers the desktop update listener. Call once from app.vue's onMounted;
+ * Registers the desktop update listener. Call once from app.tsx's onMounted;
  * a no-op in a plain browser where the preload bridge is absent.
  */
 export function initAppUpdateListener(): void {

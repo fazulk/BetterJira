@@ -11,11 +11,6 @@ interface DescriptionEditorExpose {
   focusEditor: () => void
 }
 
-function getTextAreaValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLTextAreaElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'AiDescriptionModal',
   props: {
@@ -181,10 +176,9 @@ export default defineComponent({
                     <label for="ai-description-instruction" class="mb-2 text-[12px] font-medium text-slate-400">Instruction</label>
                     <textarea
                       id="ai-description-instruction"
-                      value={promptText.value}
+                      v-model={promptText.value}
                       class="min-h-[112px] w-full resize-y rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[13px] leading-5 text-slate-300 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.04]"
                       placeholder="Describe how the description should change..."
-                      onInput={event => (promptText.value = getTextAreaValue(event))}
                     />
 
                     {generationError.value && (

@@ -3,7 +3,7 @@ import { createAssistantChatState } from '@/composables/useAssistantChat'
 
 // Module-scope store so the assistant panel — its transcript, draft, pinned
 // ticket, and any in-flight stream — survives navigation anywhere in the app.
-// The panel itself is mounted globally in app.vue.
+// The panel itself is mounted globally in app.tsx.
 const isOpen = ref(false)
 const minimized = ref(false)
 const expanded = ref(false)

@@ -7,11 +7,6 @@ import { getStatusGroup } from '@/types/jira'
 
 type ProjectDetailHealth = 'On track' | 'At risk' | 'Completed'
 
-function getTextAreaValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLTextAreaElement ? target.value : ''
-}
-
 const datePartFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
 function formatDate(value: string | undefined): string | null {
@@ -294,7 +289,7 @@ export default defineComponent({
               <textarea
                 id="detail-title"
                 ref={titleInputRef}
-                value={titleDraft.value}
+                v-model={titleDraft.value}
                 class="min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent p-0 !text-[28px] !font-semibold !leading-tight text-slate-100 outline-none appearance-none placeholder:text-slate-700"
                 maxlength={255}
                 rows={1}
@@ -302,7 +297,6 @@ export default defineComponent({
                 spellcheck={false}
                 autocorrect="off"
                 autocapitalize="off"
-                onInput={event => (titleDraft.value = getTextAreaValue(event))}
                 onFocusin={handleTitleFocusIn}
                 onFocusout={handleTitleFocusOut}
                 onKeydown={handleTitleKeydown}

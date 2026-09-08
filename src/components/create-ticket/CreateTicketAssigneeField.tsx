@@ -3,11 +3,6 @@ import type { JiraAssignableUser } from '@/types/jira'
 import { computed, defineComponent } from 'vue'
 import { useAssigneePicker } from '@/features/create-ticket/useAssigneePicker'
 
-function getInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'CreateTicketAssigneeField',
   props: {
@@ -135,12 +130,11 @@ export default defineComponent({
                             <input
                               id="create-field-assignee"
                               ref={assigneeInputRef}
-                              value={assigneeSearch.value}
+                              v-model={assigneeSearch.value}
                               name="create-assignee-search"
                               aria-label="Search assignees"
                               class="w-48 rounded-md border border-white/[0.08] bg-surface-0 py-1.5 pl-8 pr-3 text-xs text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16]"
                               placeholder="Search assignees..."
-                              onInput={event => (assigneeSearch.value = getInputValue(event))}
                               onKeydown={handleAssigneeKeydown}
                             />
                           </div>

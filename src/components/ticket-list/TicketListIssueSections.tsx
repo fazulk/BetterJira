@@ -27,7 +27,7 @@ export default defineComponent({
       required: true,
     },
     focusedIssueKey: {
-      type: String as PropType<string | null>,
+      type: [String, null] as PropType<string | null>,
       required: true,
     },
     checkedIssueKeySet: {

@@ -5,11 +5,6 @@ import { useAddTicketMessage } from '@/composables/useAddTicketMessage'
 import { useJiraActivity } from '@/composables/useJiraMessages'
 import { useUpdateTicketWatching } from '@/composables/useUpdateTicketWatching'
 
-function getTextAreaValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLTextAreaElement ? target.value : ''
-}
-
 function addActivityParticipantName(names: string[], name: string | undefined): void {
   const nextName = name?.trim()
   if (!nextName || nextName === 'Unassigned' || names.includes(nextName))
@@ -374,11 +369,10 @@ export default defineComponent({
                 <textarea
                   id="detail-message"
                   ref={messageTextareaRef}
-                  value={messageDraft.value}
+                  v-model={messageDraft.value}
                   class="min-h-[92px] w-full resize-none border border-transparent bg-transparent p-0 text-[15px] leading-6 text-slate-300 outline-none placeholder:text-slate-600"
                   rows={4}
                   placeholder="Leave a comment..."
-                  onInput={event => (messageDraft.value = getTextAreaValue(event))}
                   onKeydown={handleMessageKeydown}
                 />
                 <div class="mt-2 flex items-center justify-between gap-3">

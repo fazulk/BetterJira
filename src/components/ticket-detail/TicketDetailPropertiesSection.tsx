@@ -14,11 +14,6 @@ import { getTransitionLabel } from '@/types/jira'
 import { assignedCycleFromTicket } from '~/shared/cycles'
 import { LOCAL_PRIORITY_NAMES } from '~/shared/localTickets'
 
-function getInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement || target instanceof HTMLSelectElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'TicketDetailPropertiesSection',
   props: {
@@ -216,9 +211,8 @@ export default defineComponent({
                     <div class="min-w-0 space-y-2">
                       <select
                         id="detail-status"
-                        value={statusDraft.value}
+                        v-model={statusDraft.value}
                         class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]"
-                        onChange={event => (statusDraft.value = getInputValue(event))}
                       >
                         <option value="" disabled>Move to...</option>
                         {(props.isLocalTicket ? localTransitionsList.value : (transitionsQuery.data.value ?? [])).map(transition => (
@@ -263,11 +257,10 @@ export default defineComponent({
                     <div class="min-w-0 space-y-2">
                       <input
                         id="detail-local-assignee"
-                        value={localAssigneeDraft.value}
+                        v-model={localAssigneeDraft.value}
                         list={localAssigneeDatalistId.value}
                         class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]"
                         placeholder="Assignee name"
-                        onInput={event => (localAssigneeDraft.value = getInputValue(event))}
                       />
                       <datalist id={localAssigneeDatalistId.value}>
                         {localAssigneeSuggestions.value.map(name => <option key={name} value={name} />)}
@@ -289,10 +282,9 @@ export default defineComponent({
                         <input
                           id="detail-assignee-search"
                           ref={assigneeInputRef}
-                          value={assigneeSearch.value}
+                          v-model={assigneeSearch.value}
                           class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16]"
                           placeholder="Search assignees..."
-                          onInput={event => (assigneeSearch.value = getInputValue(event))}
                           onKeydown={handleAssigneeKeydown}
                         />
                         <div class="absolute left-0 top-full z-50 mt-1 max-h-64 w-56 overflow-y-auto rounded-lg border border-white/[0.08] bg-surface-2 py-1 shadow-xl shadow-black/40">
@@ -349,9 +341,8 @@ export default defineComponent({
                       <div class="min-w-0 space-y-2">
                         <select
                           id="detail-team"
-                          value={teamDraft.value}
+                          v-model={teamDraft.value}
                           class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]"
-                          onChange={event => (teamDraft.value = getInputValue(event))}
                         >
                           <option value="">No team</option>
                           {teamOptions.value.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
@@ -386,7 +377,7 @@ export default defineComponent({
                 {isEditingCycle.value
                   ? (
                       <div class="min-w-0 space-y-2">
-                        <select id="detail-cycle" value={cycleDraft.value} class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]" onChange={event => (cycleDraft.value = getInputValue(event))}>
+                        <select id="detail-cycle" v-model={cycleDraft.value} class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]">
                           {cycleOptions.value.map(option => <option key={option.id || 'none'} value={option.id}>{option.name}</option>)}
                         </select>
                         <div class="flex flex-wrap items-center gap-1.5">
@@ -415,13 +406,13 @@ export default defineComponent({
                     <div class="min-w-0 space-y-2">
                       {!props.isLocalTicket
                         ? (
-                            <select id="detail-priority" value={priorityDraft.value} class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]" onChange={event => (priorityDraft.value = getInputValue(event))}>
+                            <select id="detail-priority" v-model={priorityDraft.value} class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]">
                               <option value="" disabled>Set priority...</option>
                               {(prioritiesQuery.data.value ?? []).map(priority => <option key={priority.id} value={priority.id}>{priority.name}</option>)}
                             </select>
                           )
                         : (
-                            <select id="detail-local-priority" value={priorityDraftLocal.value} class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]" onChange={event => (priorityDraftLocal.value = getInputValue(event))}>
+                            <select id="detail-local-priority" v-model={priorityDraftLocal.value} class="w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-white/[0.16]">
                               {LOCAL_PRIORITY_NAMES.map(priority => <option key={priority} value={priority}>{priority}</option>)}
                             </select>
                           )}
