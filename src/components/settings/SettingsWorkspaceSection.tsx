@@ -9,11 +9,6 @@ interface StatusBadge {
   classes: string
 }
 
-function readInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'SettingsWorkspaceSection',
   setup() {
@@ -123,11 +118,11 @@ export default defineComponent({
             <div class="grid gap-3 md:grid-cols-2">
               <label class="block">
                 <span class="mb-1.5 block text-xs font-medium text-slate-500">Jira URL</span>
-                <input value={jiraBaseUrlDraft.value} type="url" name="jira-base-url" autocomplete="url" placeholder="https://example.atlassian.net" class={inputClass} onInput={(event) => { jiraBaseUrlDraft.value = readInputValue(event) }} onKeydown={saveConnectionFromEnter} />
+                <input v-model={jiraBaseUrlDraft.value} type="url" name="jira-base-url" autocomplete="url" placeholder="https://example.atlassian.net" class={inputClass} onKeydown={saveConnectionFromEnter} />
               </label>
               <label class="block">
                 <span class="mb-1.5 block text-xs font-medium text-slate-500">Atlassian email</span>
-                <input value={jiraEmailDraft.value} type="email" name="jira-email" autocomplete="email" placeholder="you@example.com" class={inputClass} onInput={(event) => { jiraEmailDraft.value = readInputValue(event) }} onKeydown={saveConnectionFromEnter} />
+                <input v-model={jiraEmailDraft.value} type="email" name="jira-email" autocomplete="email" placeholder="you@example.com" class={inputClass} onKeydown={saveConnectionFromEnter} />
               </label>
             </div>
             <div class="flex justify-end">
@@ -154,7 +149,7 @@ export default defineComponent({
                       <span class="ml-auto text-xs text-slate-600">hidden</span>
                     </div>
                   )}
-                  <input value={jiraApiToken.value} type="password" name="jira-api-token" autocomplete="new-password" placeholder={jiraHasApiToken.value ? 'Paste a new token to replace it' : 'Paste your Jira API token'} class={inputClass} onInput={(event) => { jiraApiToken.value = readInputValue(event) }} onKeydown={saveTokenFromEnter} />
+                  <input v-model={jiraApiToken.value} type="password" name="jira-api-token" autocomplete="new-password" placeholder={jiraHasApiToken.value ? 'Paste a new token to replace it' : 'Paste your Jira API token'} class={inputClass} onKeydown={saveTokenFromEnter} />
                   <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noreferrer" class="inline-flex items-center gap-1 text-xs text-slate-400 transition hover:text-slate-200">
                     <Icon name="lucide:external-link" class="h-3 w-3" aria-hidden="true" />
                     Create a Jira API token

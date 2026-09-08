@@ -8,11 +8,6 @@ type JiraSetupStep = 'form' | 'connecting' | 'success'
 
 declare function navigateTo(path: string): Promise<void>
 
-function readInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'JiraSetupModal',
   props: {
@@ -132,18 +127,18 @@ export default defineComponent({
                 <div class="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.015]">
                   <label class="grid gap-2 border-b border-white/[0.05] px-3 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
                     <span class="text-[12px] text-slate-500">Jira base URL</span>
-                    <input value={baseUrl.value} type="url" autocomplete="url" placeholder="https://your-team.atlassian.net" class="w-full rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[13px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.04]" onInput={(event) => { baseUrl.value = readInputValue(event) }} />
+                    <input v-model={baseUrl.value} type="url" autocomplete="url" placeholder="https://your-team.atlassian.net" class="w-full rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[13px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.04]" />
                   </label>
 
                   <label class="grid gap-2 border-b border-white/[0.05] px-3 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
                     <span class="text-[12px] text-slate-500">Atlassian email</span>
-                    <input value={email.value} type="email" autocomplete="email" placeholder="you@company.com" class="w-full rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[13px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.04]" onInput={(event) => { email.value = readInputValue(event) }} />
+                    <input v-model={email.value} type="email" autocomplete="email" placeholder="you@company.com" class="w-full rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[13px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.04]" />
                   </label>
 
                   <label class="grid gap-2 px-3 py-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
                     <span class="pt-2 text-[12px] text-slate-500">API token</span>
                     <div class="min-w-0 space-y-2">
-                      <input value={apiToken.value} type="password" autocomplete="new-password" placeholder="Paste an Atlassian API token" class="w-full rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[13px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.04]" onInput={(event) => { apiToken.value = readInputValue(event) }} />
+                      <input v-model={apiToken.value} type="password" autocomplete="new-password" placeholder="Paste an Atlassian API token" class="w-full rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[13px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.04]" />
                       <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noreferrer" class="inline-flex text-[12px] text-slate-400 transition hover:text-slate-200">
                         Create an Atlassian API token
                       </a>

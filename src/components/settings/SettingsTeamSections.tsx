@@ -29,11 +29,6 @@ function readColorInputValue(event: Event): string | null {
   return /^#[0-9a-f]{6}$/.test(normalizedColor) ? normalizedColor : null
 }
 
-function readInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'SettingsTeamSections',
   setup() {
@@ -163,8 +158,7 @@ export default defineComponent({
       setStatusColor(row.status, row.group, normalizedColor)
     }
 
-    function handleCustomHexInput(event: Event): void {
-      customHexDraft.value = readInputValue(event)
+    function handleCustomHexInput(): void {
       applyCustomHex()
     }
 
@@ -367,7 +361,7 @@ export default defineComponent({
                       </label>
                       <div class="flex flex-1 items-center gap-1 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2 py-1.5 focus-within:border-white/[0.2]">
                         <span class="text-xs text-slate-500">#</span>
-                        <input value={customHexDraft.value} type="text" maxlength="7" spellcheck={false} placeholder="rrggbb" class="w-full bg-transparent text-xs uppercase tracking-wide text-slate-200 outline-none placeholder:text-slate-600" aria-label="Custom hex color" onInput={handleCustomHexInput} onKeydown={handleCustomHexKeydown} />
+                        <input v-model={customHexDraft.value} type="text" maxlength="7" spellcheck={false} placeholder="rrggbb" class="w-full bg-transparent text-xs uppercase tracking-wide text-slate-200 outline-none placeholder:text-slate-600" aria-label="Custom hex color" onInput={handleCustomHexInput} onKeydown={handleCustomHexKeydown} />
                       </div>
                     </div>
                     {!isCustomHexValid.value && customHexDraft.value.length > 0 && <p class="mt-1.5 text-[11px] text-rose-300">Enter a 6-digit hex color.</p>}

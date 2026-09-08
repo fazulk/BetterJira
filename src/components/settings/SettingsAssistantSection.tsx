@@ -13,11 +13,6 @@ import {
   isAssistantReasoning,
 } from '~/shared/assistant'
 
-function readTextAreaValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLTextAreaElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'SettingsAssistantSection',
   setup() {
@@ -226,11 +221,10 @@ export default defineComponent({
             </button>
           </div>
           <textarea
-            value={promptDraft.value}
+            v-model={promptDraft.value}
             rows="7"
             spellcheck={false}
             class="w-full resize-y rounded-md border border-white/[0.06] bg-white/[0.04] px-3 py-2 font-mono text-[12px] leading-relaxed text-slate-200 outline-none transition focus:border-white/[0.16] focus:bg-white/[0.06]"
-            onInput={(event) => { promptDraft.value = readTextAreaValue(event) }}
           />
           <div class="mt-3 flex items-center justify-between gap-3">
             {promptFeedback.value

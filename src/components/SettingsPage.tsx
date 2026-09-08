@@ -6,11 +6,6 @@ import SettingsWorkspaceSection from '@/components/settings/SettingsWorkspaceSec
 import { provideSettingsPageContext } from '@/features/settings/settingsPageContext'
 import { useSettingsPageState } from '@/features/settings/useSettingsPageState'
 
-function readInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'SettingsPage',
   emits: {
@@ -48,12 +43,11 @@ export default defineComponent({
             <label class="mb-4 block px-2">
               <span class="sr-only">Search settings</span>
               <input
-                value={settingsSearchQuery.value}
+                v-model={settingsSearchQuery.value}
                 type="search"
                 name="settings-search"
                 placeholder="Search settings"
                 class="w-full rounded-md border border-white/[0.06] bg-white/[0.035] px-2.5 py-1.5 text-[12px] text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16] focus:bg-white/[0.05]"
-                onInput={(event) => { settingsSearchQuery.value = readInputValue(event) }}
               />
             </label>
             <nav class="space-y-5">

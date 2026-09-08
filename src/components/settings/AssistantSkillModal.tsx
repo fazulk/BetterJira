@@ -3,11 +3,6 @@ import type { AssistantSkillSetting } from '~/shared/settings'
 import { computed, defineComponent, ref, Teleport } from 'vue'
 import { Icon } from '#components'
 
-function readInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'AssistantSkillModal',
   props: {
@@ -46,12 +41,11 @@ export default defineComponent({
           <div class="flex w-full max-w-2xl flex-col rounded-xl border border-white/[0.1] bg-[#16171b] p-5 shadow-2xl shadow-black/50">
             <div class="mb-4 flex items-start justify-between gap-3">
               <input
-                value={name.value}
+                v-model={name.value}
                 type="text"
                 name="skill-name"
                 placeholder="Skill name"
                 class="min-w-0 flex-1 bg-transparent text-xl font-semibold text-slate-100 outline-none placeholder:text-slate-600"
-                onInput={(event) => { name.value = readInputValue(event) }}
               />
               {props.skill && (
                 <div class="relative shrink-0">
@@ -78,13 +72,12 @@ export default defineComponent({
             </div>
 
             <textarea
-              value={body.value}
+              v-model={body.value}
               rows="12"
               name="skill-body"
               spellcheck={false}
               placeholder="Write the prompt this skill injects (markdown supported)…"
               class="w-full resize-y rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-white/[0.16]"
-              onInput={(event) => { body.value = readInputValue(event) }}
             />
 
             <div class="mt-4 flex items-center justify-end gap-2">

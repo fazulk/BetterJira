@@ -102,4 +102,34 @@ describe('settings assistant TSX components', () => {
     deleteButton!.click()
     expect(wrapper.emitted('delete')).toEqual([[]])
   })
+
+  it('preserves skill name model while IME composition is active', async () => {
+    const wrapper = mount(AssistantSkillModal, {
+      props: {
+        skill: skills[0],
+      },
+    })
+
+    const input = document.body.querySelector<HTMLInputElement>('input[name="skill-name"]')
+    const saveButton = [...document.body.querySelectorAll('button')]
+      .find(button => button.textContent === 'Save') as HTMLButtonElement | undefined
+    expect(input).toBeInstanceOf(HTMLInputElement)
+    expect(saveButton).toBeInstanceOf(HTMLButtonElement)
+
+    input!.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+    input!.value = 'Composing'
+    input!.dispatchEvent(new Event('input', { bubbles: true }))
+    saveButton!.click()
+
+    expect(wrapper.emitted('save')).toEqual([[{ name: 'Triage', body: 'triage prompt' }]])
+
+    input!.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    saveButton!.click()
+
+    expect(wrapper.emitted('save')).toEqual([
+      [{ name: 'Triage', body: 'triage prompt' }],
+      [{ name: 'Composing', body: 'triage prompt' }],
+    ])
+  })
 })
