@@ -11,7 +11,8 @@
     "dev": "nuxt dev",
     "lint": "eslint .",
     "test": "vitest run",
-    "typecheck": "vue-tsc -p .nuxt/tsconfig.app.json --noEmit && tsc -p .nuxt/tsconfig.server.json --noEmit && tsc -p .nuxt/tsconfig.shared.json --noEmit",
+    "typecheck": "bun run typecheck:tsc -p .nuxt/tsconfig.app.json --noEmit && bun run typecheck:tsc -p .nuxt/tsconfig.server.json --noEmit && bun run typecheck:tsc -p .nuxt/tsconfig.shared.json --noEmit",
+    "typecheck:tsc": "node node_modules/@typescript/native/bin/tsc",
     "build": "nuxt build",
     "build:desktop": "bun run build && bun run app:build:main",
     "app:icon": "node electron/resources/generate-icon.mjs",
@@ -58,6 +59,7 @@
     "@stylexjs/unplugin": "^0.19.0",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.0.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitejs/plugin-vue-jsx": "5.1.5",
     "@vue/test-utils": "^2.4.11",
     "electron": "^40.9.1",
@@ -66,8 +68,7 @@
     "eslint": "^10.5.0",
     "happy-dom": "^20.11.6",
     "tsdown": "^0.21.9",
-    "typescript": "^5.7.0",
-    "vitest": "^4.1.10",
-    "vue-tsc": "^3.3.6"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.10"
   }
 }

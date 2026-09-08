@@ -46,6 +46,8 @@ bun run lint
 
 `check:styles` compiles StyleX definitions only; it does not verify production CSS extraction or desktop packaging.
 
+`typecheck` uses the native TypeScript 7 compiler for the Vue TSX app, server, and shared code. The `@typescript/native` dependency aliases TypeScript 7; `typescript` stays on version 6 for tools such as ESLint that require the JavaScript compiler API. `typecheck:tsc` explicitly selects the native compiler so it does not depend on which version supplies the `tsc` executable.
+
 ### Build for your OS
 
 Install for your system below. Packaged artifacts are written to `release/` unless noted otherwise.
