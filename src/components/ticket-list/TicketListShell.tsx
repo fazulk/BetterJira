@@ -1,5 +1,8 @@
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent, reactive } from 'vue'
 import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
+import { uiStyles } from '@/styles/shared'
+import { colors } from '@/styles/tokens.stylex'
 import AddSpaceModal from '../AddSpaceModal'
 import CreateTicketModal from '../CreateTicketModal'
 import Sidebar from '../Sidebar'
@@ -17,14 +20,33 @@ import TicketListSearchView from './TicketListSearchView'
 import TicketListSelectionBar from './TicketListSelectionBar'
 import TicketListToolbarArea from './TicketListToolbarArea'
 
+const spin = stylex.keyframes({ to: { transform: 'rotate(360deg)' } })
+
+const styles = stylex.create({
+  shell: { display: 'flex', height: '100vh', overflow: 'hidden' },
+  sidebarColumn: (width: string) => ({ position: 'relative', flexShrink: 0, width, transitionProperty: 'width', transitionDuration: '200ms' }),
+  resizeHandle: { position: 'absolute', top: 0, right: '-1rem', zIndex: 10, height: '100%', width: '1rem', cursor: 'col-resize', touchAction: 'none', backgroundColor: 'transparent', outlineStyle: { ':focus': 'none' } },
+  main: { minWidth: 0, flex: '1', overflow: 'hidden', padding: '0.5rem' },
+  contentPanel: { display: 'flex', height: '100%', minWidth: 0, flexDirection: 'column', overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.055)', backgroundColor: colors['--color-issue-detail-bg'] },
+  detailScroll: { minHeight: 0, flex: '1', overflowY: { 'default': 'auto', '@media (min-width: 64rem)': 'hidden' } },
+  cycleBody: { display: 'flex', minHeight: 0, flex: '1', flexDirection: 'column', overflow: 'hidden' },
+  issueSections: { minHeight: 0, flex: '1', overflowY: 'auto' },
+  loadingOverlay: { position: 'fixed', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.7)', paddingInline: '1rem', paddingBlock: '2rem' },
+  loadingPanel: { display: 'flex', width: '100%', maxWidth: '24rem', alignItems: 'center', gap: '0.75rem', borderRadius: '0.5rem', backgroundColor: '#121316', paddingInline: '1rem', paddingBlock: '0.75rem', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.35), 0 8px 10px -6px rgb(0 0 0 / 0.35)' },
+  spinner: { height: '1.25rem', width: '1.25rem', flexShrink: 0, borderRadius: '9999px', borderWidth: 2, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.12)', borderTopColor: '#d7d8dc', animationName: spin, animationDuration: '1s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' },
+  loadingText: { minWidth: 0, textAlign: 'left' },
+  loadingTitle: { fontSize: 13, fontWeight: 500, color: '#f0f1f4' },
+  loadingDescription: { marginTop: '0.125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: '#8f9198' },
+})
+
 export default defineComponent({
   name: 'TicketListShell',
   setup() {
     const context = reactive(useTicketListContext())
 
     return () => (
-      <div class="linear-shell flex h-screen overflow-hidden" aria-busy={context.showInitialWorkspaceOverlay}>
-        <div class="relative shrink-0 transition-[width] duration-200" style={{ width: `${context.effectiveSidebarWidth}px` }}>
+      <div {...stylex.attrs(styles.shell, uiStyles.shell)} aria-busy={context.showInitialWorkspaceOverlay}>
+        <div {...stylex.attrs(styles.sidebarColumn(`${context.effectiveSidebarWidth}px`))}>
           <Sidebar
             tickets={context.tickets}
             selectedKey={context.selectedKey}
@@ -54,18 +76,18 @@ export default defineComponent({
               role="separator"
               aria-orientation="vertical"
               tabindex="0"
-              class="absolute top-0 -right-4 z-10 h-full w-4 cursor-col-resize touch-none bg-transparent focus:outline-none [cursor:col-resize]"
+              {...stylex.attrs(styles.resizeHandle)}
               aria-label="Resize sidebar"
               onPointerdown={context.startSidebarResize}
             />
           )}
         </div>
-        <main class="min-w-0 flex-1 overflow-hidden p-2">
-          <div class="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-white/[0.055] bg-issue-detail-bg">
+        <main {...stylex.attrs(styles.main)}>
+          <div {...stylex.attrs(styles.contentPanel)}>
             {!context.selectedKey && !context.isTeamSettingsView && context.currentView !== 'assistant' && <TicketListToolbarArea />}
             {context.selectedKey
               ? (
-                  <div class="scrollbar-gutter-stable min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
+                  <div {...stylex.attrs(styles.detailScroll, uiStyles.stableScrollbar)}>
                     <TicketDetail
                       ticketKey={context.selectedKey}
                       mode="inline"
@@ -88,8 +110,7 @@ export default defineComponent({
                             rows={context.initiativeRows}
                             gridTemplate={context.initiativeGridTemplate}
                             isFieldVisible={context.isInitiativeRowFieldVisible}
-                            getHealthClass={context.getProjectHealthClass}
-                            getProgressBarClass={context.getProgressBarClass}
+                            getHealthTone={context.getProjectHealthTone}
                             getRelativeTimeLabel={context.getRelativeTimeLabel}
                             onOpen={context.openTicket}
                           />
@@ -103,8 +124,7 @@ export default defineComponent({
                               gridTemplate={context.projectGridTemplate}
                               isFieldVisible={context.isProjectRowFieldVisible}
                               isSectionCollapsed={context.isProjectSectionCollapsed}
-                              getHealthClass={context.getProjectHealthClass}
-                              getProgressBarClass={context.getProgressBarClass}
+                              getHealthTone={context.getProjectHealthTone}
                               onToggleSection={context.toggleProjectSection}
                               onPrefetch={context.prefetchTicket}
                               onOpen={context.openTicket}
@@ -132,7 +152,7 @@ export default defineComponent({
                                 />
                               )
                             : (
-                                <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                                <div {...stylex.attrs(styles.cycleBody)}>
                                   {context.isCycleWorkingView && context.activeCycle && (
                                     <CyclePlanningHeader
                                       cycle={context.activeCycle}
@@ -144,7 +164,7 @@ export default defineComponent({
                                     />
                                   )}
                                   <TicketListIssueSections
-                                    class="min-h-0 flex-1 overflow-y-auto"
+                                    xstyle={styles.issueSections}
                                     sections={context.issueSections}
                                     visibleCount={context.visibleIssueCount}
                                     hiddenCompletedCount={context.hiddenCompletedCount}
@@ -204,12 +224,12 @@ export default defineComponent({
         />
         <AddSpaceModal open={context.isAddSpaceModalOpen} onClose={context.closeAddSpaceModal} />
         {context.showInitialWorkspaceOverlay && (
-          <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4 py-8" aria-live="polite">
-            <div class="linear-panel flex w-full max-w-sm items-center gap-3 rounded-lg bg-[#121316] px-4 py-3 shadow-xl shadow-black/35">
-              <div class="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-white/[0.12] border-t-[#d7d8dc]" />
-              <div class="min-w-0 text-left">
-                <h2 class="text-[13px] font-medium text-[#f0f1f4]">Connecting to Jira</h2>
-                <p class="mt-0.5 truncate text-[12px] text-[#8f9198]">Pulling latest issues and workspace settings.</p>
+          <div {...stylex.attrs(styles.loadingOverlay)} aria-live="polite">
+            <div {...stylex.attrs(styles.loadingPanel, uiStyles.panel)}>
+              <div {...stylex.attrs(styles.spinner)} />
+              <div {...stylex.attrs(styles.loadingText)}>
+                <h2 {...stylex.attrs(styles.loadingTitle)}>Connecting to Jira</h2>
+                <p {...stylex.attrs(styles.loadingDescription)}>Pulling latest issues and workspace settings.</p>
               </div>
             </div>
           </div>

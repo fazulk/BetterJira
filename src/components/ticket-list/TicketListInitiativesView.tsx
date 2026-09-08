@@ -1,6 +1,52 @@
 import type { PropType } from 'vue'
-import type { InitiativeRow, InitiativeRowFieldId, ProjectRow } from '@/features/ticket-list/types'
+import type { InitiativeRow, InitiativeRowFieldId, ProjectHealthTone, ProjectRow } from '@/features/ticket-list/types'
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent } from 'vue'
+import { uiStyles } from '@/styles/shared'
+
+const styles = stylex.create({
+  root: { minHeight: 0, flex: '1', overflowY: 'auto' },
+  header: (gridTemplateColumns: string) => ({ display: 'grid', gridTemplateColumns, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem', paddingBlock: '0.5rem', fontSize: 12, color: '#777a83' }),
+  row: (gridTemplateColumns: string) => ({ display: 'grid', minHeight: '3rem', width: '100%', alignItems: 'center', paddingInline: '1rem', paddingBlock: '0.5rem', textAlign: 'left', gridTemplateColumns }),
+  nameCell: { minWidth: 0, paddingRight: '1rem' },
+  name: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 500, color: '#e6e7ea' },
+  description: { marginTop: '0.125rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11, color: '#777a83' },
+  healthBadge: { display: 'inline-flex', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', paddingInline: '0.5rem', paddingBlock: '0.125rem', fontSize: 11 },
+  healthCompleted: { borderColor: 'rgba(77, 187, 131, 0.2)', backgroundColor: 'rgba(77, 187, 131, 0.1)', color: '#63c891' },
+  healthAtRisk: { borderColor: 'rgba(229, 147, 86, 0.2)', backgroundColor: 'rgba(229, 147, 86, 0.1)', color: '#e9a66c' },
+  healthOnTrack: { borderColor: 'rgba(63, 159, 214, 0.2)', backgroundColor: 'rgba(63, 159, 214, 0.1)', color: '#6fb7de' },
+  mutedCell: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: '#aeb0b7' },
+  leadCell: { paddingRight: '1rem' },
+  countCell: { fontSize: 12, color: '#8f9198' },
+  issuesCell: { paddingRight: '1.25rem' },
+  issueStats: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', fontSize: 11, color: '#8f9198' },
+  progressTrack: { marginTop: '0.25rem', display: 'block', height: '0.25rem', overflow: 'hidden', borderRadius: '9999px', backgroundColor: 'rgba(255, 255, 255, 0.06)' },
+  progressFill: (width: string) => ({ display: 'block', height: '100%', width, borderRadius: '9999px' }),
+  progressCompleted: { backgroundColor: '#4dbb83' },
+  progressAtRisk: { backgroundColor: '#e59356' },
+  progressOnTrack: { backgroundColor: '#6f73ff' },
+  updatedCell: { color: '#777a83' },
+  empty: { display: 'flex', height: '100%', minHeight: '20rem', alignItems: 'center', justifyContent: 'center', paddingInline: '1.5rem', textAlign: 'center' },
+  emptyContent: { maxWidth: '24rem' },
+  emptyTitle: { fontSize: 13, fontWeight: 500, color: '#d7d8dc' },
+  emptyDescription: { marginTop: '0.25rem', fontSize: 12, color: '#777a83' },
+})
+
+function healthStyle(tone: ProjectHealthTone) {
+  if (tone === 'completed')
+    return styles.healthCompleted
+  if (tone === 'atRisk')
+    return styles.healthAtRisk
+  return styles.healthOnTrack
+}
+
+function progressStyle(tone: ProjectHealthTone) {
+  if (tone === 'completed')
+    return styles.progressCompleted
+  if (tone === 'atRisk')
+    return styles.progressAtRisk
+  return styles.progressOnTrack
+}
 
 export default defineComponent({
   name: 'TicketListInitiativesView',
@@ -17,12 +63,8 @@ export default defineComponent({
       type: Function as PropType<(field: InitiativeRowFieldId) => boolean>,
       required: true,
     },
-    getHealthClass: {
-      type: Function as PropType<(health: ProjectRow['health']) => string>,
-      required: true,
-    },
-    getProgressBarClass: {
-      type: Function as PropType<(health: ProjectRow['health']) => string>,
+    getHealthTone: {
+      type: Function as PropType<(health: ProjectRow['health']) => ProjectHealthTone>,
       required: true,
     },
     getRelativeTimeLabel: {
@@ -35,8 +77,8 @@ export default defineComponent({
   },
   setup(props, { emit }) {
     return () => (
-      <div class="min-h-0 flex-1 overflow-y-auto">
-        <div class="grid border-b border-white/[0.06] px-4 py-2 text-[12px] text-[#777a83]" style={{ gridTemplateColumns: props.gridTemplate }}>
+      <div {...stylex.attrs(styles.root)}>
+        <div {...stylex.attrs(styles.header(props.gridTemplate))}>
           <span>Name</span>
           {props.isFieldVisible('health') && <span>Health</span>}
           {props.isFieldVisible('lead') && <span>Lead</span>}
@@ -52,26 +94,25 @@ export default defineComponent({
                   <button
                     key={initiative.id}
                     type="button"
-                    class="linear-row grid min-h-12 w-full items-center px-4 py-2 text-left"
-                    style={{ gridTemplateColumns: props.gridTemplate }}
+                    {...stylex.attrs(styles.row(props.gridTemplate), uiStyles.row)}
                     onClick={() => emit('open', initiative.id)}
                   >
-                    <span class="min-w-0 pr-4">
-                      <span class="block truncate text-[13px] font-medium text-[#e6e7ea]">{initiative.name}</span>
-                      <span class="mt-0.5 block truncate text-[11px] text-[#777a83]">{initiative.description}</span>
+                    <span {...stylex.attrs(styles.nameCell)}>
+                      <span {...stylex.attrs(styles.name)}>{initiative.name}</span>
+                      <span {...stylex.attrs(styles.description)}>{initiative.description}</span>
                     </span>
 
                     {props.isFieldVisible('health') && (
                       <span>
-                        <span class={['inline-flex rounded-full border px-2 py-0.5 text-[11px]', props.getHealthClass(initiative.health)]}>
+                        <span {...stylex.attrs(styles.healthBadge, healthStyle(props.getHealthTone(initiative.health)))}>
                           {initiative.health}
                         </span>
                       </span>
                     )}
 
-                    {props.isFieldVisible('lead') && <span class="truncate pr-4 text-[12px] text-[#aeb0b7]">{initiative.lead}</span>}
+                    {props.isFieldVisible('lead') && <span {...stylex.attrs(styles.mutedCell, styles.leadCell)}>{initiative.lead}</span>}
                     {props.isFieldVisible('projects') && (
-                      <span class="text-[12px] text-[#8f9198]">
+                      <span {...stylex.attrs(styles.countCell)}>
                         {initiative.projectCount}
                         {' '}
                         {initiative.projectCount === 1 ? 'project' : 'projects'}
@@ -79,8 +120,8 @@ export default defineComponent({
                     )}
 
                     {props.isFieldVisible('issues') && (
-                      <span class="pr-5">
-                        <span class="flex items-center justify-between gap-2 text-[11px] text-[#8f9198]">
+                      <span {...stylex.attrs(styles.issuesCell)}>
+                        <span {...stylex.attrs(styles.issueStats)}>
                           <span>
                             {initiative.completedCount}
                             /
@@ -91,22 +132,22 @@ export default defineComponent({
                             %
                           </span>
                         </span>
-                        <span class="mt-1 block h-1 overflow-hidden rounded-full bg-white/[0.06]">
-                          <span class={['block h-full rounded-full', props.getProgressBarClass(initiative.health)]} style={{ width: `${initiative.progress}%` }} />
+                        <span {...stylex.attrs(styles.progressTrack)}>
+                          <span {...stylex.attrs(styles.progressFill(`${initiative.progress}%`), progressStyle(props.getHealthTone(initiative.health)))} />
                         </span>
                       </span>
                     )}
 
-                    {props.isFieldVisible('updated') && <span class="truncate text-[12px] text-[#777a83]">{props.getRelativeTimeLabel(initiative.updatedAt)}</span>}
+                    {props.isFieldVisible('updated') && <span {...stylex.attrs(styles.mutedCell, styles.updatedCell)}>{props.getRelativeTimeLabel(initiative.updatedAt)}</span>}
                   </button>
                 ))}
               </div>
             )
           : (
-              <div class="flex h-full min-h-80 items-center justify-center px-6 text-center">
-                <div class="max-w-sm">
-                  <p class="text-[13px] font-medium text-[#d7d8dc]">No initiatives found</p>
-                  <p class="mt-1 text-[12px] text-[#777a83]">Initiatives will appear when projects can be grouped into roadmap work.</p>
+              <div {...stylex.attrs(styles.empty)}>
+                <div {...stylex.attrs(styles.emptyContent)}>
+                  <p {...stylex.attrs(styles.emptyTitle)}>No initiatives found</p>
+                  <p {...stylex.attrs(styles.emptyDescription)}>Initiatives will appear when projects can be grouped into roadmap work.</p>
                 </div>
               </div>
             )}

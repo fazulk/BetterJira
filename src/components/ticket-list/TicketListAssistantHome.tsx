@@ -1,3 +1,4 @@
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { Icon } from '#components'
 import AssistantMarkdown from '@/components/AssistantMarkdown'
@@ -5,11 +6,47 @@ import AssistantSkillPicker from '@/components/AssistantSkillPicker'
 import { createAssistantChatState, useAssistantChat } from '@/composables/useAssistantChat'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 import { useAssistantSkills } from '@/composables/useAssistantSkills'
+import { colors } from '@/styles/tokens.stylex'
 import { getAssistantProviderLabel } from '~/shared/assistant'
 
 const homeChatState = createAssistantChatState()
 const draft = ref('')
 const selectedSkillIds = ref<string[]>([])
+
+const styles = stylex.create({
+  root: { position: 'relative', display: 'flex', height: '100%', minHeight: 0, flexDirection: 'column' },
+  newChatRow: { display: 'flex', flexShrink: 0, justifyContent: 'flex-end', paddingInline: '1rem', paddingTop: '0.75rem' },
+  newChatButton: { display: 'flex', alignItems: 'center', gap: '0.375rem', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: { 'default': 'rgba(255, 255, 255, 0.03)', ':hover': 'rgba(255, 255, 255, 0.08)' }, paddingInline: '0.625rem', paddingBlock: '0.375rem', fontSize: 12, color: colors['--color-slate-300'], transitionProperty: 'background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  smallIcon: { width: '0.875rem', height: '0.875rem' },
+  scroll: { minHeight: 0, flex: '1', overflowY: 'auto' },
+  messages: { marginInline: 'auto', width: '100%', maxWidth: '48rem', paddingInline: '1rem', paddingBlock: '2rem' },
+  messageSpacer: { display: 'flex', flexDirection: 'column', gap: '1rem' },
+  messageRow: { display: 'flex' },
+  messageRowUser: { justifyContent: 'flex-end' },
+  messageRowAssistant: { justifyContent: 'flex-start' },
+  bubble: { maxWidth: '85%', overflowWrap: 'break-word', borderRadius: '0.5rem', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: 13, lineHeight: 1.625 },
+  userBubble: { whiteSpace: 'pre-wrap', backgroundColor: 'rgba(111, 115, 255, 0.9)', color: colors['--color-white'] },
+  assistantBubble: { backgroundColor: 'rgba(255, 255, 255, 0.05)', color: colors['--color-slate-200'] },
+  skillPill: { marginBottom: '0.25rem', marginRight: '0.25rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', borderRadius: '0.25rem', backgroundColor: 'rgba(255, 255, 255, 0.14)', paddingInline: '0.375rem', paddingBlock: '0.125rem', fontSize: 11, color: 'rgba(255, 255, 255, 0.9)' },
+  skillIcon: { width: '0.75rem', height: '0.75rem' },
+  statusRow: { display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  pulseDot: { height: '0.375rem', width: '0.375rem', borderRadius: '9999px', backgroundColor: colors['--color-accent-indigo'], animationName: stylex.keyframes({ '50%': { opacity: 0.5 } }), animationDuration: '2s', animationTimingFunction: 'cubic-bezier(0.4, 0, 0.6, 1)', animationIterationCount: 'infinite' },
+  truncate: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  error: { borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(251, 113, 133, 0.2)', backgroundColor: 'rgba(244, 63, 94, 0.1)', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-rose-200'] },
+  composerSection: { display: 'flex', flexShrink: 0, flexDirection: 'column' },
+  composerWithConversation: { paddingBottom: '1.5rem', paddingTop: '0.5rem' },
+  composerEmpty: { minHeight: 0, flex: '1', justifyContent: 'center' },
+  composerWidth: { marginInline: 'auto', width: '100%', maxWidth: '42rem', paddingInline: '1rem' },
+  providerWarning: { marginBottom: '0.5rem', paddingInline: '0.25rem', fontSize: 11, color: 'rgba(252, 211, 77, 0.8)' },
+  composerBox: { borderRadius: '0.75rem', borderWidth: 1, borderStyle: 'solid', borderColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':focus-within': 'rgba(255, 255, 255, 0.16)' }, backgroundColor: 'rgba(255, 255, 255, 0.03)', paddingInline: '0.875rem', paddingBlock: '0.75rem' },
+  skillPickerGap: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  inputRow: { display: 'flex', alignItems: 'flex-end', gap: '0.5rem' },
+  textarea: { 'maxHeight': '10rem', 'minHeight': '2rem', 'flex': '1', 'resize': 'none', 'backgroundColor': 'transparent', 'fontSize': 17, 'color': colors['--color-slate-200'], 'outlineStyle': 'none', '::placeholder': { color: colors['--color-slate-600'] } },
+  iconButton: { display: 'flex', height: '2rem', width: '2rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  stopButton: { backgroundColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':hover': 'rgba(255, 255, 255, 0.14)' }, color: colors['--color-slate-200'] },
+  sendButton: { backgroundColor: { 'default': colors['--color-accent-indigo'], ':hover': 'rgba(111, 115, 255, 0.9)', ':disabled': 'rgba(255, 255, 255, 0.06)' }, color: { 'default': colors['--color-white'], ':disabled': colors['--color-slate-600'] }, cursor: { ':disabled': 'not-allowed' } },
+  sendIcon: { width: '1rem', height: '1rem' },
+})
 
 export default defineComponent({
   name: 'TicketListAssistantHome',
@@ -89,33 +126,33 @@ export default defineComponent({
     }
 
     return () => (
-      <div class="relative flex h-full min-h-0 flex-col">
+      <div {...stylex.attrs(styles.root)}>
         {hasConversation.value && (
-          <div class="flex shrink-0 justify-end px-4 pt-3">
+          <div {...stylex.attrs(styles.newChatRow)}>
             <button
               type="button"
-              class="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-[12px] text-slate-300 transition hover:bg-white/[0.08]"
+              {...stylex.attrs(styles.newChatButton)}
               onClick={startNewChat}
             >
-              <Icon name="lucide:plus" class="h-3.5 w-3.5" aria-hidden="true" />
+              <Icon name="lucide:plus" {...stylex.attrs(styles.smallIcon)} aria-hidden="true" />
               New chat
             </button>
           </div>
         )}
 
         {hasConversation.value && (
-          <div ref={scrollRef} class="min-h-0 flex-1 overflow-y-auto">
-            <div class="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
+          <div ref={scrollRef} {...stylex.attrs(styles.scroll)}>
+            <div {...stylex.attrs(styles.messages, styles.messageSpacer)}>
               {messages.value.map(message => (
-                <div key={message.id} class={['flex', message.role === 'user' ? 'justify-end' : 'justify-start']}>
-                  <div class={['max-w-[85%] break-words rounded-lg px-3 py-2 text-[13px] leading-relaxed', message.role === 'user' ? 'whitespace-pre-wrap bg-accent-indigo/90 text-white' : 'bg-white/[0.05] text-slate-200']}>
+                <div key={message.id} {...stylex.attrs(styles.messageRow, message.role === 'user' ? styles.messageRowUser : styles.messageRowAssistant)}>
+                  <div {...stylex.attrs(styles.bubble, message.role === 'user' ? styles.userBubble : styles.assistantBubble)}>
                     {message.role === 'assistant' && message.content
                       ? <AssistantMarkdown content={message.content} />
                       : (
                           <>
                             {(message.skills ?? []).map(skill => (
-                              <span key={skill.name} class="mb-1 mr-1 inline-flex items-center gap-1 rounded bg-white/[0.14] px-1.5 py-0.5 text-[11px] text-white/90">
-                                <Icon name="lucide:box" class="h-3 w-3" aria-hidden="true" />
+                              <span key={skill.name} {...stylex.attrs(styles.skillPill)}>
+                                <Icon name="lucide:box" {...stylex.attrs(styles.skillIcon)} aria-hidden="true" />
                                 {skill.name}
                               </span>
                             ))}
@@ -127,14 +164,14 @@ export default defineComponent({
               ))}
 
               {statusText.value && (
-                <div class="flex items-center gap-2 text-xs text-slate-500">
-                  <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-accent-indigo" />
-                  <span class="truncate">{statusText.value}</span>
+                <div {...stylex.attrs(styles.statusRow)}>
+                  <span {...stylex.attrs(styles.pulseDot)} />
+                  <span {...stylex.attrs(styles.truncate)}>{statusText.value}</span>
                 </div>
               )}
 
               {errorText.value && (
-                <p class="rounded-md border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+                <p {...stylex.attrs(styles.error)}>
                   {errorText.value}
                 </p>
               )}
@@ -142,39 +179,39 @@ export default defineComponent({
           </div>
         )}
 
-        <div class={['flex shrink-0 flex-col', hasConversation.value ? 'pb-6 pt-2' : 'min-h-0 flex-1 justify-center']}>
-          <div class="mx-auto w-full max-w-2xl px-4">
+        <div {...stylex.attrs(styles.composerSection, hasConversation.value ? styles.composerWithConversation : styles.composerEmpty)}>
+          <div {...stylex.attrs(styles.composerWidth)}>
             {!providerAvailable.value && (
-              <p class="mb-2 px-1 text-[11px] text-amber-300/80">
+              <p {...stylex.attrs(styles.providerWarning)}>
                 {providerLabel.value}
                 {' '}
                 CLI was not detected. Choose an available provider in Settings → Assistant.
               </p>
             )}
 
-            <div class="space-y-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3 focus-within:border-white/[0.16]">
+            <div {...stylex.attrs(styles.composerBox, styles.skillPickerGap)}>
               <AssistantSkillPicker
                 modelValue={selectedSkillIds.value}
                 onUpdate:modelValue={(value: string[]) => { selectedSkillIds.value = value }}
               />
-              <div class="flex items-end gap-2">
+              <div {...stylex.attrs(styles.inputRow)}>
                 <textarea
                   ref={textareaRef}
                   v-model={draft.value}
                   rows="1"
                   placeholder={`Ask ${providerLabel.value}…`}
-                  class="max-h-40 min-h-[2rem] flex-1 resize-none bg-transparent text-[17px] text-slate-200 outline-none placeholder:text-slate-600"
+                  {...stylex.attrs(styles.textarea)}
                   onKeydown={handleKeydown}
                 />
                 {isStreaming.value
                   ? (
-                      <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/[0.08] text-slate-200 transition hover:bg-white/[0.14]" aria-label="Stop" onClick={stop}>
-                        <Icon name="lucide:square" class="h-3.5 w-3.5" aria-hidden="true" />
+                      <button type="button" {...stylex.attrs(styles.iconButton, styles.stopButton)} aria-label="Stop" onClick={stop}>
+                        <Icon name="lucide:square" {...stylex.attrs(styles.smallIcon)} aria-hidden="true" />
                       </button>
                     )
                   : (
-                      <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-indigo text-white transition hover:bg-accent-indigo/90 disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-slate-600" disabled={!canSubmit.value} aria-label="Send" onClick={() => { void submit() }}>
-                        <Icon name="lucide:arrow-up" class="h-4 w-4" aria-hidden="true" />
+                      <button type="button" {...stylex.attrs(styles.iconButton, styles.sendButton)} disabled={!canSubmit.value} aria-label="Send" onClick={() => { void submit() }}>
+                        <Icon name="lucide:arrow-up" {...stylex.attrs(styles.sendIcon)} aria-hidden="true" />
                       </button>
                     )}
               </div>

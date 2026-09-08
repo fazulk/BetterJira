@@ -1,4 +1,16 @@
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent, Teleport, Transition } from 'vue'
+import { colors } from '@/styles/tokens.stylex'
+
+const styles = stylex.create({
+  overlay: { position: 'fixed', insetInline: 0, bottom: '1.25rem', zIndex: 40, display: 'flex', justifyContent: 'center', paddingInline: '1rem' },
+  bar: { display: 'flex', maxWidth: 'calc(100vw - 2rem)', alignItems: 'center', gap: '0.25rem', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(18, 19, 22, 0.95)', padding: '0.375rem', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4)', backdropFilter: 'blur(8px)' },
+  countGroup: { display: 'flex', alignItems: 'center', gap: '0.5rem', borderRightWidth: 1, borderRightStyle: 'solid', borderRightColor: 'rgba(255, 255, 255, 0.08)', paddingInline: '0.625rem', fontSize: '0.75rem', lineHeight: '1rem', color: '#d7d8dc' },
+  countBadge: { display: 'flex', height: '1.25rem', minWidth: '1.25rem', alignItems: 'center', justifyContent: 'center', borderRadius: '0.25rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.045)', paddingInline: '0.375rem', fontSize: 11, fontWeight: 600, color: colors['--color-slate-200'] },
+  nowrap: { whiteSpace: 'nowrap' },
+  actionButton: { height: '1.75rem', borderRadius: '0.375rem', paddingInline: '0.625rem', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': '#bfc1c8', ':hover': '#f0f1f4' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.06)' } },
+  clearButton: { color: { 'default': '#8f9198', ':hover': '#f0f1f4' } },
+})
 
 export default defineComponent({
   name: 'TicketListSelectionBar',
@@ -24,25 +36,25 @@ export default defineComponent({
         <Transition name="fade">
           {props.count > 0 && (
             <div
-              class="fixed inset-x-0 bottom-5 z-40 flex justify-center px-4"
+              {...stylex.attrs(styles.overlay)}
               aria-live="polite"
             >
-              <div class="flex max-w-[calc(100vw-2rem)] items-center gap-1 rounded-lg border border-white/[0.08] bg-surface-2/95 p-1.5 shadow-xl shadow-black/40 backdrop-blur">
-                <div class="flex items-center gap-2 border-r border-white/[0.08] px-2.5 text-[12px] text-[#d7d8dc]">
-                  <span class="flex h-5 min-w-5 items-center justify-center rounded border border-white/[0.08] bg-white/[0.045] px-1.5 text-[11px] font-semibold text-slate-200">
+              <div {...stylex.attrs(styles.bar)}>
+                <div {...stylex.attrs(styles.countGroup)}>
+                  <span {...stylex.attrs(styles.countBadge)}>
                     {props.count}
                   </span>
-                  <span class="whitespace-nowrap">
+                  <span {...stylex.attrs(styles.nowrap)}>
                     {props.count === 1 ? 'issue selected' : 'issues selected'}
                   </span>
                 </div>
 
-                <button type="button" class="h-7 rounded-md px-2.5 text-[12px] text-[#bfc1c8] hover:bg-white/[0.06] hover:text-[#f0f1f4]" onClick={() => emit('open')}>Open</button>
-                <button type="button" class="h-7 rounded-md px-2.5 text-[12px] text-[#bfc1c8] hover:bg-white/[0.06] hover:text-[#f0f1f4]" onClick={() => emit('copy')}>Copy IDs</button>
+                <button type="button" {...stylex.attrs(styles.actionButton)} onClick={() => emit('open')}>Open</button>
+                <button type="button" {...stylex.attrs(styles.actionButton)} onClick={() => emit('copy')}>Copy IDs</button>
                 {props.canCreateChild && (
-                  <button type="button" class="h-7 rounded-md px-2.5 text-[12px] text-[#bfc1c8] hover:bg-white/[0.06] hover:text-[#f0f1f4]" onClick={() => emit('createChild')}>Add sub-issue</button>
+                  <button type="button" {...stylex.attrs(styles.actionButton)} onClick={() => emit('createChild')}>Add sub-issue</button>
                 )}
-                <button type="button" class="h-7 rounded-md px-2.5 text-[12px] text-[#8f9198] hover:bg-white/[0.06] hover:text-[#f0f1f4]" onClick={() => emit('clear')}>Clear</button>
+                <button type="button" {...stylex.attrs(styles.actionButton, styles.clearButton)} onClick={() => emit('clear')}>Clear</button>
               </div>
             </div>
           )}

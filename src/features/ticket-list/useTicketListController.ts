@@ -42,22 +42,22 @@ import { useViewContext } from '@/features/ticket-list/useViewContext'
 import { useViewEditor } from '@/features/ticket-list/useViewEditor'
 import { useViewFilters } from '@/features/ticket-list/useViewFilters'
 import { useViewStatePersistence } from '@/features/ticket-list/useViewStatePersistence'
+import { resolveClassifiedCycles, ticketBelongsToCycle } from '~/shared/cycles'
 import {
   initiativeMatchesFilter,
   savedViewMatchesFilter,
 } from './filterEngine'
 import {
   createRowFieldVisibility,
-  getDisplayedIssueRowKey,
-  getInitiativeGridTemplate,
-  getIssueGroupMarkerClass,
-  getProgressBarClass,
-  getProjectGridTemplate,
-  getProjectHealthClass,
-  getRelativeTimeLabel,
-  getSavedViewGridTemplate,
   getCycleSprintIdFromSection,
   getCycleViewKind,
+  getDisplayedIssueRowKey,
+  getInitiativeGridTemplate,
+  getIssueGroupMarkerTone,
+  getProjectGridTemplate,
+  getProjectHealthTone,
+  getRelativeTimeLabel,
+  getSavedViewGridTemplate,
   getTeamCycleViewId,
   getTeamViewId,
   isEpicIssue,
@@ -79,7 +79,6 @@ import {
   projectRowFieldOptions,
   savedViewRowFieldOptions,
 } from './options'
-import { resolveClassifiedCycles, ticketBelongsToCycle } from '~/shared/cycles'
 
 export function useTicketListController() {
   const { tickets, fetching, refreshing, refresh } = useJiraTickets()
@@ -1036,9 +1035,8 @@ export function useTicketListController() {
     toggleFilterMenu,
     saveCurrentViewFilters,
     saveCurrentViewChangesToThisView,
-    getProjectHealthClass,
-    getProgressBarClass,
-    getIssueGroupMarkerClass,
+    getProjectHealthTone,
+    getIssueGroupMarkerTone,
     getStatusCategoryForGroupLabel,
     isIssueRowFieldVisible,
     toggleIssueRowField,

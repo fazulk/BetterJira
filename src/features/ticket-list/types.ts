@@ -23,6 +23,8 @@ export type IssueOrderingFieldId
     | 'linkCount'
     | 'timeInStatus'
 export type ProjectGroupingFieldId = 'none' | 'health' | 'status' | 'priority' | 'lead'
+export type ProjectHealthTone = 'completed' | 'atRisk' | 'onTrack'
+export type IssueGroupMarkerTone = 'done' | 'active' | 'todo' | 'default'
 export type ProjectOrderingFieldId
   = | 'manual'
     | 'name'

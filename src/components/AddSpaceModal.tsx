@@ -1,14 +1,53 @@
 import type { JiraTeamRef } from '@/types/jira'
 import type { AppSpaceTeamFilter } from '~/shared/settings'
+import * as stylex from '@stylexjs/stylex'
 import { useQuery } from '@tanstack/vue-query'
 import { refDebounced } from '@vueuse/core'
 import { computed, defineComponent, ref, Teleport, Transition, watch } from 'vue'
 import { fetchAvailableTeams } from '@/api/settings'
 import { useAvailableSpaces } from '@/composables/useAvailableSpaces'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
+import { colors } from '@/styles/tokens.stylex'
 import { buildTeamSpaceKey } from '~/shared/settings'
 
 type ModalMode = 'space' | 'team'
+
+const styles = stylex.create({
+  overlay: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.6)', paddingInline: '0.75rem', paddingBlock: '12vh', backdropFilter: 'blur(4px)' },
+  panel: { width: '100%', maxWidth: '34rem', overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: colors['--color-surface-1'], boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4)' },
+  header: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1rem', paddingBlock: '0.75rem' },
+  title: { fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-100'] },
+  subtitle: { marginTop: '0.125rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  closeButton: { display: 'inline-flex', height: '1.75rem', width: '1.75rem', alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.08)' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.04)' }, fontSize: '0.875rem', lineHeight: '1.25rem', color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-200'] }, transitionProperty: 'background-color, border-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  closeIcon: { height: '0.875rem', width: '0.875rem' },
+  body: { display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingInline: '1rem', paddingBlock: '1rem' },
+  tabs: { display: 'inline-flex', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: '0.125rem', fontSize: '0.75rem', lineHeight: '1rem' },
+  tab: { borderRadius: '0.25rem', paddingInline: '0.625rem', paddingBlock: '0.25rem', color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-300'] }, transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  activeTab: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: colors['--color-slate-100'] },
+  selectedProject: { display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-400'] },
+  projectBadge: { borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.04)', paddingInline: '0.5rem', paddingBlock: '0.25rem', color: colors['--color-slate-200'] },
+  linkButton: { color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-300'] }, textDecorationLine: 'underline', textDecorationColor: 'rgba(255, 255, 255, 0.2)', textUnderlineOffset: '2px', transitionProperty: 'color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  label: { display: 'block' },
+  searchLabel: { marginBottom: '0.5rem', display: 'block', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-slate-500'] },
+  input: { 'width': '100%', 'borderRadius': '0.375rem', 'borderWidth': 1, 'borderStyle': 'solid', 'borderColor': { 'default': 'rgba(255, 255, 255, 0.06)', ':focus': 'rgba(255, 255, 255, 0.16)' }, 'backgroundColor': { 'default': 'rgba(255, 255, 255, 0.04)', ':focus': 'rgba(255, 255, 255, 0.06)' }, 'paddingInline': '0.75rem', 'paddingBlock': '0.5rem', 'fontSize': '0.875rem', 'lineHeight': '1.25rem', 'color': colors['--color-slate-200'], 'outlineStyle': 'none', 'transitionProperty': 'background-color, border-color', 'transitionDuration': '150ms', 'transitionTimingFunction': 'cubic-bezier(0.4, 0, 0.2, 1)', '::placeholder': { color: colors['--color-slate-500'] } },
+  notice: { borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem' },
+  amberNotice: { borderColor: 'rgba(245, 158, 11, 0.2)', backgroundColor: 'rgba(245, 158, 11, 0.08)', color: colors['--color-amber-200'] },
+  loadingNotice: { borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.025)', color: colors['--color-slate-500'] },
+  errorNotice: { borderColor: 'rgba(244, 63, 94, 0.2)', backgroundColor: 'rgba(244, 63, 94, 0.08)', color: colors['--color-rose-300'] },
+  list: { maxHeight: '22rem', overflowY: 'auto', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.015)' },
+  row: { display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.05)', paddingInline: '0.75rem', paddingBlock: '0.75rem', textAlign: 'left', transitionProperty: 'background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)', backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.04)', ':disabled:hover': 'transparent' }, cursor: { ':disabled': 'default' } },
+  lastRow: { borderBottomWidth: 0 },
+  rowText: { minWidth: 0 },
+  rowTitle: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-200'] },
+  rowMeta: { marginTop: '0.125rem', display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.14em', color: colors['--color-slate-500'] },
+  added: { display: 'inline-flex', flexShrink: 0, alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-emerald-400'] },
+  checkIcon: { height: '0.875rem', width: '0.875rem' },
+  rowAction: { flexShrink: 0, fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  emptyList: { paddingInline: '0.75rem', paddingBlock: '1.5rem', textAlign: 'center', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
+  feedback: { fontSize: '0.75rem', lineHeight: '1rem' },
+  successFeedback: { color: colors['--color-slate-400'] },
+  errorFeedback: { color: colors['--color-rose-300'] },
+})
 
 export default defineComponent({
   name: 'AddSpaceModal',
@@ -188,146 +227,146 @@ export default defineComponent({
       <Teleport to="body">
         <Transition name="fade">
           {props.open && (
-            <div class="fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-3 py-[12vh] backdrop-blur-sm" onClick={closeOnSelf}>
+            <div {...stylex.attrs(styles.overlay)} onClick={closeOnSelf}>
               <div
-                class="w-full max-w-[34rem] overflow-hidden rounded-lg border border-white/[0.08] bg-surface-1 shadow-xl shadow-black/40"
+                {...stylex.attrs(styles.panel)}
                 role="dialog"
                 aria-modal="true"
                 aria-label="Add space"
                 onKeydown={handleKeydown}
               >
-                <div class="flex items-start justify-between gap-4 border-b border-white/[0.06] px-4 py-3">
+                <div {...stylex.attrs(styles.header)}>
                   <div>
-                    <p class="text-sm font-medium text-slate-100">Add space</p>
-                    <p class="mt-0.5 text-xs text-slate-500">
+                    <p {...stylex.attrs(styles.title)}>Add space</p>
+                    <p {...stylex.attrs(styles.subtitle)}>
                       {mode.value === 'team'
                         ? 'Add a space scoped to one Jira team: pick the project, then the team.'
                         : 'Search Jira spaces and add them to your sidebar.'}
                     </p>
                   </div>
-                  <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-sm text-slate-500 transition hover:border-white/[0.08] hover:bg-white/[0.04] hover:text-slate-200" aria-label="Close" onClick={closeModal}>
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <button type="button" {...stylex.attrs(styles.closeButton)} aria-label="Close" onClick={closeModal}>
+                    <svg {...stylex.attrs(styles.closeIcon)} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                       <path stroke-linecap="round" d="M4.25 4.25l7.5 7.5M11.75 4.25l-7.5 7.5" />
                     </svg>
                   </button>
                 </div>
 
-                <div class="space-y-3 px-4 py-4">
-                  <div class="inline-flex rounded-md border border-white/[0.08] bg-white/[0.02] p-0.5 text-xs" role="tablist" aria-label="Space type">
-                    <button type="button" role="tab" aria-selected={mode.value === 'space'} class={['rounded px-2.5 py-1 transition', mode.value === 'space' ? 'bg-white/[0.08] text-slate-100' : 'text-slate-500 hover:text-slate-300']} onClick={() => setMode('space')}>
+                <div {...stylex.attrs(styles.body)}>
+                  <div {...stylex.attrs(styles.tabs)} role="tablist" aria-label="Space type">
+                    <button type="button" role="tab" aria-selected={mode.value === 'space'} {...stylex.attrs(styles.tab, mode.value === 'space' ? styles.activeTab : null)} onClick={() => setMode('space')}>
                       Space
                     </button>
-                    <button type="button" role="tab" aria-selected={mode.value === 'team'} class={['rounded px-2.5 py-1 transition', mode.value === 'team' ? 'bg-white/[0.08] text-slate-100' : 'text-slate-500 hover:text-slate-300']} onClick={() => setMode('team')}>
+                    <button type="button" role="tab" aria-selected={mode.value === 'team'} {...stylex.attrs(styles.tab, mode.value === 'team' ? styles.activeTab : null)} onClick={() => setMode('team')}>
                       Team space
                     </button>
                   </div>
 
                   {showTeamList.value && (
-                    <div class="flex items-center gap-2 text-xs text-slate-400">
-                      <span class="rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-slate-200">
+                    <div {...stylex.attrs(styles.selectedProject)}>
+                      <span {...stylex.attrs(styles.projectBadge)}>
                         {teamProject.value?.name}
                         {' '}
                         (
                         {teamProject.value?.key}
                         )
                       </span>
-                      <button type="button" class="text-slate-500 underline decoration-white/20 underline-offset-2 transition hover:text-slate-300" onClick={clearTeamProject}>
+                      <button type="button" {...stylex.attrs(styles.linkButton)} onClick={clearTeamProject}>
                         Change project
                       </button>
                     </div>
                   )}
 
-                  <label class="block">
-                    <span class="mb-2 block text-xs font-medium text-slate-500">{searchLabel.value}</span>
+                  <label {...stylex.attrs(styles.label)}>
+                    <span {...stylex.attrs(styles.searchLabel)}>{searchLabel.value}</span>
                     <input
                       v-model={searchQuery.value}
                       type="text"
                       name="sidebar-space-search"
                       placeholder={searchPlaceholder.value}
-                      class="w-full rounded-md border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-slate-200 outline-none transition placeholder:text-slate-500 focus:border-white/[0.16] focus:bg-white/[0.06]"
+                      {...stylex.attrs(styles.input)}
                       autofocus
                     />
                   </label>
 
                   {!hasJiraCredentialsConfigured.value
-                    ? <p class="rounded-md border border-amber-500/20 bg-amber-500/[0.08] px-3 py-2 text-xs text-amber-200">Complete Jira setup before browsing remote spaces.</p>
+                    ? <p {...stylex.attrs(styles.notice, styles.amberNotice)}>Complete Jira setup before browsing remote spaces.</p>
                     : showTeamList.value
                       ? (
                           <>
                             {teamsQuery.isLoading.value
-                              ? <p class="rounded-md border border-white/[0.06] bg-white/[0.025] px-3 py-2 text-xs text-slate-500">Loading Jira teams...</p>
+                              ? <p {...stylex.attrs(styles.notice, styles.loadingNotice)}>Loading Jira teams...</p>
                               : teamsErrorMessage.value
-                                ? <p class="rounded-md border border-rose-500/20 bg-rose-500/[0.08] px-3 py-2 text-xs text-rose-300">{teamsErrorMessage.value}</p>
+                                ? <p {...stylex.attrs(styles.notice, styles.errorNotice)}>{teamsErrorMessage.value}</p>
                                 : (
-                                    <div class="max-h-[22rem] overflow-y-auto rounded-lg border border-white/[0.06] bg-white/[0.015]">
-                                      {visibleTeams.value.map(team => (
+                                    <div {...stylex.attrs(styles.list)}>
+                                      {visibleTeams.value.map((team, index) => (
                                         <button
                                           key={team.id}
                                           type="button"
-                                          class="flex w-full items-center justify-between gap-3 border-b border-white/[0.05] px-3 py-3 text-left transition last:border-b-0 hover:bg-white/[0.04] disabled:cursor-default disabled:hover:bg-transparent"
+                                          {...stylex.attrs(styles.row, index === visibleTeams.value.length - 1 ? styles.lastRow : null)}
                                           disabled={isSaving.value || addingSpaceKey.value !== null || isTeamAdded(team)}
                                           onClick={() => { void addTeamSpace(team) }}
                                         >
-                                          <span class="min-w-0">
-                                            <span class="block truncate text-sm font-medium text-slate-200">{team.name}</span>
-                                            <span class="mt-0.5 block text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                                          <span {...stylex.attrs(styles.rowText)}>
+                                            <span {...stylex.attrs(styles.rowTitle)}>{team.name}</span>
+                                            <span {...stylex.attrs(styles.rowMeta)}>
                                               Team in
                                               {teamProject.value?.key}
                                             </span>
                                           </span>
                                           {isTeamAdded(team)
                                             ? (
-                                                <span class="inline-flex shrink-0 items-center gap-1 text-xs text-emerald-400">
-                                                  <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                                <span {...stylex.attrs(styles.added)}>
+                                                  <svg {...stylex.attrs(styles.checkIcon)} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.25 8.5l3 3 6.5-7" />
                                                   </svg>
                                                   Added
                                                 </span>
                                               )
-                                            : <span class="shrink-0 text-xs text-slate-500">{addingSpaceKey.value === getTeamSpaceKey(team) ? 'Adding...' : 'Add'}</span>}
+                                            : <span {...stylex.attrs(styles.rowAction)}>{addingSpaceKey.value === getTeamSpaceKey(team) ? 'Adding...' : 'Add'}</span>}
                                         </button>
                                       ))}
-                                      {!visibleTeams.value.length && <p class="px-3 py-6 text-center text-xs text-slate-500">No Jira teams matched your search.</p>}
+                                      {!visibleTeams.value.length && <p {...stylex.attrs(styles.emptyList)}>No Jira teams matched your search.</p>}
                                     </div>
                                   )}
                           </>
                         )
                       : isLoading.value
-                        ? <p class="rounded-md border border-white/[0.06] bg-white/[0.025] px-3 py-2 text-xs text-slate-500">Loading Jira spaces...</p>
+                        ? <p {...stylex.attrs(styles.notice, styles.loadingNotice)}>Loading Jira spaces...</p>
                         : errorMessage.value
-                          ? <p class="rounded-md border border-rose-500/20 bg-rose-500/[0.08] px-3 py-2 text-xs text-rose-300">{errorMessage.value}</p>
+                          ? <p {...stylex.attrs(styles.notice, styles.errorNotice)}>{errorMessage.value}</p>
                           : (
-                              <div class="max-h-[22rem] overflow-y-auto rounded-lg border border-white/[0.06] bg-white/[0.015]">
-                                {visibleSpaces.value.map(space => (
+                              <div {...stylex.attrs(styles.list)}>
+                                {visibleSpaces.value.map((space, index) => (
                                   <button
                                     key={space.key}
                                     type="button"
-                                    class="flex w-full items-center justify-between gap-3 border-b border-white/[0.05] px-3 py-3 text-left transition last:border-b-0 hover:bg-white/[0.04] disabled:cursor-default disabled:hover:bg-transparent"
+                                    {...stylex.attrs(styles.row, index === visibleSpaces.value.length - 1 ? styles.lastRow : null)}
                                     disabled={isSaving.value || addingSpaceKey.value !== null || (mode.value === 'space' && isSpaceAdded(space))}
                                     onClick={() => handleSpaceRowClick(space)}
                                   >
-                                    <span class="min-w-0">
-                                      <span class="block truncate text-sm font-medium text-slate-200">{space.name}</span>
-                                      <span class="mt-0.5 block text-[11px] uppercase tracking-[0.14em] text-slate-500">{space.key}</span>
+                                    <span {...stylex.attrs(styles.rowText)}>
+                                      <span {...stylex.attrs(styles.rowTitle)}>{space.name}</span>
+                                      <span {...stylex.attrs(styles.rowMeta)}>{space.key}</span>
                                     </span>
                                     {mode.value === 'space' && isSpaceAdded(space)
                                       ? (
-                                          <span class="inline-flex shrink-0 items-center gap-1 text-xs text-emerald-400">
-                                            <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                          <span {...stylex.attrs(styles.added)}>
+                                            <svg {...stylex.attrs(styles.checkIcon)} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                                               <path stroke-linecap="round" stroke-linejoin="round" d="M3.25 8.5l3 3 6.5-7" />
                                             </svg>
                                             Added
                                           </span>
                                         )
-                                      : <span class="shrink-0 text-xs text-slate-500">{mode.value === 'team' ? 'Choose' : addingSpaceKey.value === space.key ? 'Adding...' : 'Add'}</span>}
+                                      : <span {...stylex.attrs(styles.rowAction)}>{mode.value === 'team' ? 'Choose' : addingSpaceKey.value === space.key ? 'Adding...' : 'Add'}</span>}
                                   </button>
                                 ))}
-                                {!visibleSpaces.value.length && <p class="px-3 py-6 text-center text-xs text-slate-500">No available Jira spaces matched your search.</p>}
+                                {!visibleSpaces.value.length && <p {...stylex.attrs(styles.emptyList)}>No available Jira spaces matched your search.</p>}
                               </div>
                             )}
 
                   {feedback.value && (
-                    <p class={['text-xs', feedback.value.kind === 'success' ? 'text-slate-400' : 'text-rose-300']}>
+                    <p {...stylex.attrs(styles.feedback, feedback.value.kind === 'success' ? styles.successFeedback : styles.errorFeedback)}>
                       {feedback.value.message}
                     </p>
                   )}

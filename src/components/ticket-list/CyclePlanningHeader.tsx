@@ -1,8 +1,31 @@
 import type { PropType } from 'vue'
 import type { JiraTicket } from '@/types/jira'
 import type { Cycle } from '~/shared/cycles'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, ref } from 'vue'
+import { colors } from '@/styles/tokens.stylex'
 import { cycleDaysRemaining, cycleProgress, formatCycleDateRange } from '~/shared/cycles'
+
+const styles = stylex.create({
+  root: { flexShrink: 0, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '1.5rem', paddingBlock: '1rem' },
+  header: { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' },
+  titleBlock: { minWidth: 0 },
+  title: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 16, fontWeight: 600, color: '#f0f1f4' },
+  description: { marginTop: '0.25rem', fontSize: 12, color: '#8f9198' },
+  actions: { display: 'flex', flexShrink: 0, alignItems: 'center', gap: '0.375rem' },
+  addWrapper: { position: 'relative' },
+  addButton: { borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: { 'default': 'rgba(255, 255, 255, 0.045)', ':hover': 'rgba(255, 255, 255, 0.07)' }, paddingInline: '0.625rem', paddingBlock: '0.25rem', fontSize: 12, color: '#d7d8dc', opacity: { ':disabled': 0.5 } },
+  menu: { position: 'absolute', top: '2.25rem', right: 0, zIndex: 30, width: '18rem', overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: '#15161a', padding: '0.5rem', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4)' },
+  input: { marginBottom: '0.25rem', width: '100%', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.035)', paddingInline: '0.5rem', paddingBlock: '0.375rem', fontSize: 12, color: colors['--color-slate-200'], outlineStyle: 'none' },
+  option: { display: 'flex', width: '100%', flexDirection: 'column', borderRadius: '0.375rem', paddingInline: '0.5rem', paddingBlock: '0.375rem', textAlign: 'left', backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.06)' } },
+  optionKey: { fontSize: 11, color: '#8f9198' },
+  optionSummary: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: '#e6e7ea' },
+  emptyOption: { paddingInline: '0.5rem', paddingBlock: '0.5rem', fontSize: 12, color: '#8f9198' },
+  progressBlock: { marginTop: '0.75rem' },
+  track: { height: '0.375rem', overflow: 'hidden', borderRadius: '9999px', backgroundColor: 'rgba(255, 255, 255, 0.06)' },
+  fill: (width: string) => ({ height: '100%', width, borderRadius: '9999px', backgroundColor: '#5b8def' }),
+  stats: { marginTop: '0.375rem', fontSize: 11, color: '#8f9198' },
+})
 
 export default defineComponent({
   name: 'CyclePlanningHeader',
@@ -74,13 +97,13 @@ export default defineComponent({
     }
 
     return () => (
-      <div class="shrink-0 border-b border-white/[0.06] px-6 py-4">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div class="min-w-0">
-            <h2 class="truncate text-[16px] font-semibold text-[#f0f1f4]">
+      <div {...stylex.attrs(styles.root)}>
+        <div {...stylex.attrs(styles.header)}>
+          <div {...stylex.attrs(styles.titleBlock)}>
+            <h2 {...stylex.attrs(styles.title)}>
               {props.cycle?.name ?? emptyTitle.value}
             </h2>
-            <p class="mt-1 text-[12px] text-[#8f9198]">
+            <p {...stylex.attrs(styles.description)}>
               {props.cycle
                 ? (
                     <>
@@ -95,37 +118,37 @@ export default defineComponent({
                 : emptyDescription.value}
             </p>
           </div>
-          <div class="flex shrink-0 items-center gap-1.5">
+          <div {...stylex.attrs(styles.actions)}>
             {props.cycle && canAddIssues.value && (
-              <div class="relative">
+              <div {...stylex.attrs(styles.addWrapper)}>
                 <button
                   type="button"
-                  class="rounded-md border border-white/[0.08] bg-white/[0.045] px-2.5 py-1 text-[12px] text-[#d7d8dc] hover:bg-white/[0.07] disabled:opacity-50"
+                  {...stylex.attrs(styles.addButton)}
                   disabled={props.isMutating}
                   onClick={() => { addOpen.value = !addOpen.value }}
                 >
                   Add issue
                 </button>
                 {addOpen.value && (
-                  <div class="absolute top-9 right-0 z-30 w-72 overflow-hidden rounded-lg border border-white/[0.08] bg-[#15161a] p-2 shadow-xl shadow-black/40">
+                  <div {...stylex.attrs(styles.menu)}>
                     <input
                       v-model={addQuery.value}
-                      class="mb-1 w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-[12px] text-slate-200 outline-none"
+                      {...stylex.attrs(styles.input)}
                       placeholder="Search issues"
                     />
                     {filteredAddable.value.map(ticket => (
                       <button
                         key={ticket.key}
                         type="button"
-                        class="flex w-full flex-col rounded-md px-2 py-1.5 text-left hover:bg-white/[0.06]"
+                        {...stylex.attrs(styles.option)}
                         onClick={() => addTicket(ticket.key)}
                       >
-                        <span class="text-[11px] text-[#8f9198]">{ticket.key}</span>
-                        <span class="truncate text-[12px] text-[#e6e7ea]">{ticket.summary}</span>
+                        <span {...stylex.attrs(styles.optionKey)}>{ticket.key}</span>
+                        <span {...stylex.attrs(styles.optionSummary)}>{ticket.summary}</span>
                       </button>
                     ))}
                     {filteredAddable.value.length === 0 && (
-                      <p class="px-2 py-2 text-[12px] text-[#8f9198]">No matching issues</p>
+                      <p {...stylex.attrs(styles.emptyOption)}>No matching issues</p>
                     )}
                   </div>
                 )}
@@ -134,11 +157,11 @@ export default defineComponent({
           </div>
         </div>
         {props.cycle && (
-          <div class="mt-3">
-            <div class="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-              <div class="h-full rounded-full bg-[#5b8def]" style={{ width: `${progress.value.percent}%` }} />
+          <div {...stylex.attrs(styles.progressBlock)}>
+            <div {...stylex.attrs(styles.track)}>
+              <div {...stylex.attrs(styles.fill(`${progress.value.percent}%`))} />
             </div>
-            <p class="mt-1.5 text-[11px] text-[#8f9198]">
+            <p {...stylex.attrs(styles.stats)}>
               {progress.value.percent}
               %
               {' · '}

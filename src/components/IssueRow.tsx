@@ -1,22 +1,54 @@
 import type { PropType } from 'vue'
 import type { JiraTicket } from '@/types/jira'
 import type { ProjectAppearance } from '~/shared/settings'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent } from 'vue'
 import { Icon } from '#components'
 import LabelPill from '@/components/LabelPill'
 import StatusIcon from '@/components/StatusIcon'
 import { isEpicIssueType } from '@/features/ticket-list/helpers'
+import { uiStyles } from '@/styles/shared'
+import { colors } from '@/styles/tokens.stylex'
 import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON } from '~/shared/settings'
 
-const priorityClasses: Record<string, string> = {
-  highest: 'text-[#f26d78]',
-  high: 'text-[#e59356]',
-  medium: 'text-[#d6a84b]',
-  low: 'text-[#62a8d8]',
-  lowest: 'text-[#8f9198]',
+type PriorityTone = 'highest' | 'high' | 'medium' | 'low' | 'lowest'
+
+const priorityTones: Record<string, PriorityTone> = {
+  highest: 'highest',
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+  lowest: 'lowest',
 }
 
 const MAX_VISIBLE_LABELS = 3
+
+const styles = stylex.create({
+  row: { position: 'relative', display: 'grid', minHeight: '3rem', width: '100%', cursor: 'default', alignItems: 'center', gap: '0.5rem', paddingInline: '1rem', paddingBlock: '0.625rem', textAlign: 'left', color: '#d6d7dc', transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  rowSelected: { color: '#f0f1f4' },
+  rowGrid: (gridTemplateColumns: string) => ({ gridTemplateColumns }),
+  issueKey: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, color: '#8f9198' },
+  statusCell: { display: 'flex', height: '1rem', width: '1rem', alignItems: 'center', justifyContent: 'center' },
+  summaryCell: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  summary: { fontWeight: 500 },
+  projectChip: { display: { 'default': 'none', '@media (min-width: 64rem)': 'flex' }, minWidth: 0, alignItems: 'center', gap: '0.375rem', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '0.375rem', paddingBlock: '0.125rem', fontSize: 11, color: '#aeb0b7' },
+  projectIcon: (color: string) => ({ width: '0.75rem', height: '0.75rem', flexShrink: 0, color }),
+  projectName: { maxWidth: '10rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  labelsCell: { display: { 'default': 'none', '@media (min-width: 48rem)': 'flex' }, maxWidth: '28rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' },
+  hiddenLabelCount: { display: 'inline-flex', alignItems: 'center', borderRadius: '0.75rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: 11, fontWeight: 500, lineHeight: 1.25, color: colors['--color-slate-400'] },
+  priorityCell: { display: { 'default': 'none', '@media (min-width: 64rem)': 'flex' }, minWidth: 0, alignItems: 'center', gap: '0.25rem', fontSize: 12, color: '#8f9198' },
+  priorityMarker: { fontSize: 13 },
+  priorityHighest: { color: '#f26d78' },
+  priorityHigh: { color: '#e59356' },
+  priorityMedium: { color: '#d6a84b' },
+  priorityLow: { color: '#62a8d8' },
+  priorityLowest: { color: '#8f9198' },
+  priorityLabel: { maxWidth: '6rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  storyPoints: { display: { 'default': 'none', '@media (min-width: 64rem)': 'flex' }, minWidth: '34px', justifyContent: 'flex-end', fontSize: 12, color: '#8f9198' },
+  metaCell: { display: 'flex', minWidth: '94px', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem', fontSize: 12, color: '#8f9198' },
+  assigneeAvatar: { display: 'flex', height: '1.25rem', width: '1.25rem', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', backgroundColor: 'rgba(255, 255, 255, 0.08)', fontSize: 9, color: '#c7c9d0' },
+  responsiveDate: { display: { 'default': 'none', '@media (min-width: 40rem)': 'inline' } },
+})
 
 function formatDate(value: string | undefined): string {
   if (!value)
@@ -87,9 +119,9 @@ export default defineComponent({
     toggleCheck: (key: string) => typeof key === 'string',
   },
   setup(props, { emit }) {
-    const priorityClass = computed(() => {
+    const priorityTone = computed<PriorityTone>(() => {
       const normalized = props.ticket.priority.trim().toLowerCase()
-      return priorityClasses[normalized] ?? 'text-[#8f9198]'
+      return priorityTones[normalized] ?? 'lowest'
     })
 
     const initials = computed(() => {
@@ -177,45 +209,43 @@ export default defineComponent({
       <div
         role="button"
         tabindex="0"
-        class={['linear-row group relative grid min-h-12 w-full cursor-default items-center gap-2 px-4 py-2.5 text-left transition', props.selected ? 'linear-row-active text-[#f0f1f4]' : 'text-[#d6d7dc]']}
-        style={{ gridTemplateColumns: rowGridTemplate.value }}
+        {...stylex.attrs(styles.row, styles.rowGrid(rowGridTemplate.value), props.selected ? styles.rowSelected : null, uiStyles.row, props.selected ? uiStyles.activeRow : null)}
         onMouseenter={() => emit('prefetch', rowIssueKey.value)}
         onClick={emitSelect}
         onKeydown={handleKeydown}
       >
-        {props.showId !== false && <span class="truncate font-medium text-[#8f9198]">{rowIssueKey.value}</span>}
+        {props.showId !== false && <span {...stylex.attrs(styles.issueKey)}>{rowIssueKey.value}</span>}
 
         {props.showStatus !== false && (
-          <span class="flex h-4 w-4 items-center justify-center">
+          <span {...stylex.attrs(styles.statusCell)}>
             <StatusIcon status={props.ticket.status} statusCategory={props.ticket.statusCategory} size={16} />
           </span>
         )}
 
-        <span class="min-w-0 truncate">
-          <span class="font-medium">{rowPrimarySummary.value}</span>
+        <span {...stylex.attrs(styles.summaryCell)}>
+          <span {...stylex.attrs(styles.summary)}>{rowPrimarySummary.value}</span>
         </span>
 
         {projectChip.value && (
           <span
-            class="hidden min-w-0 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.025] px-1.5 py-0.5 text-[11px] text-[#aeb0b7] lg:flex"
+            {...stylex.attrs(styles.projectChip)}
             title={projectChip.value.name}
           >
             <Icon
               name={`lucide:${projectChip.value.icon}`}
-              class="h-3 w-3 shrink-0"
-              style={{ color: projectChip.value.color }}
+              {...stylex.attrs(styles.projectIcon(projectChip.value.color))}
               aria-hidden="true"
             />
-            <span class="max-w-40 truncate">{projectChip.value.name}</span>
+            <span {...stylex.attrs(styles.projectName)}>{projectChip.value.name}</span>
           </span>
         )}
 
         {props.showLabels !== false && visibleLabels.value.length > 0 && (
-          <span class="hidden max-w-[28rem] flex-wrap items-center justify-end gap-1 md:flex">
+          <span {...stylex.attrs(styles.labelsCell)}>
             {displayedLabels.value.map(label => <LabelPill key={label} label={label} dense showDot />)}
             {hiddenLabelCount.value > 0 && (
               <span
-                class="inline-flex items-center rounded-xl border border-white/[0.08] bg-white/[0.025] px-2 py-1 text-[11px] font-medium leading-[1.25] text-slate-400"
+                {...stylex.attrs(styles.hiddenLabelCount)}
                 title={hiddenLabelSummary.value}
               >
                 +
@@ -226,27 +256,38 @@ export default defineComponent({
         )}
 
         {props.showPriority !== false && (
-          <span class="hidden min-w-0 items-center gap-1 text-[12px] text-[#8f9198] lg:flex">
-            <span class={['text-[13px]', priorityClass.value]}>▮</span>
-            <span class="max-w-24 truncate">{props.ticket.priority || 'No priority'}</span>
+          <span {...stylex.attrs(styles.priorityCell)}>
+            <span
+              {...stylex.attrs(
+                styles.priorityMarker,
+                priorityTone.value === 'highest' ? styles.priorityHighest : null,
+                priorityTone.value === 'high' ? styles.priorityHigh : null,
+                priorityTone.value === 'medium' ? styles.priorityMedium : null,
+                priorityTone.value === 'low' ? styles.priorityLow : null,
+                priorityTone.value === 'lowest' ? styles.priorityLowest : null,
+              )}
+            >
+              ▮
+            </span>
+            <span {...stylex.attrs(styles.priorityLabel)}>{props.ticket.priority || 'No priority'}</span>
           </span>
         )}
 
         {props.showStoryPoints === true && (
-          <span class="hidden min-w-[34px] justify-end text-[12px] text-[#8f9198] lg:flex">
+          <span {...stylex.attrs(styles.storyPoints)}>
             {props.ticket.storyPoints !== undefined ? `${props.ticket.storyPoints} pts` : '–'}
           </span>
         )}
 
         {(props.showAssignee !== false || props.showCreated !== false || props.showUpdated === true || props.showDue === true) && (
-          <span class="flex min-w-[94px] items-center justify-end gap-2 text-[12px] text-[#8f9198]">
+          <span {...stylex.attrs(styles.metaCell)}>
             {props.showAssignee !== false && initials.value && (
-              <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white/[0.08] text-[9px] text-[#c7c9d0]">{initials.value}</span>
+              <span {...stylex.attrs(styles.assigneeAvatar)}>{initials.value}</span>
             )}
-            {props.showCreated !== false && createdLabel.value && <span class="hidden sm:inline">{createdLabel.value}</span>}
-            {props.showUpdated === true && updatedLabel.value && <span class="hidden sm:inline">{updatedLabel.value}</span>}
+            {props.showCreated !== false && createdLabel.value && <span {...stylex.attrs(styles.responsiveDate)}>{createdLabel.value}</span>}
+            {props.showUpdated === true && updatedLabel.value && <span {...stylex.attrs(styles.responsiveDate)}>{updatedLabel.value}</span>}
             {props.showDue === true && dueLabel.value && (
-              <span class="hidden sm:inline">
+              <span {...stylex.attrs(styles.responsiveDate)}>
                 {`Due ${dueLabel.value}`}
               </span>
             )}

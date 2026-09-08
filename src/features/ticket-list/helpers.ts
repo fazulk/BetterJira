@@ -5,7 +5,9 @@ import type {
   DateFilterOperator,
   InitiativeRowFieldId,
   InsightSlice,
+  IssueGroupMarkerTone,
   ProjectGroupingFieldId,
+  ProjectHealthTone,
   ProjectRow,
   ProjectRowFieldId,
   SavedViewRowFieldId,
@@ -197,23 +199,15 @@ export function getProjectHealthRank(health: ProjectRow['health']): number {
   return 2
 }
 
-export function getProjectHealthClass(health: ProjectRow['health']): string {
+export function getProjectHealthTone(health: ProjectRow['health']): ProjectHealthTone {
   if (health === 'Completed')
-    return 'bg-[#4dbb83]/10 text-[#63c891] border-[#4dbb83]/20'
+    return 'completed'
   if (health === 'At risk')
-    return 'bg-[#e59356]/10 text-[#e9a66c] border-[#e59356]/20'
-  return 'bg-[#3f9fd6]/10 text-[#6fb7de] border-[#3f9fd6]/20'
+    return 'atRisk'
+  return 'onTrack'
 }
 
-export function getProgressBarClass(health: ProjectRow['health']): string {
-  if (health === 'Completed')
-    return 'bg-[#4dbb83]'
-  if (health === 'At risk')
-    return 'bg-[#e59356]'
-  return 'bg-[#6f73ff]'
-}
-
-export function getIssueGroupMarkerClass(label: string): string {
+export function getIssueGroupMarkerTone(label: string): IssueGroupMarkerTone {
   const normalizedLabel = label.toLowerCase()
   if (
     normalizedLabel.includes('qa')
@@ -221,23 +215,23 @@ export function getIssueGroupMarkerClass(label: string): string {
     || normalizedLabel.includes('done')
     || normalizedLabel.includes('complete')
   ) {
-    return 'border-[#3aa7ff] bg-[#3aa7ff]/10'
+    return 'done'
   }
   if (
     normalizedLabel.includes('progress')
     || normalizedLabel.includes('review')
     || normalizedLabel.includes('blocked')
   ) {
-    return 'border-[#e59356] bg-[#e59356]/10'
+    return 'active'
   }
   if (
     normalizedLabel.includes('todo')
     || normalizedLabel.includes('backlog')
     || normalizedLabel.includes('unstarted')
   ) {
-    return 'border-[#d7d8dc] bg-transparent'
+    return 'todo'
   }
-  return 'border-[#8f9198] bg-transparent'
+  return 'default'
 }
 
 export function getMostCommonLead(projects: ProjectRow[]): string {

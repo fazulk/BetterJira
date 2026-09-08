@@ -1,15 +1,32 @@
+import type { StyleXStyles } from '@stylexjs/stylex'
 import type { PropType } from 'vue'
 import type { IssueRowDisplayProps, IssueSection } from '@/features/ticket-list/types'
 import type { JiraTicket } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent } from 'vue'
 import { Icon } from '#components'
 import IssueRow from '@/components/IssueRow'
 import StatusIcon from '@/components/StatusIcon'
 import { useProjectAppearances } from '@/composables/useProjectAppearances'
 
+const styles = stylex.create({
+  root: { minWidth: 0, overflowY: 'auto' },
+  sectionHeader: { display: 'flex', height: '2rem', alignItems: 'center', gap: '0.5rem', borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '1rem', fontSize: 12, fontWeight: 500, color: '#aeb0b7' },
+  sectionButton: { display: 'flex', minWidth: 0, flex: '1', alignItems: 'center', gap: '0.5rem', textAlign: 'left', color: { 'default': null, ':hover': '#d7d8dc' } },
+  chevron: { width: '0.75rem', height: '0.75rem', flexShrink: 0, color: '#777a83', transitionProperty: 'transform', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  collapsedChevron: { transform: 'rotate(-90deg)' },
+  truncate: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  count: { color: '#6f727b' },
+  empty: { display: 'flex', height: '100%', minHeight: '20rem', alignItems: 'center', justifyContent: 'center', paddingInline: '1.5rem', textAlign: 'center' },
+  emptyContent: { maxWidth: '24rem' },
+  emptyTitle: { fontSize: 13, fontWeight: 500, color: '#d7d8dc' },
+  emptyDescription: { marginTop: '0.25rem', fontSize: 12, color: '#777a83' },
+})
+
 export default defineComponent({
   name: 'TicketListIssueSections',
   props: {
+    xstyle: { type: [Object, Array] as PropType<StyleXStyles> },
     sections: {
       type: Array as PropType<IssueSection[]>,
       required: true,
@@ -73,34 +90,34 @@ export default defineComponent({
     prefetch: (key: string) => typeof key === 'string',
     toggleCheck: (key: string) => typeof key === 'string',
   },
-  setup(props, { emit, attrs }) {
+  setup(props, { emit }) {
     const { getTicketProjectAppearance } = useProjectAppearances()
 
     return () => (
-      <div class={['min-w-0 overflow-y-auto', attrs.class]}>
+      <div {...stylex.attrs(styles.root, props.xstyle)}>
         {props.sections.length && props.visibleCount > 0
           ? (
               <div>
                 {props.sections.map(section => (
                   <section key={section.id}>
                     {props.showHeaders && (
-                      <div class="flex h-8 items-center gap-2 border-b border-white/[0.06] bg-white/[0.025] px-4 text-[12px] font-medium text-[#aeb0b7]">
+                      <div {...stylex.attrs(styles.sectionHeader)}>
                         <button
                           type="button"
-                          class="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-[#d7d8dc]"
+                          {...stylex.attrs(styles.sectionButton)}
                           aria-expanded={!props.isCollapsed(section)}
                           onClick={() => emit('toggleSection', section)}
                         >
                           <Icon
                             name="lucide:chevron-down"
-                            class={['h-3 w-3 shrink-0 text-[#777a83] transition-transform', props.isCollapsed(section) ? '-rotate-90' : '']}
+                            {...stylex.attrs(styles.chevron, props.isCollapsed(section) ? styles.collapsedChevron : null)}
                             aria-hidden="true"
                           />
                           {props.isStatusGrouping && props.getStatusCategoryForGroupLabel && (
                             <StatusIcon status={section.label} statusCategory={props.getStatusCategoryForGroupLabel(section.label)} size={16} />
                           )}
-                          <span class="truncate">{section.label}</span>
-                          <span class="text-[#6f727b]">{section.tickets.length}</span>
+                          <span {...stylex.attrs(styles.truncate)}>{section.label}</span>
+                          <span {...stylex.attrs(styles.count)}>{section.tickets.length}</span>
                         </button>
                       </div>
                     )}
@@ -125,10 +142,10 @@ export default defineComponent({
               </div>
             )
           : (
-              <div class="flex h-full min-h-80 items-center justify-center px-6 text-center">
-                <div class="max-w-sm">
-                  <p class="text-[13px] font-medium text-[#d7d8dc]">{props.emptyTitle}</p>
-                  <p class="mt-1 text-[12px] text-[#777a83]">{props.emptyDescription}</p>
+              <div {...stylex.attrs(styles.empty)}>
+                <div {...stylex.attrs(styles.emptyContent)}>
+                  <p {...stylex.attrs(styles.emptyTitle)}>{props.emptyTitle}</p>
+                  <p {...stylex.attrs(styles.emptyDescription)}>{props.emptyDescription}</p>
                 </div>
               </div>
             )}

@@ -1,12 +1,77 @@
+import type { StyleXStyles } from '@stylexjs/stylex'
 import type { PropType } from 'vue'
 import type { FavoriteViewNavItem } from '@/features/sidebar/useSidebarNavigation'
 import type { JiraTicket } from '@/types/jira'
+import * as stylex from '@stylexjs/stylex'
 import { defineComponent, reactive, Teleport } from 'vue'
 import { Icon } from '#components'
 import StatusIcon from '@/components/StatusIcon'
 import { useSidebarNavigation } from '@/features/sidebar/useSidebarNavigation'
+import { colors } from '@/styles/tokens.stylex'
 import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
-import './Sidebar.css'
+
+const spin = stylex.keyframes({ to: { transform: 'rotate(360deg)' } })
+
+const styles = stylex.create({
+  root: { display: 'flex', height: '100vh', width: '100%', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#090a0c', fontSize: 13, color: '#b9bbc3' },
+  header: { display: 'flex', height: '2.75rem', flexShrink: 0, alignItems: 'center', gap: '0.5rem', paddingInline: '0.75rem' },
+  homeButton: { display: 'flex', minWidth: 0, flex: '1', alignItems: 'center', gap: '0.5rem', borderRadius: '0.375rem', paddingInline: '0.375rem', paddingBlock: '0.25rem', textAlign: 'left', color: '#e6e7ea', backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.05)' } },
+  centered: { justifyContent: 'center' },
+  favicon: { height: '1.25rem', width: '1.25rem', flexShrink: 0, borderRadius: '0.25rem' },
+  truncate: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  label: { minWidth: 0, flex: '1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  medium: { fontWeight: 500 },
+  headerButton: { display: 'flex', height: '1.75rem', width: '1.75rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', color: { 'default': '#8f9198', ':enabled:hover': '#e6e7ea' }, backgroundColor: { 'default': null, ':enabled:hover': 'rgba(255, 255, 255, 0.05)' }, cursor: { ':disabled': 'default' }, opacity: { ':disabled': 0.3 }, transitionProperty: 'background-color, color, opacity', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  plainHeaderButton: { color: { 'default': '#8f9198', ':hover': '#e6e7ea' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.05)' } },
+  createButton: { display: 'flex', height: '1.75rem', width: '1.75rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', backgroundColor: { 'default': 'rgba(255, 255, 255, 0.08)', ':hover': 'rgba(255, 255, 255, 0.12)' }, color: { 'default': '#d7d8dc', ':hover': '#f0f1f4' } },
+  iconMd: { height: '1rem', width: '1rem' },
+  iconSm: { height: '0.875rem', width: '0.875rem' },
+  iconXs: { height: '0.75rem', width: '0.75rem' },
+  scroll: { flex: '1', overflowY: 'auto', paddingInline: '0.5rem', paddingBottom: '0.75rem' },
+  nav: { display: 'flex', flexDirection: 'column', gap: '1.25rem' },
+  compactSection: { display: 'flex', flexDirection: 'column', gap: '0.125rem' },
+  teamSection: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
+  navButton: { display: 'flex', height: '1.75rem', width: '100%', alignItems: 'center', gap: '0.5rem', borderRadius: '0.375rem', paddingInline: '0.5rem', textAlign: 'left', fontSize: 13, transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  navActive: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#f0f1f4' },
+  navInactive: { color: { 'default': '#a9abb3', ':hover': '#e6e7ea' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.045)' } },
+  navMutedInactive: { color: { 'default': '#8f9198', ':hover': '#d7d8dc' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.045)' } },
+  navSubButton: { height: '1.5rem', fontSize: 12 },
+  navIcon: { height: '0.875rem', width: '0.875rem', flexShrink: 0, color: '#8f9198' },
+  count: { fontSize: 11, color: '#6f727b' },
+  sectionToggle: { display: 'flex', height: '1.5rem', width: '100%', alignItems: 'center', justifyContent: 'space-between', borderRadius: '0.375rem', paddingInline: '0.5rem', textAlign: 'left', fontSize: 12, fontWeight: 500, color: { 'default': '#777a83', ':hover': '#b9bbc3' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.045)' }, transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  chevron: { height: '0.75rem', width: '0.75rem', transitionProperty: 'transform', transitionDuration: '200ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  chevronMd: { height: '0.875rem', width: '0.875rem' },
+  collapsedChevron: { transform: 'rotate(-90deg)' },
+  collapse: { display: 'grid', gridTemplateRows: '0fr', opacity: 0, transitionProperty: { 'default': 'grid-template-rows, opacity', '@media (prefers-reduced-motion: reduce)': 'none' }, transitionDuration: '220ms, 180ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1), ease' },
+  collapseOpen: { gridTemplateRows: '1fr', opacity: 1 },
+  collapseClosed: { pointerEvents: 'none' },
+  collapseInner: { minHeight: 0, overflow: 'hidden', transform: { 'default': 'translateY(-4px)', '@media (prefers-reduced-motion: reduce)': 'none' }, transitionProperty: { 'default': 'transform', '@media (prefers-reduced-motion: reduce)': 'none' }, transitionDuration: '220ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  collapseInnerOpen: { transform: 'translateY(0)' },
+  favoriteIcon: (color: string) => ({ height: '0.875rem', width: '0.875rem', flexShrink: 0, color }),
+  starIcon: { width: '0.875rem', flexShrink: 0, textAlign: 'center', fontSize: 13, lineHeight: 1, color: '#d7a543' },
+  ticketIconWrap: { display: 'flex', height: '1rem', width: '1rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center' },
+  sectionHeader: { display: 'flex', height: '1.5rem', alignItems: 'center', justifyContent: 'space-between', paddingInline: '0.5rem', fontSize: 12, fontWeight: 500, color: '#777a83' },
+  addSpaceButton: { display: 'flex', height: '1.25rem', width: '1.25rem', alignItems: 'center', justifyContent: 'center', borderRadius: '0.25rem', fontSize: 14, color: { 'default': '#777a83', ':hover': '#f0f1f4' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.055)' }, transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  teamRow: { display: 'flex', height: '1.75rem', width: '100%', alignItems: 'center', borderRadius: '0.375rem', fontSize: 13, color: { 'default': '#c6c8ce', ':hover': '#f0f1f4' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.045)' }, transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  teamRowActive: { backgroundColor: 'rgba(255, 255, 255, 0.055)' },
+  teamMainButton: { display: 'flex', height: '100%', minWidth: 0, flex: '1', alignItems: 'center', gap: '0.25rem', borderTopLeftRadius: '0.375rem', borderBottomLeftRadius: '0.375rem', paddingInline: '0.5rem', textAlign: 'left' },
+  teamAvatar: (color: string) => ({ display: 'flex', height: '1.5rem', width: '1.5rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color }),
+  teamIcon: { height: '1.5rem', width: '1.5rem' },
+  expandButton: { marginRight: '0.25rem', display: 'flex', height: '1.25rem', width: '1.25rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.25rem', color: { 'default': '#6f727b', ':hover': '#f0f1f4' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.06)' }, transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  teamNested: { marginLeft: '1.25rem' },
+  cycleNested: { marginLeft: '1.125rem', borderLeftWidth: 1, borderLeftStyle: 'solid', borderLeftColor: 'rgba(255, 255, 255, 0.08)', paddingLeft: '0.5rem' },
+  cycleActive: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#f0f1f4', boxShadow: 'inset 0 0 0 1px rgba(91, 106, 191, 0.7)' },
+  footer: { flexShrink: 0, borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '0.5rem', paddingBlock: '0.5rem' },
+  footerStack: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
+  footerButton: { display: 'flex', height: '1.75rem', width: '100%', alignItems: 'center', gap: '0.5rem', borderRadius: '0.375rem', paddingInline: '0.5rem', textAlign: 'left', fontSize: 12, color: { 'default': '#8f9198', ':hover': '#e6e7ea' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.045)' }, transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  syncIcon: { width: '1rem', textAlign: 'center' },
+  spinning: { animationName: spin, animationDuration: '1s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' },
+  menu: (top: string, left: string) => ({ position: 'fixed', top, left, zIndex: 100, width: '11rem', overflow: 'hidden', borderRadius: '0.75rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(17, 19, 26, 0.95)', padding: '0.25rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-200'], boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.4)', backdropFilter: 'blur(8px)' }),
+  menuHeader: { borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '0.5rem', paddingBlock: '0.375rem' },
+  menuTitle: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.14em', color: colors['--color-slate-500'] },
+  dangerMenuItem: { display: 'flex', width: '100%', alignItems: 'center', gap: '0.5rem', borderRadius: '0.5rem', paddingInline: '0.5rem', paddingBlock: '0.5rem', textAlign: 'left', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': colors['--color-rose-300'], ':hover': colors['--color-rose-200'] }, backgroundColor: { 'default': null, ':hover': 'rgba(244, 63, 94, 0.12)' }, transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  menuItem: { display: 'flex', width: '100%', alignItems: 'center', gap: '0.5rem', borderRadius: '0.5rem', paddingInline: '0.5rem', paddingBlock: '0.5rem', textAlign: 'left', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': colors['--color-slate-200'], ':hover': colors['--color-white'] }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.06)' }, transitionProperty: 'background-color, color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+})
 
 export default defineComponent({
   name: 'Sidebar',
@@ -64,75 +129,71 @@ export default defineComponent({
     const sidebarNavigation = useSidebarNavigation(props, emit)
     const nav = reactive(sidebarNavigation)
 
-    function navButtonClass(active: boolean): string {
+    function navButtonStyles(active: boolean): StyleXStyles {
       return active
-        ? 'bg-white/[0.08] text-[#f0f1f4]'
-        : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]'
+        ? styles.navActive
+        : styles.navMutedInactive
     }
 
     return () => (
-      <aside class="flex h-screen w-full flex-col overflow-hidden bg-[#090a0c] text-[13px] text-[#b9bbc3]">
-        <div class="flex h-11 shrink-0 items-center gap-2 px-3">
+      <aside {...stylex.attrs(styles.root)}>
+        <div {...stylex.attrs(styles.header)}>
           <button
             type="button"
-            class={['flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left text-[#e6e7ea] hover:bg-white/[0.05]', props.collapsed ? 'justify-center' : '']}
+            {...stylex.attrs(styles.homeButton, props.collapsed ? styles.centered : null)}
             onClick={() => emit('home')}
           >
-            <img src="/favicon.svg" alt="" class="h-5 w-5 shrink-0 rounded" aria-hidden="true" />
-            {!props.collapsed && <span class="truncate font-medium">BetterJira!</span>}
+            <img src="/favicon.svg" alt="" {...stylex.attrs(styles.favicon)} aria-hidden="true" />
+            {!props.collapsed && <span {...stylex.attrs(styles.truncate, styles.medium)}>BetterJira!</span>}
           </button>
 
           {!props.collapsed && (
             <>
-              <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#8f9198] transition enabled:hover:bg-white/[0.05] enabled:hover:text-[#e6e7ea] disabled:cursor-default disabled:opacity-30" title="Go back" disabled={!props.canGoBack} onClick={() => emit('back')}>
-                <Icon name="lucide:chevron-left" class="h-4 w-4" aria-hidden="true" />
+              <button type="button" {...stylex.attrs(styles.headerButton)} title="Go back" disabled={!props.canGoBack} onClick={() => emit('back')}>
+                <Icon name="lucide:chevron-left" {...stylex.attrs(styles.iconMd)} aria-hidden="true" />
               </button>
-              <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#8f9198] transition enabled:hover:bg-white/[0.05] enabled:hover:text-[#e6e7ea] disabled:cursor-default disabled:opacity-30" title="Go forward" disabled={!props.canGoForward} onClick={() => emit('forward')}>
-                <Icon name="lucide:chevron-right" class="h-4 w-4" aria-hidden="true" />
+              <button type="button" {...stylex.attrs(styles.headerButton)} title="Go forward" disabled={!props.canGoForward} onClick={() => emit('forward')}>
+                <Icon name="lucide:chevron-right" {...stylex.attrs(styles.iconMd)} aria-hidden="true" />
               </button>
-              <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#8f9198] hover:bg-white/[0.05] hover:text-[#e6e7ea]" title="Search workspace" onClick={() => emit('command')}>
-                <Icon name="lucide:search" class="h-3.5 w-3.5" aria-hidden="true" />
+              <button type="button" {...stylex.attrs(styles.headerButton, styles.plainHeaderButton)} title="Search workspace" onClick={() => emit('command')}>
+                <Icon name="lucide:search" {...stylex.attrs(styles.iconSm)} aria-hidden="true" />
               </button>
-              <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-[#d7d8dc] hover:bg-white/[0.12] hover:text-[#f0f1f4]" title="Create issue" onClick={() => nav.selectView('create')}>
-                <Icon name="lucide:square-pen" class="h-3.5 w-3.5" aria-hidden="true" />
+              <button type="button" {...stylex.attrs(styles.createButton)} title="Create issue" onClick={() => nav.selectView('create')}>
+                <Icon name="lucide:square-pen" {...stylex.attrs(styles.iconSm)} aria-hidden="true" />
               </button>
             </>
           )}
         </div>
 
-        <div class="flex-1 overflow-y-auto px-2 pb-3">
-          <nav class="space-y-5">
-            <section class="space-y-0.5">
+        <div {...stylex.attrs(styles.scroll)}>
+          <nav {...stylex.attrs(styles.nav)}>
+            <section {...stylex.attrs(styles.compactSection)}>
               {nav.primaryItems.map(item => (
                 <button
                   key={item.id}
                   type="button"
-                  class={[
-                    'flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition',
-                    nav.isActiveView(item.id) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#a9abb3] hover:bg-white/[0.045] hover:text-[#e6e7ea]',
-                    props.collapsed ? 'justify-center' : '',
-                  ]}
+                  {...stylex.attrs(styles.navButton, nav.isActiveView(item.id) ? styles.navActive : styles.navInactive, props.collapsed ? styles.centered : null)}
                   onClick={() => nav.selectView(item.id)}
                 >
-                  <Icon name={item.icon === 'inbox' ? 'lucide:inbox' : 'lucide:scan'} class="h-3.5 w-3.5 shrink-0 text-[#8f9198]" aria-hidden="true" />
-                  {!props.collapsed && <span class="min-w-0 flex-1 truncate">{item.label}</span>}
-                  {!props.collapsed && item.count !== undefined && item.count > 0 && <span class="text-[11px] text-[#6f727b]">{item.count}</span>}
+                  <Icon name={item.icon === 'inbox' ? 'lucide:inbox' : 'lucide:scan'} {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
+                  {!props.collapsed && <span {...stylex.attrs(styles.label)}>{item.label}</span>}
+                  {!props.collapsed && item.count !== undefined && item.count > 0 && <span {...stylex.attrs(styles.count)}>{item.count}</span>}
                 </button>
               ))}
             </section>
 
             {!props.collapsed && (
               <section>
-                <button type="button" class="flex h-6 w-full items-center justify-between rounded-md px-2 text-left text-[12px] font-medium text-[#777a83] transition hover:bg-white/[0.045] hover:text-[#b9bbc3]" aria-expanded={nav.workspaceExpanded} onClick={nav.toggleWorkspace}>
+                <button type="button" {...stylex.attrs(styles.sectionToggle)} aria-expanded={nav.workspaceExpanded} onClick={nav.toggleWorkspace}>
                   <span>Workspace</span>
-                  <Icon name="lucide:chevron-down" class={['h-3 w-3 transition-transform duration-200', nav.workspaceExpanded ? '' : '-rotate-90']} aria-hidden="true" />
+                  <Icon name="lucide:chevron-down" {...stylex.attrs(styles.chevron, nav.workspaceExpanded ? null : styles.collapsedChevron)} aria-hidden="true" />
                 </button>
-                <div class={['sidebar-collapse', nav.workspaceExpanded ? 'sidebar-collapse-open' : 'sidebar-collapse-closed']} inert={!nav.workspaceExpanded}>
-                  <div class="sidebar-collapse-inner space-y-1 pt-1">
+                <div {...stylex.attrs(styles.collapse, nav.workspaceExpanded ? styles.collapseOpen : styles.collapseClosed)} inert={!nav.workspaceExpanded}>
+                  <div {...stylex.attrs(styles.collapseInner, nav.workspaceExpanded ? styles.collapseInnerOpen : null, styles.footerStack)}>
                     {nav.workspaceItems.map(item => (
-                      <button key={item.id} type="button" class={['flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition', nav.isActiveView(item.id) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#a9abb3] hover:bg-white/[0.045] hover:text-[#e6e7ea]']} onClick={() => nav.selectView(item.id)}>
-                        <Icon name={item.icon === 'initiative' ? 'lucide:flag' : item.icon === 'project' ? 'lucide:box' : item.icon === 'view' ? 'lucide:layers' : 'lucide:circle-dashed'} class="h-3.5 w-3.5 shrink-0 text-[#8f9198]" aria-hidden="true" />
-                        <span class="min-w-0 flex-1 truncate">{item.label}</span>
+                      <button key={item.id} type="button" {...stylex.attrs(styles.navButton, nav.isActiveView(item.id) ? styles.navActive : styles.navInactive)} onClick={() => nav.selectView(item.id)}>
+                        <Icon name={item.icon === 'initiative' ? 'lucide:flag' : item.icon === 'project' ? 'lucide:box' : item.icon === 'view' ? 'lucide:layers' : 'lucide:circle-dashed'} {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
+                        <span {...stylex.attrs(styles.label)}>{item.label}</span>
                       </button>
                     ))}
                   </div>
@@ -142,42 +203,42 @@ export default defineComponent({
 
             {!props.collapsed && (
               <section>
-                <button type="button" class="flex h-6 w-full items-center justify-between rounded-md px-2 text-left text-[12px] font-medium text-[#777a83] transition hover:bg-white/[0.045] hover:text-[#b9bbc3]" aria-expanded={nav.favoritesExpanded} onClick={nav.toggleFavorites}>
+                <button type="button" {...stylex.attrs(styles.sectionToggle)} aria-expanded={nav.favoritesExpanded} onClick={nav.toggleFavorites}>
                   <span>Favorites</span>
-                  <Icon name="lucide:chevron-down" class={['h-3 w-3 transition-transform duration-200', nav.favoritesExpanded ? '' : '-rotate-90']} aria-hidden="true" />
+                  <Icon name="lucide:chevron-down" {...stylex.attrs(styles.chevron, nav.favoritesExpanded ? null : styles.collapsedChevron)} aria-hidden="true" />
                 </button>
-                <div class={['sidebar-collapse', nav.favoritesExpanded ? 'sidebar-collapse-open' : 'sidebar-collapse-closed']} inert={!nav.favoritesExpanded}>
-                  <div class="sidebar-collapse-inner space-y-1 pt-1">
+                <div {...stylex.attrs(styles.collapse, nav.favoritesExpanded ? styles.collapseOpen : styles.collapseClosed)} inert={!nav.favoritesExpanded}>
+                  <div {...stylex.attrs(styles.collapseInner, nav.favoritesExpanded ? styles.collapseInnerOpen : null, styles.footerStack)}>
                     {props.favoriteViews.map(favoriteView => (
                       <button
                         key={favoriteView.id}
                         type="button"
-                        class={['flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition', nav.isActiveView(favoriteView.id) ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#a9abb3] hover:bg-white/[0.045] hover:text-[#e6e7ea]']}
+                        {...stylex.attrs(styles.navButton, nav.isActiveView(favoriteView.id) ? styles.navActive : styles.navInactive)}
                         onClick={() => emit('favoriteView', favoriteView.id)}
                         onContextmenu={event => nav.openFavoriteMenu(favoriteView, event)}
                       >
                         {favoriteView.icon
-                          ? <Icon name={`lucide:${favoriteView.icon}`} class="h-3.5 w-3.5 shrink-0" style={favoriteView.color ? { color: favoriteView.color } : undefined} aria-hidden="true" />
-                          : <span class="w-3.5 shrink-0 text-center text-[13px] leading-none text-[#d7a543]" aria-hidden="true">★</span>}
-                        <span class="min-w-0 flex-1 truncate">{favoriteView.label}</span>
-                        {favoriteView.showIssueCount && favoriteView.count !== undefined && <span class="text-[11px] text-[#6f727b]">{favoriteView.count}</span>}
+                          ? <Icon name={`lucide:${favoriteView.icon}`} {...stylex.attrs(styles.favoriteIcon(favoriteView.color ?? 'currentColor'))} aria-hidden="true" />
+                          : <span {...stylex.attrs(styles.starIcon)} aria-hidden="true">★</span>}
+                        <span {...stylex.attrs(styles.label)}>{favoriteView.label}</span>
+                        {favoriteView.showIssueCount && favoriteView.count !== undefined && <span {...stylex.attrs(styles.count)}>{favoriteView.count}</span>}
                       </button>
                     ))}
                     {nav.pinnedTicketItems.map(ticket => (
                       <button
                         key={ticket.key}
                         type="button"
-                        class={['flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition', props.selectedKey === ticket.key ? 'bg-white/[0.08] text-[#f0f1f4]' : 'text-[#a9abb3] hover:bg-white/[0.045] hover:text-[#e6e7ea]']}
+                        {...stylex.attrs(styles.navButton, props.selectedKey === ticket.key ? styles.navActive : styles.navInactive)}
                         title={`${ticket.key}: ${ticket.status}`}
                         onMouseenter={() => emit('prefetch', ticket.key)}
                         onClick={() => emit('select', ticket.key)}
                       >
-                        <span class="flex h-4 w-4 shrink-0 items-center justify-center">
+                        <span {...stylex.attrs(styles.ticketIconWrap)}>
                           {ticket.projectIcon
-                            ? <Icon name={`lucide:${ticket.projectIcon}`} class="h-3.5 w-3.5" style={ticket.projectColor ? { color: ticket.projectColor } : undefined} aria-hidden="true" />
+                            ? <Icon name={`lucide:${ticket.projectIcon}`} {...stylex.attrs(styles.favoriteIcon(ticket.projectColor ?? 'currentColor'))} aria-hidden="true" />
                             : <StatusIcon status={ticket.status} statusCategory={ticket.statusCategory} size={16} />}
                         </span>
-                        <span class="min-w-0 flex-1 truncate">{ticket.summary}</span>
+                        <span {...stylex.attrs(styles.label)}>{ticket.summary}</span>
                       </button>
                     ))}
                   </div>
@@ -186,10 +247,10 @@ export default defineComponent({
             )}
 
             {!props.collapsed && (
-              <section class="space-y-1">
-                <div class="flex h-6 items-center justify-between px-2 text-[12px] font-medium text-[#777a83]">
+              <section {...stylex.attrs(styles.teamSection)}>
+                <div {...stylex.attrs(styles.sectionHeader)}>
                   <span>Your teams</span>
-                  <button type="button" class="flex h-5 w-5 items-center justify-center rounded text-[14px] text-[#777a83] transition hover:bg-white/[0.055] hover:text-[#f0f1f4]" aria-label="Add space" onClick={() => emit('addSpace')}>
+                  <button type="button" {...stylex.attrs(styles.addSpaceButton)} aria-label="Add space" onClick={() => emit('addSpace')}>
                     ＋
                   </button>
                 </div>
@@ -197,20 +258,20 @@ export default defineComponent({
                 {nav.teamItems.map(team => (
                   <div key={team.key}>
                     <div
-                      class={['flex h-7 w-full items-center rounded-md text-[13px] text-[#c6c8ce] transition hover:bg-white/[0.045] hover:text-[#f0f1f4]', nav.viewNavigationIsActive && nav.isTeamViewForTeam(nav.currentViewId, team.key) ? 'bg-white/[0.055]' : '']}
+                      {...stylex.attrs(styles.teamRow, nav.viewNavigationIsActive && nav.isTeamViewForTeam(nav.currentViewId, team.key) ? styles.teamRowActive : null)}
                       onContextmenu={event => nav.openTeamMenu(team, event)}
                     >
-                      <button type="button" class="flex h-full min-w-0 flex-1 items-center gap-1 rounded-l-md px-2 text-left" onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'settings'))}>
-                        <span class="flex h-6 w-6 shrink-0 items-center justify-center text-[14px] font-semibold" style={{ color: team.color }}>
+                      <button type="button" {...stylex.attrs(styles.teamMainButton)} onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'settings'))}>
+                        <span {...stylex.attrs(styles.teamAvatar(team.color))}>
                           {team.icon
-                            ? <Icon name={`lucide:${team.icon}`} class="h-6 w-6" aria-hidden="true" />
+                            ? <Icon name={`lucide:${team.icon}`} {...stylex.attrs(styles.teamIcon)} aria-hidden="true" />
                             : team.initial}
                         </span>
-                        <span class="min-w-0 flex-1 truncate">{team.name}</span>
+                        <span {...stylex.attrs(styles.label)}>{team.name}</span>
                       </button>
                       <button
                         type="button"
-                        class="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-[#6f727b] transition hover:bg-white/[0.06] hover:text-[#f0f1f4]"
+                        {...stylex.attrs(styles.expandButton)}
                         aria-expanded={nav.isTeamExpanded(team.key)}
                         aria-label={`${nav.isTeamExpanded(team.key) ? 'Collapse' : 'Expand'} ${team.name}`}
                         onClick={(event) => {
@@ -218,33 +279,33 @@ export default defineComponent({
                           nav.toggleTeam(team.key)
                         }}
                       >
-                        <Icon name="lucide:chevron-down" class={['h-3.5 w-3.5 transition-transform duration-200', nav.isTeamExpanded(team.key) ? '' : '-rotate-90']} aria-hidden="true" />
+                        <Icon name="lucide:chevron-down" {...stylex.attrs(styles.chevron, styles.chevronMd, nav.isTeamExpanded(team.key) ? null : styles.collapsedChevron)} aria-hidden="true" />
                       </button>
                     </div>
 
-                    <div class={['sidebar-collapse ml-5', nav.isTeamExpanded(team.key) ? 'sidebar-collapse-open' : 'sidebar-collapse-closed']} inert={!nav.isTeamExpanded(team.key)}>
-                      <div class="sidebar-collapse-inner space-y-0.5 pt-0.5">
-                        <button type="button" class={['flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition', navButtonClass(nav.isActiveView(nav.getTeamViewId(team.key, 'triage')))]} onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'triage'))}>
-                          <span class="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border border-current" aria-hidden="true">
-                            <Icon name="lucide:arrow-left-right" class="h-2.5 w-2.5" />
+                    <div {...stylex.attrs(styles.collapse, styles.teamNested, nav.isTeamExpanded(team.key) ? styles.collapseOpen : styles.collapseClosed)} inert={!nav.isTeamExpanded(team.key)}>
+                      <div {...stylex.attrs(styles.collapseInner, nav.isTeamExpanded(team.key) ? styles.collapseInnerOpen : null, styles.compactSection)}>
+                        <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, navButtonStyles(nav.isActiveView(nav.getTeamViewId(team.key, 'triage'))))} onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'triage'))}>
+                          <span {...stylex.attrs(styles.ticketIconWrap)} aria-hidden="true">
+                            <Icon name="lucide:arrow-left-right" {...stylex.attrs(styles.iconXs)} />
                           </span>
-                          <span class="flex-1 truncate">Triage</span>
+                          <span {...stylex.attrs(styles.label)}>Triage</span>
                           {team.triageCount > 0 && <span>{team.triageCount}</span>}
                         </button>
-                        <button type="button" class={['flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition', navButtonClass(nav.isTeamIssuesView(team.key))]} onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'active'))}>
-                          <Icon name="lucide:copy" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                          <span class="flex-1 truncate">Issues</span>
+                        <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, navButtonStyles(nav.isTeamIssuesView(team.key)))} onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'active'))}>
+                          <Icon name="lucide:copy" {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
+                          <span {...stylex.attrs(styles.label)}>Issues</span>
                         </button>
                         {team.key !== LOCAL_SPACE_KEY && (
                           <div>
-                            <div class={['flex h-6 w-full items-center rounded-md text-[12px] transition', nav.isTeamCyclesView(team.key) ? 'bg-white/[0.055] text-[#f0f1f4]' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]']}>
-                              <button type="button" class="flex h-full min-w-0 flex-1 items-center gap-2 rounded-l-md px-2 text-left" onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'directory'))}>
-                                <Icon name="lucide:circle-play" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                                <span class="flex-1 truncate">Cycles</span>
+                            <div {...stylex.attrs(styles.navButton, styles.navSubButton, nav.isTeamCyclesView(team.key) ? styles.teamRowActive : styles.navMutedInactive)}>
+                              <button type="button" {...stylex.attrs(styles.teamMainButton)} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'directory'))}>
+                                <Icon name="lucide:circle-play" {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
+                                <span {...stylex.attrs(styles.label)}>Cycles</span>
                               </button>
                               <button
                                 type="button"
-                                class="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-[#6f727b] transition hover:bg-white/[0.06] hover:text-[#f0f1f4]"
+                                {...stylex.attrs(styles.expandButton)}
                                 aria-expanded={nav.isCycleSectionExpanded(team.key)}
                                 aria-label={`${nav.isCycleSectionExpanded(team.key) ? 'Collapse' : 'Expand'} cycles`}
                                 onClick={(event) => {
@@ -252,25 +313,25 @@ export default defineComponent({
                                   nav.toggleCycleSection(team.key)
                                 }}
                               >
-                                <Icon name="lucide:chevron-down" class={['h-3 w-3 transition-transform duration-200', nav.isCycleSectionExpanded(team.key) ? '' : '-rotate-90']} aria-hidden="true" />
+                                <Icon name="lucide:chevron-down" {...stylex.attrs(styles.chevron, nav.isCycleSectionExpanded(team.key) ? null : styles.collapsedChevron)} aria-hidden="true" />
                               </button>
                             </div>
-                            <div class={['sidebar-collapse ml-[1.125rem] border-l border-white/[0.08] pl-2', nav.isCycleSectionExpanded(team.key) ? 'sidebar-collapse-open' : 'sidebar-collapse-closed']} inert={!nav.isCycleSectionExpanded(team.key)}>
-                              <div class="sidebar-collapse-inner pt-0.5">
-                                <button type="button" class={['flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition', nav.isCycleCurrentView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]']} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'current'))}>Current</button>
-                                <button type="button" class={['flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition', nav.isCycleUpcomingView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]']} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'upcoming'))}>Upcoming</button>
-                                <button type="button" class={['flex h-6 w-full items-center rounded-md px-2 text-left text-[12px] transition', nav.isCyclePreviousView(team.key) ? 'bg-white/[0.08] text-[#f0f1f4] ring-1 ring-inset ring-[#5b6abf]/70' : 'text-[#8f9198] hover:bg-white/[0.045] hover:text-[#d7d8dc]']} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'previous'))}>Previous</button>
+                            <div {...stylex.attrs(styles.collapse, styles.cycleNested, nav.isCycleSectionExpanded(team.key) ? styles.collapseOpen : styles.collapseClosed)} inert={!nav.isCycleSectionExpanded(team.key)}>
+                              <div {...stylex.attrs(styles.collapseInner, nav.isCycleSectionExpanded(team.key) ? styles.collapseInnerOpen : null)}>
+                                <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, nav.isCycleCurrentView(team.key) ? styles.cycleActive : styles.navMutedInactive)} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'current'))}>Current</button>
+                                <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, nav.isCycleUpcomingView(team.key) ? styles.cycleActive : styles.navMutedInactive)} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'upcoming'))}>Upcoming</button>
+                                <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, nav.isCyclePreviousView(team.key) ? styles.cycleActive : styles.navMutedInactive)} onClick={() => nav.selectView(nav.getTeamCycleViewId(team.key, 'previous'))}>Previous</button>
                               </div>
                             </div>
                           </div>
                         )}
-                        <button type="button" class={['flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition', navButtonClass(nav.isActiveView(nav.getTeamViewId(team.key, 'projects')))]} onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'projects'))}>
-                          <Icon name="lucide:box" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                          <span class="flex-1 truncate">Projects</span>
+                        <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, navButtonStyles(nav.isActiveView(nav.getTeamViewId(team.key, 'projects'))))} onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'projects'))}>
+                          <Icon name="lucide:box" {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
+                          <span {...stylex.attrs(styles.label)}>Projects</span>
                         </button>
-                        <button type="button" class={['flex h-6 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] transition', navButtonClass(nav.isTeamViewsView(team.key))]} onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'views'))}>
-                          <Icon name="lucide:layers" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                          <span class="flex-1 truncate">Views</span>
+                        <button type="button" {...stylex.attrs(styles.navButton, styles.navSubButton, navButtonStyles(nav.isTeamViewsView(team.key)))} onClick={() => nav.selectView(nav.getTeamViewId(team.key, 'views'))}>
+                          <Icon name="lucide:layers" {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
+                          <span {...stylex.attrs(styles.label)}>Views</span>
                         </button>
                       </div>
                     </div>
@@ -281,18 +342,18 @@ export default defineComponent({
           </nav>
         </div>
 
-        <div class="shrink-0 space-y-1 border-t border-white/[0.06] px-2 py-2">
-          <button type="button" class={['flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] text-[#8f9198] transition hover:bg-white/[0.045] hover:text-[#e6e7ea]', props.collapsed ? 'justify-center' : '']} disabled={props.refreshing} onClick={() => emit('refresh')}>
-            <span class={['w-4 text-center', { 'animate-spin': props.refreshing }]}>↻</span>
-            {!props.collapsed && <span class="flex-1 truncate">{props.refreshing ? 'Syncing' : 'Sync Jira'}</span>}
+        <div {...stylex.attrs(styles.footer, styles.footerStack)}>
+          <button type="button" {...stylex.attrs(styles.footerButton, props.collapsed ? styles.centered : null)} disabled={props.refreshing} onClick={() => emit('refresh')}>
+            <span {...stylex.attrs(styles.syncIcon, props.refreshing ? styles.spinning : null)}>↻</span>
+            {!props.collapsed && <span {...stylex.attrs(styles.label)}>{props.refreshing ? 'Syncing' : 'Sync Jira'}</span>}
           </button>
-          <button type="button" class={['flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] text-[#8f9198] transition hover:bg-white/[0.045] hover:text-[#e6e7ea]', props.collapsed ? 'justify-center' : '']} onClick={() => emit('settings')}>
-            <Icon name="lucide:settings" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {!props.collapsed && <span class="flex-1 truncate">Settings</span>}
+          <button type="button" {...stylex.attrs(styles.footerButton, props.collapsed ? styles.centered : null)} onClick={() => emit('settings')}>
+            <Icon name="lucide:settings" {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
+            {!props.collapsed && <span {...stylex.attrs(styles.label)}>Settings</span>}
           </button>
-          <button type="button" class={['flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[12px] text-[#8f9198] transition hover:bg-white/[0.045] hover:text-[#e6e7ea]', props.collapsed ? 'justify-center' : '']} onClick={() => emit('toggleCollapse')}>
-            <span class="w-4 text-center">{props.collapsed ? '›' : '‹'}</span>
-            {!props.collapsed && <span class="flex-1 truncate">Collapse sidebar</span>}
+          <button type="button" {...stylex.attrs(styles.footerButton, props.collapsed ? styles.centered : null)} onClick={() => emit('toggleCollapse')}>
+            <span {...stylex.attrs(styles.syncIcon)}>{props.collapsed ? '›' : '‹'}</span>
+            {!props.collapsed && <span {...stylex.attrs(styles.label)}>Collapse sidebar</span>}
           </button>
         </div>
 
@@ -300,16 +361,15 @@ export default defineComponent({
           {nav.teamMenuState.open && (
             <div
               ref={sidebarNavigation.teamMenuElement}
-              class="fixed z-[100] w-44 overflow-hidden rounded-xl border border-white/[0.08] bg-[#11131a]/95 p-1 text-sm text-slate-200 shadow-2xl shadow-black/40 backdrop-blur"
-              style={nav.teamMenuStyle}
+              {...stylex.attrs(styles.menu(nav.teamMenuStyle.top, nav.teamMenuStyle.left))}
               role="menu"
               onContextmenu={event => event.preventDefault()}
             >
-              <div class="border-b border-white/[0.06] px-2 py-1.5">
-                <p class="truncate text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">{nav.teamMenuState.teamName}</p>
+              <div {...stylex.attrs(styles.menuHeader)}>
+                <p {...stylex.attrs(styles.menuTitle)}>{nav.teamMenuState.teamName}</p>
               </div>
-              <button type="button" class="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs text-rose-300 transition hover:bg-rose-500/[0.12] hover:text-rose-200" role="menuitem" onClick={nav.leaveCurrentTeam}>
-                <Icon name="lucide:log-out" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <button type="button" {...stylex.attrs(styles.dangerMenuItem)} role="menuitem" onClick={nav.leaveCurrentTeam}>
+                <Icon name="lucide:log-out" {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
                 <span>Leave space</span>
               </button>
             </div>
@@ -318,16 +378,15 @@ export default defineComponent({
           {nav.favoriteMenuState.open && (
             <div
               ref={sidebarNavigation.favoriteMenuElement}
-              class="fixed z-[100] w-44 overflow-hidden rounded-xl border border-white/[0.08] bg-[#11131a]/95 p-1 text-sm text-slate-200 shadow-2xl shadow-black/40 backdrop-blur"
-              style={nav.favoriteMenuStyle}
+              {...stylex.attrs(styles.menu(nav.favoriteMenuStyle.top, nav.favoriteMenuStyle.left))}
               role="menu"
               onContextmenu={event => event.preventDefault()}
             >
-              <div class="border-b border-white/[0.06] px-2 py-1.5">
-                <p class="truncate text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">{nav.favoriteMenuState.viewLabel}</p>
+              <div {...stylex.attrs(styles.menuHeader)}>
+                <p {...stylex.attrs(styles.menuTitle)}>{nav.favoriteMenuState.viewLabel}</p>
               </div>
-              <button type="button" class="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs text-slate-200 transition hover:bg-white/[0.06] hover:text-white" role="menuitem" onClick={() => nav.setFavoriteIssueCountVisibility(!nav.favoriteMenuState.showIssueCount)}>
-                <Icon name={nav.favoriteMenuState.showIssueCount ? 'lucide:eye-off' : 'lucide:hash'} class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <button type="button" {...stylex.attrs(styles.menuItem)} role="menuitem" onClick={() => nav.setFavoriteIssueCountVisibility(!nav.favoriteMenuState.showIssueCount)}>
+                <Icon name={nav.favoriteMenuState.showIssueCount ? 'lucide:eye-off' : 'lucide:hash'} {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
                 <span>{nav.favoriteMenuState.showIssueCount ? 'Hide issue count' : 'Show issue count'}</span>
               </button>
             </div>

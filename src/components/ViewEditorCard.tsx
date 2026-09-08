@@ -1,8 +1,34 @@
 import type { PropType } from 'vue'
 import type { ActiveFilterChip } from '@/features/ticket-list/types'
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Icon } from '#components'
 import SpaceIconPicker from './SpaceIconPicker'
+
+const styles = stylex.create({
+  root: { position: 'relative', marginInline: '0.375rem', marginBottom: '0.375rem', flexShrink: 0, borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.035)' },
+  header: { display: 'flex', minHeight: '6.25rem', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', paddingInline: '0.75rem', paddingBlock: '0.75rem' },
+  mainGroup: { display: 'flex', minWidth: 0, flex: '1', alignItems: 'flex-start', gap: '0.75rem' },
+  iconButton: (backgroundColor: string) => ({ marginTop: '0.125rem', display: 'flex', height: '2rem', width: '2rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.375rem', backgroundColor, color: 'white', filter: { ':hover': 'brightness(1.1)' }, transitionProperty: 'filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }),
+  mainIcon: { height: '1.25rem', width: '1.25rem' },
+  picker: { position: 'absolute', left: '0.75rem', top: '3rem', zIndex: 50 },
+  fields: { minWidth: 0, flex: '1' },
+  nameInput: { 'height': '1.75rem', 'width': '100%', 'backgroundColor': 'transparent', 'fontSize': 15, 'fontWeight': 500, 'color': '#f0f1f4', 'outlineStyle': 'none', '::placeholder': { color: '#71737c' } },
+  descriptionInput: { 'marginTop': '0.5rem', 'height': '1.5rem', 'width': '100%', 'backgroundColor': 'transparent', 'fontSize': 13, 'color': '#aeb0b7', 'outlineStyle': 'none', '::placeholder': { color: '#5f626b' } },
+  actions: { display: 'flex', flexShrink: 0, alignItems: 'center', gap: '0.5rem' },
+  ghostButton: { borderRadius: '0.375rem', paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: 12, color: { 'default': '#d7d8dc', ':hover': '#f0f1f4' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.05)' } },
+  saveButton: { borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: { 'default': 'rgba(255, 255, 255, 0.06)', ':hover': 'rgba(255, 255, 255, 0.1)' }, paddingInline: '0.625rem', paddingBlock: '0.25rem', fontSize: 12, color: '#f0f1f4', cursor: { ':disabled': 'not-allowed' }, opacity: { ':disabled': 0.4 } },
+  footer: { display: 'flex', minHeight: '3rem', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: 'rgba(255, 255, 255, 0.06)', paddingInline: '0.75rem', paddingBlock: '0.5rem' },
+  chips: { display: 'flex', minWidth: 0, flex: '1', flexWrap: 'wrap', alignItems: 'center', gap: '0.375rem' },
+  chip: { display: 'inline-flex', height: '1.75rem', maxWidth: '18rem', alignItems: 'center', gap: '0.375rem', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.045)', paddingInline: '0.5rem', fontSize: 12, color: '#d7d8dc' },
+  truncate: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  chipOperator: { color: '#777a83' },
+  chipValue: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#f0f1f4' },
+  removeChipButton: { marginLeft: '0.125rem', display: 'flex', height: '1rem', width: '1rem', alignItems: 'center', justifyContent: 'center', borderRadius: '0.25rem', color: { 'default': '#777a83', ':hover': '#f0f1f4' }, backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.08)' } },
+  iconActions: { display: 'flex', flexShrink: 0, alignItems: 'center', gap: '0.5rem' },
+  roundIconButton: { display: 'flex', height: '2rem', width: '2rem', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: { 'default': 'rgba(255, 255, 255, 0.045)', ':hover': 'rgba(255, 255, 255, 0.08)' }, color: { 'default': '#8f9198', ':hover': '#f0f1f4' } },
+  icon: { height: '1rem', width: '1rem' },
+})
 
 function getInputValue(event: Event): string {
   const target = event.target
@@ -86,21 +112,20 @@ export default defineComponent({
     })
 
     return () => (
-      <div ref={rootElement} class="relative mx-1.5 mb-1.5 shrink-0 rounded-lg border border-white/[0.06] bg-white/[0.035]">
-        <div class="flex min-h-[6.25rem] items-start justify-between gap-4 px-3 py-3">
-          <div class="flex min-w-0 flex-1 items-start gap-3">
+      <div ref={rootElement} {...stylex.attrs(styles.root)}>
+        <div {...stylex.attrs(styles.header)}>
+          <div {...stylex.attrs(styles.mainGroup)}>
             <button
               type="button"
-              class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-white transition hover:brightness-110"
-              style={{ backgroundColor: props.color }}
+              {...stylex.attrs(styles.iconButton(props.color))}
               title="Change icon and color"
               onClick={toggleIconPicker}
             >
-              <Icon name={`lucide:${props.icon}`} class="h-5 w-5" aria-hidden="true" />
+              <Icon name={`lucide:${props.icon}`} {...stylex.attrs(styles.mainIcon)} aria-hidden="true" />
             </button>
 
             {iconPickerOpen.value && (
-              <div class="absolute left-3 top-12 z-50">
+              <div {...stylex.attrs(styles.picker)}>
                 <SpaceIconPicker
                   icon={props.icon}
                   color={props.color}
@@ -110,31 +135,31 @@ export default defineComponent({
               </div>
             )}
 
-            <div class="min-w-0 flex-1 space-y-2">
+            <div {...stylex.attrs(styles.fields)}>
               <input
                 value={props.name}
                 type="text"
-                class="h-7 w-full bg-transparent text-[15px] font-medium text-[#f0f1f4] outline-none placeholder:text-[#71737c]"
+                {...stylex.attrs(styles.nameInput)}
                 placeholder="All issues"
                 onInput={event => emit('update:name', getInputValue(event))}
               />
               <input
                 value={props.description}
                 type="text"
-                class="h-6 w-full bg-transparent text-[13px] text-[#aeb0b7] outline-none placeholder:text-[#5f626b]"
+                {...stylex.attrs(styles.descriptionInput)}
                 placeholder="Description (optional)"
                 onInput={event => emit('update:description', getInputValue(event))}
               />
             </div>
           </div>
 
-          <div class="flex shrink-0 items-center gap-2">
-            <button type="button" class="rounded-md px-2 py-1 text-[12px] text-[#d7d8dc] hover:bg-white/[0.05] hover:text-[#f0f1f4]" onClick={() => emit('cancel')}>
+          <div {...stylex.attrs(styles.actions)}>
+            <button type="button" {...stylex.attrs(styles.ghostButton)} onClick={() => emit('cancel')}>
               Cancel
             </button>
             <button
               type="button"
-              class="rounded-md border border-white/[0.08] bg-white/[0.06] px-2.5 py-1 text-[12px] text-[#f0f1f4] hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-40"
+              {...stylex.attrs(styles.saveButton)}
               disabled={props.saveDisabled}
               onClick={() => emit('save')}
             >
@@ -143,16 +168,16 @@ export default defineComponent({
           </div>
         </div>
 
-        <div class="flex min-h-12 items-center justify-between gap-3 border-t border-white/[0.06] px-3 py-2">
-          <div class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+        <div {...stylex.attrs(styles.footer)}>
+          <div {...stylex.attrs(styles.chips)}>
             {displayedFilterChips.value.map(filter => (
-              <span key={filter.id} class="inline-flex h-7 max-w-[18rem] items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.045] px-2 text-[12px] text-[#d7d8dc]">
-                <span class="truncate">{filter.fieldLabel}</span>
-                <span class="text-[#777a83]">is</span>
-                <span class="truncate text-[#f0f1f4]">{filter.valueLabel}</span>
+              <span key={filter.id} {...stylex.attrs(styles.chip)}>
+                <span {...stylex.attrs(styles.truncate)}>{filter.fieldLabel}</span>
+                <span {...stylex.attrs(styles.chipOperator)}>is</span>
+                <span {...stylex.attrs(styles.chipValue)}>{filter.valueLabel}</span>
                 <button
                   type="button"
-                  class="ml-0.5 flex h-4 w-4 items-center justify-center rounded text-[#777a83] hover:bg-white/[0.08] hover:text-[#f0f1f4]"
+                  {...stylex.attrs(styles.removeChipButton)}
                   aria-label={`Remove ${filter.fieldLabel} filter`}
                   onClick={() => emit('removeFilter', filter)}
                 >
@@ -162,12 +187,12 @@ export default defineComponent({
             ))}
           </div>
 
-          <div class="flex shrink-0 items-center gap-2">
-            <button type="button" class="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.045] text-[#8f9198] hover:bg-white/[0.08] hover:text-[#f0f1f4]" title="Filter" onClick={() => emit('openFilters')}>
-              <Icon name="lucide:list-filter" class="h-4 w-4" aria-hidden="true" />
+          <div {...stylex.attrs(styles.iconActions)}>
+            <button type="button" {...stylex.attrs(styles.roundIconButton)} title="Filter" onClick={() => emit('openFilters')}>
+              <Icon name="lucide:list-filter" {...stylex.attrs(styles.icon)} aria-hidden="true" />
             </button>
-            <button type="button" class="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.045] text-[#8f9198] hover:bg-white/[0.08] hover:text-[#f0f1f4]" title="Settings" onClick={() => emit('openSettings')}>
-              <Icon name="lucide:sliders-horizontal" class="h-4 w-4" aria-hidden="true" />
+            <button type="button" {...stylex.attrs(styles.roundIconButton)} title="Settings" onClick={() => emit('openSettings')}>
+              <Icon name="lucide:sliders-horizontal" {...stylex.attrs(styles.icon)} aria-hidden="true" />
             </button>
           </div>
         </div>

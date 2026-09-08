@@ -1,8 +1,21 @@
+import * as stylex from '@stylexjs/stylex'
 import { computed, defineComponent, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Icon } from '#components'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
 import SpaceIconPicker from '../SpaceIconPicker'
+
+const styles = stylex.create({
+  root: { minHeight: 0, flex: '1', overflowY: 'auto' },
+  content: { marginInline: 'auto', width: '100%', maxWidth: '48rem', paddingInline: '2rem', paddingBlock: '2.5rem' },
+  header: { position: 'relative', display: 'flex', alignItems: 'center', gap: '1rem' },
+  iconButton: (backgroundColor: string) => ({ display: 'flex', height: '3.5rem', width: '3.5rem', flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: '0.75rem', backgroundColor, color: 'white', filter: { ':hover': 'brightness(1.1)' }, transitionProperty: 'filter', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }),
+  icon: { fontSize: '32px', lineHeight: 1 },
+  initial: { fontSize: 28, fontWeight: 600, lineHeight: 1 },
+  title: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 28, fontWeight: 600, color: '#f0f1f4' },
+  picker: { position: 'absolute', left: 0, top: '4rem', zIndex: 50 },
+  description: { marginTop: '1rem', fontSize: 15, color: '#6f727b' },
+})
 
 export default defineComponent({
   name: 'TeamSettingsView',
@@ -72,27 +85,26 @@ export default defineComponent({
     })
 
     return () => (
-      <div class="min-h-0 flex-1 overflow-y-auto">
-        <div class="mx-auto w-full max-w-3xl px-8 py-10">
-          <div ref={rootElement} class="relative flex items-center gap-4">
+      <div {...stylex.attrs(styles.root)}>
+        <div {...stylex.attrs(styles.content)}>
+          <div ref={rootElement} {...stylex.attrs(styles.header)}>
             <button
               type="button"
-              class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-white transition hover:brightness-110"
-              style={{ backgroundColor: appearance.value.color }}
+              {...stylex.attrs(styles.iconButton(appearance.value.color))}
               aria-label={`Change icon and color for ${teamName.value}`}
               onClick={togglePicker}
             >
               {appearance.value.icon
-                ? <Icon name={`lucide:${appearance.value.icon}`} class="text-[32px] leading-none" aria-hidden="true" />
-                : <span class="text-[28px] font-semibold leading-none">{appearance.value.initial}</span>}
+                ? <Icon name={`lucide:${appearance.value.icon}`} {...stylex.attrs(styles.icon)} aria-hidden="true" />
+                : <span {...stylex.attrs(styles.initial)}>{appearance.value.initial}</span>}
             </button>
 
-            <h1 class="min-w-0 truncate text-[28px] font-semibold text-[#f0f1f4]">
+            <h1 {...stylex.attrs(styles.title)}>
               {teamName.value}
             </h1>
 
             {pickerOpen.value && (
-              <div class="absolute left-0 top-16 z-50">
+              <div {...stylex.attrs(styles.picker)}>
                 <SpaceIconPicker
                   icon={appearance.value.icon}
                   color={appearance.value.color}
@@ -103,7 +115,7 @@ export default defineComponent({
             )}
           </div>
 
-          <p class="mt-4 text-[15px] text-[#6f727b]">Add a description...</p>
+          <p {...stylex.attrs(styles.description)}>Add a description...</p>
         </div>
       </div>
     )
