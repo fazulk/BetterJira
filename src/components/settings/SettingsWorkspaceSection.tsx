@@ -87,8 +87,7 @@ export default defineComponent({
                   {jiraSavedBaseUrl.value}
                   {jiraSavedEmail.value && (
                     <span>
-                      {' '}
-                      ·
+                      {' · '}
                       {jiraSavedEmail.value}
                     </span>
                   )}

@@ -4,11 +4,6 @@ import { useProjectAppearances } from '@/composables/useProjectAppearances'
 import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 import IssueRow from '../IssueRow'
 
-function getInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'TicketListSearchView',
   setup() {
@@ -110,11 +105,10 @@ export default defineComponent({
             <span class="text-[12px] text-[#777a83]">Search</span>
             <input
               ref={context.setSearchInputRef}
-              value={context.issueSearch}
+              v-model={context.issueSearch}
               type="search"
               class="min-w-0 flex-1 bg-transparent text-[13px] text-[#e6e7ea] outline-none placeholder:text-[#6f727b]"
               placeholder="Search issues, projects, initiatives..."
-              onInput={(event) => { context.issueSearch = getInputValue(event) }}
             />
             {context.issueSearch && (
               <button type="button" class="rounded px-1.5 py-0.5 text-[11px] text-[#777a83] hover:bg-white/[0.06] hover:text-[#d7d8dc]" onClick={() => { context.issueSearch = '' }}>

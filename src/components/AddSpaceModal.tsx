@@ -10,11 +10,6 @@ import { buildTeamSpaceKey } from '~/shared/settings'
 
 type ModalMode = 'space' | 'team'
 
-function getInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'AddSpaceModal',
   props: {
@@ -245,13 +240,12 @@ export default defineComponent({
                   <label class="block">
                     <span class="mb-2 block text-xs font-medium text-slate-500">{searchLabel.value}</span>
                     <input
-                      value={searchQuery.value}
+                      v-model={searchQuery.value}
                       type="text"
                       name="sidebar-space-search"
                       placeholder={searchPlaceholder.value}
                       class="w-full rounded-md border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-slate-200 outline-none transition placeholder:text-slate-500 focus:border-white/[0.16] focus:bg-white/[0.06]"
                       autofocus
-                      onInput={(event) => { searchQuery.value = getInputValue(event) }}
                     />
                   </label>
 

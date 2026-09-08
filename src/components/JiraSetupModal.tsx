@@ -195,6 +195,7 @@ export default defineComponent({
                       is signed in.
                     </span>
                   )}
+                  {' '}
                   Add the spaces you want to load next, then continue into the workspace.
                 </p>
                 <p class="mx-auto max-w-md text-[12px] leading-5 text-slate-600">

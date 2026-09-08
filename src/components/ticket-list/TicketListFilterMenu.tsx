@@ -1,16 +1,6 @@
 import { defineComponent, reactive } from 'vue'
 import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 
-function getInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
-function getSelectValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLSelectElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'TicketListFilterMenu',
   setup() {
@@ -40,12 +30,11 @@ export default defineComponent({
         <div class="flex w-[15rem] shrink-0 flex-col border-r border-white/[0.06] py-1.5">
           <div class="px-2 pb-1">
             <input
-              value={context.filterFieldSearchQuery}
+              v-model={context.filterFieldSearchQuery}
               type="text"
               name="linear-filter-field-search"
               class="h-8 w-full rounded-md border border-white/[0.06] bg-black/20 px-2 text-[12px] text-[#d7d8dc] outline-none placeholder:text-[#6f727b] focus:border-white/[0.14]"
               placeholder="Add Filter..."
-              onInput={(event) => { context.filterFieldSearchQuery = getInputValue(event) }}
             />
           </div>
 
@@ -85,10 +74,9 @@ export default defineComponent({
                   <label class="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3 rounded-md py-1.5">
                     <span class="text-[12px] text-[#aeb0b7]">Completed issues</span>
                     <select
-                      value={context.completedRange}
+                      v-model={context.completedRange}
                       name="filter-completed-issues-range"
                       class="w-full rounded-md border border-white/[0.08] bg-white/[0.045] px-2 py-1.5 text-[12px] text-[#d7d8dc] outline-none focus:border-white/[0.16]"
-                      onChange={(event) => { context.completedRange = getSelectValue(event) as typeof context.completedRange }}
                     >
                       {context.issueVisibilityRangeOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                     </select>
@@ -124,10 +112,9 @@ export default defineComponent({
                     <label class="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3 rounded-md py-1.5">
                       <span class="text-[12px] text-[#aeb0b7]">Completed projects</span>
                       <select
-                        value={context.projectClosedRange}
+                        v-model={context.projectClosedRange}
                         name="filter-completed-projects-range"
                         class="w-full rounded-md border border-white/[0.08] bg-white/[0.045] px-2 py-1.5 text-[12px] text-[#d7d8dc] outline-none focus:border-white/[0.16]"
-                        onChange={(event) => { context.projectClosedRange = getSelectValue(event) as typeof context.projectClosedRange }}
                       >
                         {context.projectClosedRangeOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                       </select>
@@ -234,12 +221,11 @@ export default defineComponent({
                   <>
                     <div class="px-2 pb-1">
                       <input
-                        value={context.filterSearchQuery}
+                        v-model={context.filterSearchQuery}
                         type="text"
                         name="linear-filter-search"
                         class="h-8 w-full rounded-md border border-white/[0.06] bg-black/20 px-2 text-[12px] text-[#d7d8dc] outline-none placeholder:text-[#6f727b] focus:border-white/[0.14]"
                         placeholder={`Filter ${context.activeFilterEntry.label.toLowerCase()}...`}
-                        onInput={(event) => { context.filterSearchQuery = getInputValue(event) }}
                       />
                     </div>
                     <div class="max-h-[30rem] overflow-y-auto px-2">

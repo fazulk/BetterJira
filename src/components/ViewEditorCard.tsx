@@ -29,8 +29,7 @@ export default defineComponent({
       required: true,
     },
     saveDisabled: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     activeFilterChips: {
       type: Array as PropType<readonly ActiveFilterChip[] | undefined>,

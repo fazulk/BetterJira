@@ -224,8 +224,7 @@ export default defineComponent({
                     {ticketKey.value}
                     {ticketSummary.value && (
                       <span>
-                        {' '}
-                        ·
+                        {' · '}
                         {ticketSummary.value}
                       </span>
                     )}

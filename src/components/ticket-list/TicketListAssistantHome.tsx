@@ -11,11 +11,6 @@ const homeChatState = createAssistantChatState()
 const draft = ref('')
 const selectedSkillIds = ref<string[]>([])
 
-function getTextareaValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLTextAreaElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'TicketListAssistantHome',
   setup() {
@@ -165,11 +160,10 @@ export default defineComponent({
               <div class="flex items-end gap-2">
                 <textarea
                   ref={textareaRef}
-                  value={draft.value}
+                  v-model={draft.value}
                   rows="1"
                   placeholder={`Ask ${providerLabel.value}…`}
                   class="max-h-40 min-h-[2rem] flex-1 resize-none bg-transparent text-[17px] text-slate-200 outline-none placeholder:text-slate-600"
-                  onInput={(event) => { draft.value = getTextareaValue(event) }}
                   onKeydown={handleKeydown}
                 />
                 {isStreaming.value

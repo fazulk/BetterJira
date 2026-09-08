@@ -70,6 +70,19 @@ describe('ticket workspace TSX components', () => {
       },
     })
 
+    expect(wrapper.props('showId')).toBe(false)
+    expect(wrapper.text()).not.toContain('ENG-123')
+    expect(wrapper.text()).not.toContain('Project Phoenix')
+    expect(wrapper.text()).not.toContain('alpha')
+    await wrapper.setProps({
+      showId: true,
+      showStatus: true,
+      showLabels: true,
+      showPriority: true,
+      showAssignee: true,
+      showParent: true,
+    })
+
     expect(wrapper.text()).toContain('ENG-123')
     expect(wrapper.text()).toContain('Render the converted row')
     expect(wrapper.text()).toContain('Project Phoenix')

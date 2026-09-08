@@ -4,11 +4,6 @@ import type { Cycle } from '~/shared/cycles'
 import { computed, defineComponent, ref } from 'vue'
 import { cycleDaysRemaining, cycleProgress, formatCycleDateRange } from '~/shared/cycles'
 
-function getInputValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLInputElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'CyclePlanningHeader',
   props: {
@@ -117,10 +112,9 @@ export default defineComponent({
                 {addOpen.value && (
                   <div class="absolute top-9 right-0 z-30 w-72 overflow-hidden rounded-lg border border-white/[0.08] bg-[#15161a] p-2 shadow-xl shadow-black/40">
                     <input
-                      value={addQuery.value}
+                      v-model={addQuery.value}
                       class="mb-1 w-full rounded-md border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-[12px] text-slate-200 outline-none"
                       placeholder="Search issues"
-                      onInput={(event) => { addQuery.value = getInputValue(event) }}
                     />
                     {filteredAddable.value.map(ticket => (
                       <button

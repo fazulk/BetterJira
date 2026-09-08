@@ -47,44 +47,34 @@ export default defineComponent({
       required: true,
     },
     showId: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     showStatus: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     showLabels: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     showPriority: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     showStoryPoints: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     showAssignee: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     showCreated: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     showUpdated: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     showDue: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     showParent: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     projectAppearance: {
       type: Object as PropType<ProjectAppearance | null | undefined>,

@@ -1,6 +1,6 @@
 import type { StatusLane } from '@/composables/useStatusPreferences'
 import type { TeamStatusSettingsRow } from '@/features/settings/settingsTypes'
-import { computed, defineComponent, onBeforeUnmount, onMounted, ref, Teleport, vShow, withDirectives } from 'vue'
+import { computed, defineComponent, onBeforeUnmount, onMounted, ref, Teleport, vShow, watch, withDirectives } from 'vue'
 import SettingsCyclesSection from '@/components/settings/SettingsCyclesSection'
 import StatusIcon from '@/components/StatusIcon'
 import { getStatusLaneLabel, useStatusPreferences } from '@/composables/useStatusPreferences'
@@ -80,6 +80,12 @@ export default defineComponent({
 
     const customHexPreview = computed(() => normalizeHexInput(customHexDraft.value) ?? activeMenuColor.value)
     const isCustomHexValid = computed(() => normalizeHexInput(customHexDraft.value) !== null)
+
+    watch(activeMenuColor, (color) => {
+      if (colorMenu.value.open) {
+        customHexDraft.value = color.replace('#', '')
+      }
+    })
 
     function getIssueCountLabel(count: number): string {
       return `${count} ${count === 1 ? 'issue' : 'issues'}`
@@ -323,11 +329,9 @@ export default defineComponent({
                               <p class="truncate text-sm font-medium text-slate-100">{statusRow.status}</p>
                               <p class="mt-0.5 truncate text-xs text-slate-500">
                                 {getIssueCountLabel(statusRow.issueCount)}
-                                {' '}
-                                ·
+                                {' · '}
                                 {statusGroupLabels[statusRow.group]}
-                                {' '}
-                                ·
+                                {' · '}
                                 {statusRow.spaces || 'No space'}
                               </p>
                             </div>

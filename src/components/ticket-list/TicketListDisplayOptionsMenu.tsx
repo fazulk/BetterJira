@@ -2,11 +2,6 @@ import { defineComponent, reactive } from 'vue'
 import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 import TicketListGroupOrderingMenu from './TicketListGroupOrderingMenu'
 
-function getSelectValue(event: Event): string {
-  const target = event.target
-  return target instanceof HTMLSelectElement ? target.value : ''
-}
-
 export default defineComponent({
   name: 'TicketListDisplayOptionsMenu',
   setup() {
@@ -55,10 +50,9 @@ export default defineComponent({
                     </svg>
                   </button>
                   <select
-                    value={context.listGrouping}
+                    v-model={context.listGrouping}
                     name="issue-grouping"
                     class="w-full rounded-md border border-white/[0.08] bg-white/[0.045] px-2 py-1.5 text-[12px] text-[#d7d8dc] outline-none focus:border-white/[0.16]"
-                    onChange={(event) => { context.listGrouping = getSelectValue(event) as typeof context.listGrouping }}
                   >
                     {context.issueGroupingOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                   </select>
@@ -83,10 +77,9 @@ export default defineComponent({
                     </svg>
                   </button>
                   <select
-                    value={context.listOrdering}
+                    v-model={context.listOrdering}
                     name="issue-ordering"
                     class="w-full rounded-md border border-white/[0.08] bg-white/[0.045] px-2 py-1.5 text-[12px] text-[#d7d8dc] outline-none focus:border-white/[0.16]"
-                    onChange={(event) => { context.listOrdering = getSelectValue(event) as typeof context.listOrdering }}
                   >
                     {context.issueOrderingOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                   </select>
@@ -134,10 +127,9 @@ export default defineComponent({
                       <label class="grid grid-cols-[7.5rem_minmax(0,1fr)] items-center gap-3 rounded-md py-1">
                         <span class="text-[12px] text-[#8f9198]">Grouping</span>
                         <select
-                          value={context.projectGrouping}
+                          v-model={context.projectGrouping}
                           name="project-grouping"
                           class="w-full rounded-md border border-white/[0.08] bg-white/[0.045] px-2 py-1.5 text-[12px] text-[#d7d8dc] outline-none focus:border-white/[0.16]"
-                          onChange={(event) => { context.projectGrouping = getSelectValue(event) as typeof context.projectGrouping }}
                         >
                           {context.projectGroupingOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                         </select>
@@ -145,10 +137,9 @@ export default defineComponent({
                       <label class="grid grid-cols-[7.5rem_minmax(0,1fr)] items-center gap-3 rounded-md py-1">
                         <span class="text-[12px] text-[#8f9198]">Ordering</span>
                         <select
-                          value={context.projectOrdering}
+                          v-model={context.projectOrdering}
                           name="project-ordering"
                           class="w-full rounded-md border border-white/[0.08] bg-white/[0.045] px-2 py-1.5 text-[12px] text-[#d7d8dc] outline-none focus:border-white/[0.16]"
-                          onChange={(event) => { context.projectOrdering = getSelectValue(event) as typeof context.projectOrdering }}
                         >
                           {context.projectOrderingOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
                         </select>

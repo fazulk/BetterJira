@@ -59,8 +59,7 @@ export default defineComponent({
       required: true,
     },
     isStatusGrouping: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
+      type: Boolean,
     },
     getStatusCategoryForGroupLabel: {
       type: Function as PropType<((label: string) => string) | undefined>,

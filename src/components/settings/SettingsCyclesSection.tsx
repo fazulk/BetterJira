@@ -92,7 +92,12 @@ export default defineComponent({
                         </p>
                         <p class="text-sm text-slate-400" aria-live="polite">
                           {payload.value.current ? `${payload.value.current.name} · ${currentCount.value} issues` : 'No active sprint on this board.'}
-                          {isMutating.value && <span>Saving…</span>}
+                          {isMutating.value && (
+                            <span>
+                              {' '}
+                              Saving…
+                            </span>
+                          )}
                         </p>
                       </>
                     )}
