@@ -27,6 +27,25 @@ bun install
 bun dev
 ```
 
+### UI conventions
+
+Components and routes use Vue TSX: named `defineComponent` exports with `setup()` returning a render function. Read refs inside the render function, keep props reactive, and use Vue JSX `v-model` for native inputs so composition events retain Vue semantics.
+
+Use module-level StyleX definitions and `stylex.attrs()` for styling. Shared tokens live in `src/styles/tokens.stylex.ts`; components that accept parent overrides expose a typed `xstyle` prop. Presentation helpers return semantic variants rather than CSS classes. Keep plain CSS limited to browser defaults and namespaced Markdown/TipTap content.
+
+For dynamic camel-case properties, use a default condition, such as `gridTemplateColumns: { default: columns }`. This avoids mixed-case generated CSS variables that the current `stylex.attrs()` serializer would rename. `check:styles` rejects unsafe generated variables.
+
+The Nuxt and Vitest configurations share `stylex.config.ts`. The client plugin loads the development CSS/HMR entry. To validate without starting a server or producing a build:
+
+```bash
+bun run typecheck
+bun run check:styles
+bun run test
+bun run lint
+```
+
+`check:styles` compiles StyleX definitions only; it does not verify production CSS extraction or desktop packaging.
+
 ### Build for your OS
 
 Install for your system below. Packaged artifacts are written to `release/` unless noted otherwise.

@@ -1,5 +1,4 @@
 import { fileURLToPath } from 'node:url'
-import tailwindcss from '@tailwindcss/vite'
 import { createStylexPlugin } from './stylex.config'
 
 export default defineNuxtConfig({
@@ -32,6 +31,6 @@ export default defineNuxtConfig({
     dirs: ['src/composables'],
   },
   vite: {
-    plugins: [createStylexPlugin(), tailwindcss()],
+    plugins: [createStylexPlugin()],
   },
 })
