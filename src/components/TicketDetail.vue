@@ -9,7 +9,7 @@ import TicketDetailChildren from '@/components/ticket-detail/TicketDetailChildre
 import TicketDetailDescription from '@/components/ticket-detail/TicketDetailDescription.vue'
 import TicketDetailHeader from '@/components/ticket-detail/TicketDetailHeader.vue'
 import TicketDetailSidebar from '@/components/ticket-detail/TicketDetailSidebar.vue'
-import ViewHeaderBreadcrumb from '@/components/ViewHeaderBreadcrumb.vue'
+import ViewHeaderBreadcrumb from '@/components/ViewHeaderBreadcrumb'
 import { localTicketQueryKey, ticketQueryKey } from '@/composables/queryKeys'
 import { useAssistantPanel } from '@/composables/useAssistantPanel'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'

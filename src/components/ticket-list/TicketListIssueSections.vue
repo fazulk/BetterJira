@@ -2,7 +2,7 @@
 import type { IssueRowDisplayProps, IssueSection } from '@/features/ticket-list/types'
 import type { JiraTicket } from '@/types/jira'
 import IssueRow from '@/components/IssueRow.vue'
-import StatusIcon from '@/components/StatusIcon.vue'
+import StatusIcon from '@/components/StatusIcon'
 import { useProjectAppearances } from '@/composables/useProjectAppearances'
 
 defineProps<{

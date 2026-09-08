@@ -3,7 +3,7 @@ import type { StatusLane } from '@/composables/useStatusPreferences'
 import type { TeamStatusSettingsRow } from '@/features/settings/settingsTypes'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SettingsCyclesSection from '@/components/settings/SettingsCyclesSection.vue'
-import StatusIcon from '@/components/StatusIcon.vue'
+import StatusIcon from '@/components/StatusIcon'
 import { getStatusLaneLabel, useStatusPreferences } from '@/composables/useStatusPreferences'
 import { useSettingsPageContext } from '@/features/settings/settingsPageContext'
 

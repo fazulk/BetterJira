@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { JiraTicket } from '@/types/jira'
 import { computed, ref } from 'vue'
-import StatusIcon from '@/components/StatusIcon.vue'
+import StatusIcon from '@/components/StatusIcon'
 import { useSpaceCycles } from '@/composables/useSpaceCycles'
 import { useUpdateTicketSprint } from '@/composables/useUpdateTicketSprint'
 import {

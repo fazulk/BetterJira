@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 import ViewEditorCard from '../ViewEditorCard.vue'
-import ViewHeaderBreadcrumb from '../ViewHeaderBreadcrumb.vue'
+import ViewHeaderBreadcrumb from '../ViewHeaderBreadcrumb'
 import TicketListDisplayOptionsMenu from './TicketListDisplayOptionsMenu.vue'
 import TicketListFilterMenu from './TicketListFilterMenu.vue'
 

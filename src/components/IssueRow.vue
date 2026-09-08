@@ -2,7 +2,7 @@
 import type { JiraTicket } from '@/types/jira'
 import type { ProjectAppearance } from '~/shared/settings'
 import { computed } from 'vue'
-import StatusIcon from '@/components/StatusIcon.vue'
+import StatusIcon from '@/components/StatusIcon'
 import { isEpicIssueType } from '@/features/ticket-list/helpers'
 import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON } from '~/shared/settings'
 

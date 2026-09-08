@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import StatusIcon from '@/components/StatusIcon.vue'
+import StatusIcon from '@/components/StatusIcon'
 import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 
 const {

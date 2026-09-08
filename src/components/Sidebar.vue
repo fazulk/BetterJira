@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FavoriteViewNavItem } from '@/features/sidebar/useSidebarNavigation'
 import type { JiraTicket } from '@/types/jira'
-import StatusIcon from '@/components/StatusIcon.vue'
+import StatusIcon from '@/components/StatusIcon'
 import { useSidebarNavigation } from '@/features/sidebar/useSidebarNavigation'
 import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
 

@@ -2,7 +2,7 @@
 import type { JiraAssignableUser, JiraCreateIssueType, JiraTicket } from '@/types/jira'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import CreateTicketAssigneeField from '@/components/create-ticket/CreateTicketAssigneeField.vue'
-import CreateTicketDueDateField from '@/components/create-ticket/CreateTicketDueDateField.vue'
+import CreateTicketDueDateField from '@/components/create-ticket/CreateTicketDueDateField'
 import CreateTicketModalFooter from '@/components/create-ticket/CreateTicketModalFooter.vue'
 import CreateTicketModalHeader from '@/components/create-ticket/CreateTicketModalHeader.vue'
 import CreateTicketNotices from '@/components/create-ticket/CreateTicketNotices.vue'
