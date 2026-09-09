@@ -78,16 +78,19 @@ describe('useJiraTicket', () => {
   it('fetches the full ticket even when the list cache holds a partial entry', async () => {
     const queryClient = makeQueryClient()
     queryClient.setQueryData(ticketsQueryKey(['SPACE']), [makeTicket({ key: 'T-1' })])
-    fetchTicket.mockResolvedValue(makeTicket({ key: 'T-1', description: 'full description' }))
+    const linkedIssues = [{ id: '1', relationship: 'blocks', key: 'OTHER-2', summary: 'Linked ticket', status: 'Done', statusCategory: 'done' }]
+    fetchTicket.mockResolvedValue(makeTicket({ key: 'T-1', description: 'full description', linkedIssues }))
 
     const query = runComposable(queryClient, () => useJiraTicket(ref('T-1')))
 
     // Instant display from the list cache is preserved...
     expect(query.data.value?.summary).toBe('Summary for T-1')
+    expect(query.data.value?.linkedIssues).toBeUndefined()
 
     // ...but the detail fetch must still fire and fill in the missing fields.
     await vi.waitFor(() => expect(fetchTicket).toHaveBeenCalledWith('T-1'))
     await vi.waitFor(() => expect(query.data.value?.description).toBe('full description'))
+    expect(query.data.value?.linkedIssues).toEqual(linkedIssues)
   })
 
   it('does not write the partial list entry into the detail query cache', async () => {

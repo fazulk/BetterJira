@@ -21,6 +21,15 @@ export interface JiraSprintRef {
   state?: 'future' | 'active' | 'closed'
 }
 
+export interface JiraIssueLink {
+  id?: string
+  relationship: string
+  key: string
+  summary: string
+  status: string
+  statusCategory: string
+}
+
 export interface JiraTicket {
   key: string
   summary: string
@@ -51,6 +60,7 @@ export interface JiraTicket {
   description?: string
   descriptionAdf?: JiraAdfDocument
   attachments?: JiraAttachment[]
+  linkedIssues?: JiraIssueLink[]
   self: string
   parent?: {
     key: string

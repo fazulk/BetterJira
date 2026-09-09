@@ -36,6 +36,7 @@ const detailIssueFields = [
   'watches',
   'description',
   'attachment',
+  'issuelinks',
   'parent',
   'created',
   'updated',

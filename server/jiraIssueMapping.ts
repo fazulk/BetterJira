@@ -6,6 +6,7 @@ import type {
   JiraApiSprint,
   JiraApiUser,
   JiraAttachment,
+  JiraIssueLink,
   JiraSprintRef,
   JiraTeamRef,
   JiraTicket,
@@ -381,6 +382,36 @@ function mapAttachments(attachments: JiraApiAttachment[] | undefined): JiraAttac
   return mappedAttachments.length ? mappedAttachments : undefined
 }
 
+function mapIssueLinks(value: unknown): JiraIssueLink[] {
+  if (!Array.isArray(value))
+    return []
+
+  return value.flatMap((link: unknown): JiraIssueLink[] => {
+    if (!isRecord(link))
+      return []
+
+    const inward = isRecord(link.inwardIssue)
+    const issue = inward ? link.inwardIssue : link.outwardIssue
+    if (!isRecord(issue) || typeof issue.key !== 'string' || !issue.key.trim())
+      return []
+
+    const type = isRecord(link.type) ? link.type : undefined
+    const relationship = inward ? type?.inward : type?.outward
+    const fields = isRecord(issue.fields) ? issue.fields : undefined
+    const status = isRecord(fields?.status) ? fields.status : undefined
+    const statusCategory = isRecord(status?.statusCategory) ? status.statusCategory : undefined
+
+    return [{
+      id: typeof link.id === 'string' ? link.id : undefined,
+      relationship: typeof relationship === 'string' && relationship.trim() ? relationship : 'Linked to',
+      key: issue.key,
+      summary: typeof fields?.summary === 'string' ? fields.summary : '',
+      status: typeof status?.name === 'string' ? status.name : '',
+      statusCategory: typeof statusCategory?.key === 'string' ? statusCategory.key : '',
+    }]
+  })
+}
+
 export function mapIssue(
   issue: JiraApiIssue,
   includeDescription = false,
@@ -428,6 +459,7 @@ export function mapIssue(
     description: includeDescription ? extractDescription(fields?.description, descriptionAdf) : undefined,
     descriptionAdf,
     attachments: includeDescription ? mapAttachments(fields?.attachment) : undefined,
+    linkedIssues: includeDescription ? mapIssueLinks(fields?.issuelinks) : undefined,
     self: issue.self ?? '',
     parent: fields?.parent
       ? {

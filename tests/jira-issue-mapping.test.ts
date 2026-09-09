@@ -1,6 +1,45 @@
-import type { JiraApiIssueFields } from '../server/jiraTypes'
+import type { JiraApiIssueFields, JiraApiIssueLink } from '../server/jiraTypes'
 import { describe, expect, it } from 'vitest'
 import { mapIssue } from '../server/jiraIssueMapping'
+
+describe('mapIssue linked issues', () => {
+  const type = { name: 'Blocks', inward: 'is blocked by', outward: 'blocks' }
+  const linkedIssue = {
+    key: 'OTHER-2',
+    fields: { summary: 'A dependency', status: { name: 'In Progress', statusCategory: { key: 'indeterminate' } } },
+  }
+
+  it('uses the relationship label from the current ticket perspective', () => {
+    const issuelinks: JiraApiIssueLink[] = [
+      { id: '1', type, inwardIssue: linkedIssue },
+      { id: '2', type, outwardIssue: linkedIssue },
+      { id: '3', type: { name: 'Custom', outward: 'is deployed alongside' }, outwardIssue: linkedIssue },
+    ]
+    const ticket = mapIssue({ key: 'TEST-1', fields: { issuelinks } }, true)
+
+    expect(ticket.linkedIssues).toEqual([
+      { id: '1', relationship: 'is blocked by', key: 'OTHER-2', summary: 'A dependency', status: 'In Progress', statusCategory: 'indeterminate' },
+      { id: '2', relationship: 'blocks', key: 'OTHER-2', summary: 'A dependency', status: 'In Progress', statusCategory: 'indeterminate' },
+      { id: '3', relationship: 'is deployed alongside', key: 'OTHER-2', summary: 'A dependency', status: 'In Progress', statusCategory: 'indeterminate' },
+    ])
+    expect(mapIssue({ fields: { issuelinks } }).linkedIssues).toBeUndefined()
+  })
+
+  it('keeps key-only links and skips malformed links without a usable key', () => {
+    const fields = {
+      issuelinks: [null, {}, { inwardIssue: {} }, { outwardIssue: { key: ' ' } }, { outwardIssue: { key: 2 } }, { outwardIssue: { key: 'OTHER-3' } }],
+    } as unknown as JiraApiIssueFields
+
+    expect(mapIssue({ fields }, true).linkedIssues).toEqual([
+      { relationship: 'Linked to', key: 'OTHER-3', summary: '', status: '', statusCategory: '' },
+    ])
+  })
+
+  it.each([undefined, [], null, {}])('handles absent or invalid link collections: %j', (issuelinks) => {
+    const fields = { issuelinks } as unknown as JiraApiIssueFields
+    expect(mapIssue({ fields }, true).linkedIssues).toEqual([])
+  })
+})
 
 const storyPointFields = {
   estimate: 'customfield_estimate',

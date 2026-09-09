@@ -19,6 +19,15 @@ export interface JiraSprintRef {
   state?: 'future' | 'active' | 'closed'
 }
 
+export interface JiraIssueLink {
+  id?: string
+  relationship: string
+  key: string
+  summary: string
+  status: string
+  statusCategory: string
+}
+
 export interface JiraTicket {
   key: string
   summary: string
@@ -49,6 +58,7 @@ export interface JiraTicket {
   description?: string
   descriptionAdf?: JiraAdfDocument
   attachments?: JiraAttachment[]
+  linkedIssues?: JiraIssueLink[]
   self: string
   parent?: {
     key: string
@@ -253,6 +263,7 @@ export interface JiraApiIssueFields {
   }
   description?: unknown
   attachment?: JiraApiAttachment[]
+  issuelinks?: JiraApiIssueLink[]
   parent?: {
     key?: string
     fields?: {
@@ -262,6 +273,17 @@ export interface JiraApiIssueFields {
       }
     }
   }
+}
+
+export interface JiraApiIssueLink {
+  id?: string
+  type?: {
+    name?: string
+    inward?: string
+    outward?: string
+  }
+  inwardIssue?: JiraApiIssue
+  outwardIssue?: JiraApiIssue
 }
 
 export interface JiraApiIssue {

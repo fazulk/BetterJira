@@ -10,6 +10,7 @@ import TicketDetailActivity from '@/components/ticket-detail/TicketDetailActivit
 import TicketDetailChildren from '@/components/ticket-detail/TicketDetailChildren'
 import TicketDetailDescription from '@/components/ticket-detail/TicketDetailDescription'
 import TicketDetailHeader from '@/components/ticket-detail/TicketDetailHeader'
+import TicketDetailLinkedItems from '@/components/ticket-detail/TicketDetailLinkedItems'
 import TicketDetailSidebar from '@/components/ticket-detail/TicketDetailSidebar'
 import ViewHeaderBreadcrumb from '@/components/ViewHeaderBreadcrumb'
 import { localTicketQueryKey, ticketQueryKey } from '@/composables/queryKeys'
@@ -433,6 +434,14 @@ export default defineComponent({
                             onPrefetch={prefetchTicket}
                             onSelect={key => emit('select', key)}
                           />
+
+                          {!isLocalTicket.value && (
+                            <TicketDetailLinkedItems
+                              linkedIssues={currentTicket.linkedIssues}
+                              onPrefetch={prefetchTicket}
+                              onSelect={key => emit('select', key)}
+                            />
+                          )}
 
                           {!isLocalTicket.value && (
                             <TicketDetailActivity
