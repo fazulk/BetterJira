@@ -3,8 +3,8 @@ import { colors } from './tokens.stylex'
 
 export const notificationStyles = stylex.create({
   surface: { overflow: 'hidden', borderRadius: '0.5rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: `color-mix(in oklab, ${colors['--color-surface-1']} 95%, transparent)`, color: colors['--color-slate-200'], boxShadow: '0 20px 25px -5px rgba(0,0,0,0.35), 0 8px 10px -6px rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)' },
-  update: { position: 'fixed', bottom: '1rem', left: '1rem', zIndex: 90 },
-  stack: { pointerEvents: 'none', position: 'fixed', bottom: '1rem', right: '1rem', zIndex: 90, display: 'flex', width: '100%', maxWidth: '24rem', flexDirection: 'column', gap: '0.5rem' },
+  update: { position: 'fixed', bottom: '3.75rem', left: '1rem', zIndex: 90 },
+  stack: { pointerEvents: 'none', position: 'fixed', bottom: '3.75rem', right: '1rem', zIndex: 90, display: 'flex', width: '100%', maxWidth: '24rem', flexDirection: 'column', gap: '0.5rem' },
   toast: { pointerEvents: 'auto' },
   content: { display: 'flex', minWidth: 0, alignItems: 'center', gap: '0.75rem', paddingInline: '0.875rem', paddingBlock: '0.625rem' },
   dot: { width: '0.375rem', height: '0.375rem', flexShrink: 0, borderRadius: '9999px' },

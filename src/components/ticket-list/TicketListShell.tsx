@@ -1,5 +1,7 @@
 import * as stylex from '@stylexjs/stylex'
-import { defineComponent, reactive } from 'vue'
+import { defineComponent, onUnmounted, reactive, watchEffect } from 'vue'
+import { useAssistantSessions, workspaceContext } from '@/composables/useAssistantSessions'
+import { captureAssistantContext } from '@/features/ticket-list/assistantContext'
 import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 import { uiStyles } from '@/styles/shared'
 import { colors } from '@/styles/tokens.stylex'
@@ -23,7 +25,7 @@ import TicketListToolbarArea from './TicketListToolbarArea'
 const spin = stylex.keyframes({ to: { transform: 'rotate(360deg)' } })
 
 const styles = stylex.create({
-  shell: { display: 'flex', height: '100vh', overflow: 'hidden' },
+  shell: { display: 'flex', height: 'calc(100dvh - 44px)', overflow: 'hidden' },
   sidebarColumn: (width: string) => ({ position: 'relative', flexShrink: 0, width, transitionProperty: 'width', transitionDuration: '200ms' }),
   resizeHandle: { position: 'absolute', top: 0, right: '-1rem', zIndex: 10, height: '100%', width: '1rem', cursor: 'col-resize', touchAction: 'none', backgroundColor: 'transparent', outlineStyle: { ':focus': 'none' } },
   main: { minWidth: 0, flex: '1', overflow: 'hidden', padding: '0.5rem' },
@@ -43,45 +45,54 @@ export default defineComponent({
   name: 'TicketListShell',
   setup() {
     const context = reactive(useTicketListContext())
+    const sessions = useAssistantSessions()
+    watchEffect(() => {
+      sessions.currentContext.value = captureAssistantContext(context)
+    })
+    onUnmounted(() => {
+      sessions.currentContext.value = workspaceContext
+    })
 
     return () => (
       <div {...stylex.attrs(styles.shell, uiStyles.shell)} aria-busy={context.showInitialWorkspaceOverlay}>
-        <div {...stylex.attrs(styles.sidebarColumn(`${context.effectiveSidebarWidth}px`))}>
-          <Sidebar
-            tickets={context.tickets}
-            selectedKey={context.selectedKey}
-            collapsed={context.sidebarCollapsed}
-            refreshing={context.refreshing}
-            currentView={context.currentView}
-            favoriteViews={context.favoriteViewNavItems}
-            canGoBack={context.canGoBack}
-            canGoForward={context.canGoForward}
-            onBack={context.goBack}
-            onForward={context.goForward}
-            onSelect={context.openTicket}
-            onPrefetch={context.prefetchTicket}
-            onToggleCollapse={() => { context.sidebarCollapsed = !context.sidebarCollapsed }}
-            onRefresh={context.handleRefresh}
-            onHome={() => context.handleViewChange('assistant')}
-            onSettings={context.openSettings}
-            onCommand={context.openCommandMenu}
-            onView={context.handleViewChange}
-            onFavoriteView={context.handleFavoriteViewChange}
-            onFavorite-count-visibility={context.setFavoriteViewIssueCountVisible}
-            onAddSpace={context.openAddSpaceModal}
-            onLeave-space={context.handleLeaveSpace}
-          />
-          {!context.sidebarCollapsed && (
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              tabindex="0"
-              {...stylex.attrs(styles.resizeHandle)}
-              aria-label="Resize sidebar"
-              onPointerdown={context.startSidebarResize}
+        {(context.currentView !== 'assistant' || context.selectedKey) && (
+          <div {...stylex.attrs(styles.sidebarColumn(`${context.effectiveSidebarWidth}px`))}>
+            <Sidebar
+              tickets={context.tickets}
+              selectedKey={context.selectedKey}
+              collapsed={context.sidebarCollapsed}
+              refreshing={context.refreshing}
+              currentView={context.currentView}
+              favoriteViews={context.favoriteViewNavItems}
+              canGoBack={context.canGoBack}
+              canGoForward={context.canGoForward}
+              onBack={context.goBack}
+              onForward={context.goForward}
+              onSelect={context.openTicket}
+              onPrefetch={context.prefetchTicket}
+              onToggleCollapse={() => { context.sidebarCollapsed = !context.sidebarCollapsed }}
+              onRefresh={context.handleRefresh}
+              onHome={() => context.handleViewChange('assistant')}
+              onSettings={context.openSettings}
+              onCommand={context.openCommandMenu}
+              onView={context.handleViewChange}
+              onFavoriteView={context.handleFavoriteViewChange}
+              onFavorite-count-visibility={context.setFavoriteViewIssueCountVisible}
+              onAddSpace={context.openAddSpaceModal}
+              onLeave-space={context.handleLeaveSpace}
             />
-          )}
-        </div>
+            {!context.sidebarCollapsed && (
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                tabindex="0"
+                {...stylex.attrs(styles.resizeHandle)}
+                aria-label="Resize sidebar"
+                onPointerdown={context.startSidebarResize}
+              />
+            )}
+          </div>
+        )}
         <main {...stylex.attrs(styles.main)}>
           <div {...stylex.attrs(styles.contentPanel)}>
             {!context.selectedKey && !context.isTeamSettingsView && context.currentView !== 'assistant' && <TicketListToolbarArea />}

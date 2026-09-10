@@ -3,7 +3,6 @@ import type { JiraTicket } from '@/types/jira'
 import * as stylex from '@stylexjs/stylex'
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, defineComponent, onMounted, onUnmounted, ref } from 'vue'
-import { Icon } from '#components'
 import { fetchTicket } from '@/api/jira'
 import { fetchLocalTicket } from '@/api/localTickets'
 import TicketDetailActivity from '@/components/ticket-detail/TicketDetailActivity'
@@ -14,8 +13,6 @@ import TicketDetailLinkedItems from '@/components/ticket-detail/TicketDetailLink
 import TicketDetailSidebar from '@/components/ticket-detail/TicketDetailSidebar'
 import ViewHeaderBreadcrumb from '@/components/ViewHeaderBreadcrumb'
 import { localTicketQueryKey, ticketQueryKey } from '@/composables/queryKeys'
-import { useAssistantPanel } from '@/composables/useAssistantPanel'
-import { useAssistantSettings } from '@/composables/useAssistantSettings'
 import { useJiraTicket } from '@/composables/useJiraTicket'
 import { getCachedTickets } from '@/composables/useJiraTickets'
 import { useLocalTicket } from '@/composables/useLocalTicket'
@@ -27,7 +24,6 @@ import { uiStyles } from '@/styles/shared'
 import { breakpoints, colors } from '@/styles/tokens.stylex'
 import { buildJiraIssueUrl } from '@/utils/jiraIssueUrl'
 import { resolveSpaceAppearance } from '@/utils/spaceAppearance'
-import { getAssistantActionLabel } from '~/shared/assistant'
 import { isLocalTicketKey } from '~/shared/localTickets'
 
 type TicketDetailMode = 'inline' | 'panel'
@@ -65,8 +61,6 @@ const styles = stylex.create({
   layout: { display: 'grid', minHeight: { default: 'calc(100vh - 3rem)', [breakpoints.lg]: 0 }, gridTemplateColumns: { default: '1fr', [breakpoints.lg]: 'minmax(0,1fr) 19rem' }, backgroundColor: colors['--color-issue-detail-bg'], flex: { [breakpoints.lg]: '1' }, overflow: { [breakpoints.lg]: 'hidden' } },
   main: { minWidth: 0, paddingInline: { default: '1.5rem', [breakpoints.lg]: '2.5rem' }, paddingBlock: '2rem', overflowY: { [breakpoints.lg]: 'auto' } },
   content: { marginInline: 'auto', maxWidth: '48rem' },
-  assistantButton: { position: 'fixed', right: '1rem', bottom: '1rem', zIndex: 40, display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', borderWidth: 1, borderStyle: 'solid', borderColor: { 'default': 'rgba(255, 255, 255, 0.1)', ':hover': 'rgba(255, 255, 255, 0.2)' }, backgroundColor: { 'default': '#16171b', ':hover': '#1c1d22' }, paddingInline: '1rem', paddingBlock: '0.625rem', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: colors['--color-slate-100'], boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', transitionProperty: 'color, border-color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
-  assistantIcon: { width: '1rem', height: '1rem', color: colors['--color-accent-indigo'] },
   centeredMessage: { display: 'flex', alignItems: 'center', justifyContent: 'center', paddingBlock: '5rem' },
   errorMessage: { fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-rose-300'] },
   loadingStack: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' },
@@ -98,11 +92,7 @@ export default defineComponent({
   setup(props, { emit }) {
     const { isPinned, togglePinnedTicket } = usePinnedTickets()
     const { enabledSpaces, hasJiraCredentialsConfigured, jiraConnection } = useSpaceSettings()
-    const { settings: assistantSettings } = useAssistantSettings()
     const { showError, showSuccess } = useToast()
-    const assistantPanel = useAssistantPanel()
-    const assistantActionLabel = computed(() => getAssistantActionLabel(assistantSettings.value.provider))
-    const showAssistantButton = computed(() => !assistantPanel.isOpen.value)
     const ticketKey = computed(() => props.ticketKey)
     const isLocalTicket = computed(() => isLocalTicketKey(ticketKey.value))
     const jiraDataEnabled = computed(() => (
@@ -465,16 +455,6 @@ export default defineComponent({
                       />
                     </div>
 
-                    {showAssistantButton.value && (
-                      <button
-                        type="button"
-                        {...stylex.attrs(styles.assistantButton)}
-                        onClick={() => assistantPanel.openForTicket(currentTicket.key, currentTicket.summary)}
-                      >
-                        <Icon name="lucide:sparkles" {...stylex.attrs(styles.assistantIcon)} aria-hidden="true" />
-                        {assistantActionLabel.value}
-                      </button>
-                    )}
                   </div>
                 )
               : detailQueryError.value

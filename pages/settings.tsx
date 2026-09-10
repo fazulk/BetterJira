@@ -2,7 +2,7 @@ import * as stylex from '@stylexjs/stylex'
 import { defineComponent } from 'vue'
 import SettingsPage from '@/components/SettingsPage'
 
-const styles = stylex.create({ root: { height: '100vh', overflow: 'hidden' } })
+const styles = stylex.create({ root: { height: 'calc(100dvh - 44px)', overflow: 'hidden' } })
 
 export default defineComponent({
   name: 'SettingsRoute',

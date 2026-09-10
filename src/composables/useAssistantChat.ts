@@ -1,11 +1,16 @@
 import type { Ref } from 'vue'
-import type { AssistantChatMessage, AssistantMessageSkill } from '~/shared/assistant'
+import type { AssistantChatMessage, AssistantContext, AssistantMessageSkill, AssistantSettings } from '~/shared/assistant'
 import { computed, reactive, ref } from 'vue'
 import { streamAssistantChat } from '@/api/assistant'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 
 export interface AssistantTranscriptMessage extends AssistantChatMessage {
   id: number
+  createdAt: number
+  finishedAt?: number
+  updates?: string[]
+  model?: string
+  reasoning?: string
   /** True while this assistant message is still being streamed. */
   pending?: boolean
 }
@@ -36,6 +41,8 @@ export function createAssistantChatState(): AssistantChatState {
 }
 
 interface UseAssistantChatOptions {
+  settings?: Ref<AssistantSettings>
+  context?: AssistantContext
   ticketKey: Ref<string | null | undefined>
   ticketSummary: Ref<string | null | undefined>
   /** Called after a response is fully and successfully received (not on stop/error). */
@@ -45,7 +52,7 @@ interface UseAssistantChatOptions {
 }
 
 export function useAssistantChat(options: UseAssistantChatOptions) {
-  const { settings } = useAssistantSettings()
+  const settings = options.settings ?? useAssistantSettings().settings
 
   const state = options.state ?? createAssistantChatState()
   const { messages, isStreaming, statusText, errorText } = state
@@ -69,6 +76,7 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
     const last = messages.value[messages.value.length - 1]
     if (last && last.role === 'assistant') {
       last.pending = false
+      last.finishedAt = Date.now()
       if (!last.content.trim()) {
         last.content = '_Stopped._'
       }
@@ -86,12 +94,13 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
     statusText.value = ''
 
     messages.value.push({
+      createdAt: Date.now(),
       id: state.nextId++,
       role: 'user',
       content: trimmed,
       ...(hasSkills ? { skills } : {}),
     })
-    const assistantMessage = reactive<AssistantTranscriptMessage>({ id: state.nextId++, role: 'assistant', content: '', pending: true })
+    const assistantMessage = reactive<AssistantTranscriptMessage>({ id: state.nextId++, createdAt: Date.now(), updates: [], model: settings.value.model, reasoning: settings.value.reasoning, role: 'assistant', content: '', pending: true })
     messages.value.push(assistantMessage)
 
     const requestMessages: AssistantChatMessage[] = messages.value
@@ -109,17 +118,24 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
           provider: settings.value.provider,
           model: settings.value.model,
           reasoning: settings.value.reasoning,
+          context: options.context,
           ticketKey: options.ticketKey.value ?? undefined,
           ticketSummary: options.ticketSummary.value ?? undefined,
           messages: requestMessages,
         },
         (chunk) => {
+          if (state.abortController !== abortController || abortController.signal.aborted)
+            return
           if (chunk.type === 'delta') {
             assistantMessage.content += chunk.text
             statusText.value = ''
           }
           else if (chunk.type === 'status') {
             statusText.value = chunk.text
+            assistantMessage.updates?.push(chunk.text)
+          }
+          else if (chunk.type === 'done') {
+            succeeded = true
           }
           else if (chunk.type === 'error') {
             errorText.value = chunk.message
@@ -127,26 +143,29 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
         },
         abortController.signal,
       )
-      succeeded = true
+      if (!succeeded && !errorText.value && !abortController.signal.aborted) {
+        errorText.value = 'The assistant connection ended before the response completed.'
+      }
     }
     catch (error) {
-      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+      if (state.abortController === abortController && !(error instanceof DOMException && error.name === 'AbortError')) {
         errorText.value = error instanceof Error ? error.message : 'The assistant request failed.'
       }
     }
     finally {
-      assistantMessage.pending = false
-      if (errorText.value && !assistantMessage.content.trim()) {
-        // Drop the empty assistant bubble so only the error banner shows.
-        messages.value = messages.value.filter(message => message.id !== assistantMessage.id)
-      }
-      isStreaming.value = false
-      statusText.value = ''
-      if (state.abortController === abortController) {
+      if (state.abortController === abortController && !abortController.signal.aborted) {
+        assistantMessage.finishedAt = Date.now()
+        assistantMessage.pending = false
+        if (errorText.value && !assistantMessage.content.trim()) {
+          // Drop the empty assistant bubble so only the error banner shows.
+          messages.value = messages.value.filter(message => message.id !== assistantMessage.id)
+        }
+        isStreaming.value = false
+        statusText.value = ''
         state.abortController = null
-      }
-      if (succeeded && !errorText.value) {
-        options.onComplete?.()
+        if (succeeded && !errorText.value) {
+          options.onComplete?.()
+        }
       }
     }
   }

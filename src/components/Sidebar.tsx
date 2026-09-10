@@ -13,7 +13,7 @@ import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
 const spin = stylex.keyframes({ to: { transform: 'rotate(360deg)' } })
 
 const styles = stylex.create({
-  root: { display: 'flex', height: '100vh', width: '100%', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#090a0c', fontSize: 13, color: '#b9bbc3' },
+  root: { display: 'flex', height: '100%', minHeight: 0, width: '100%', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#090a0c', fontSize: 13, color: '#b9bbc3' },
   header: { display: 'flex', height: '2.75rem', flexShrink: 0, alignItems: 'center', gap: '0.5rem', paddingInline: '0.75rem' },
   homeButton: { display: 'flex', minWidth: 0, flex: '1', alignItems: 'center', gap: '0.5rem', borderRadius: '0.375rem', paddingInline: '0.375rem', paddingBlock: '0.25rem', textAlign: 'left', color: '#e6e7ea', backgroundColor: { 'default': null, ':hover': 'rgba(255, 255, 255, 0.05)' } },
   centered: { justifyContent: 'center' },
@@ -357,7 +357,7 @@ export default defineComponent({
             <Icon name="lucide:settings" {...stylex.attrs(styles.navIcon)} aria-hidden="true" />
             {!props.collapsed && <span {...stylex.attrs(styles.label)}>Settings</span>}
           </button>
-          <button type="button" {...stylex.attrs(styles.footerButton, props.collapsed ? styles.centered : null)} onClick={() => emit('toggleCollapse')}>
+          <button type="button" {...stylex.attrs(styles.footerButton, props.collapsed ? styles.centered : null)} aria-label={props.collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => emit('toggleCollapse')}>
             <span {...stylex.attrs(styles.syncIcon)}>{props.collapsed ? '›' : '‹'}</span>
             {!props.collapsed && <span {...stylex.attrs(styles.label)}>Collapse sidebar</span>}
           </button>

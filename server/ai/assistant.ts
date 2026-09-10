@@ -11,7 +11,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
-import { resolveAssistantSystemPrompt } from '../../shared/assistant'
+import { formatAssistantContext, resolveAssistantSystemPrompt } from '../../shared/assistant'
 import { isRecord } from '../../shared/typeGuards'
 import { getAppSettings } from '../settings'
 import { getLocalAiCommandPathEnv, requiresWindowsCommandShell, resolveLocalAiCommand } from './localProviders'
@@ -47,7 +47,7 @@ function buildSystemInstructions(request: AssistantChatRequest): string {
 
   return [
     persona,
-    ticketContext,
+    request.context ? formatAssistantContext(request.context) : ticketContext,
     '',
     '---',
     '# acli Jira reference',
