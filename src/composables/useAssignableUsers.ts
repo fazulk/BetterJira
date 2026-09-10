@@ -1,47 +1,47 @@
+import type { QueryClient } from '@tanstack/vue-query'
 import type { Ref } from 'vue'
-import type { JiraAssignableUser } from '@/types/jira'
-import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useQuery } from '@tanstack/vue-query'
+import { refDebounced } from '@vueuse/core'
 import { computed } from 'vue'
 import { fetchAssignableUsers } from '@/api/jira'
 
-export const assignableUsersQueryKey = (ticketKey: string | null) => ['ticket-assignees', ticketKey] as const
-const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000
+const ASSIGNEES_QUERY_KEY = ['ticket-assignees-v2'] as const
+const TWO_MINUTES_MS = 2 * 60_000
+
+export const assignableUsersQueryKey = (ticketKey: string | null, query = '') => [...ASSIGNEES_QUERY_KEY, ticketKey, query] as const
+
+export async function resetAssignableUsersCache(queryClient: QueryClient): Promise<void> {
+  await queryClient.cancelQueries({ queryKey: ASSIGNEES_QUERY_KEY })
+  queryClient.removeQueries({ queryKey: ['ticket-assignees'] })
+  await queryClient.resetQueries({ queryKey: ASSIGNEES_QUERY_KEY })
+}
 
 export function useAssignableUsers(
   ticketKey: Ref<string | null>,
-  options?: { queryEnabled?: Ref<boolean> },
+  options?: { queryEnabled?: Ref<boolean>, search?: Ref<string> },
 ) {
-  const queryClient = useQueryClient()
-
-  return useQuery({
-    queryKey: computed(() => assignableUsersQueryKey(ticketKey.value)),
-    queryFn: () => {
-      const key = ticketKey.value
-      if (!key) {
+  const search = computed(() => options?.search?.value.trim().toLowerCase() ?? '')
+  const debouncedSearch = refDebounced(search, 250)
+  const isDebouncing = computed(() => search.value !== debouncedSearch.value)
+  const query = useQuery({
+    queryKey: computed(() => assignableUsersQueryKey(ticketKey.value, debouncedSearch.value)),
+    queryFn: ({ queryKey }) => {
+      const [, key, query] = queryKey
+      if (!key)
         throw new Error('Ticket key is required')
-      }
-      return fetchAssignableUsers(key)
+      return fetchAssignableUsers(key, query)
     },
-    enabled: computed(() => {
-      if (!ticketKey.value)
-        return false
-      if (options?.queryEnabled && !options.queryEnabled.value)
-        return false
-      return true
-    }),
-    initialData: () => {
-      const key = ticketKey.value
-      if (!key)
-        return undefined
-      return queryClient.getQueryData<JiraAssignableUser[]>(assignableUsersQueryKey(key))
-    },
-    initialDataUpdatedAt: () => {
-      const key = ticketKey.value
-      if (!key)
-        return undefined
-      return queryClient.getQueryState(assignableUsersQueryKey(key))?.dataUpdatedAt
-    },
-    staleTime: TWO_DAYS_MS,
-    gcTime: TWO_DAYS_MS,
+    enabled: computed(() => Boolean(ticketKey.value) && (options?.queryEnabled?.value ?? true)),
+    staleTime: TWO_MINUTES_MS,
+    gcTime: TWO_MINUTES_MS,
+    retry: false,
   })
+
+  return {
+    ...query,
+    // A changed input must not leave results from the previous search selectable.
+    data: computed(() => isDebouncing.value || query.isError.value ? undefined : query.data.value),
+    error: computed(() => isDebouncing.value ? null : query.error.value),
+    isSearchPending: computed(() => isDebouncing.value || query.isFetching.value),
+  }
 }

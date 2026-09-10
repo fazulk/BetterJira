@@ -395,13 +395,21 @@ export default defineComponent({
                               {option.displayName}
                             </button>
                           ))}
-                          {!flatComboOptions.value.length && <div {...stylex.attrs(styles.empty)}>No matching users</div>}
+                          {!flatComboOptions.value.length && !assignableUsersQuery.isSearchPending.value && !assignableUsersQuery.error.value && <div {...stylex.attrs(styles.empty)}>No matching users</div>}
                         </div>
                         <div {...stylex.attrs(styles.actionRow)}>
                           <button {...stylex.attrs(styles.cancelButton)} onClick={cancelEditingAssignee}>
                             Cancel
                           </button>
-                          {assignableUsersQuery.isFetching.value && <span {...stylex.attrs(styles.loading)}>Loading...</span>}
+                          {assignableUsersQuery.isSearchPending.value && <span {...stylex.attrs(styles.loading)}>Loading...</span>}
+                          {assignableUsersQuery.error.value && (
+                            <>
+                              <span {...stylex.attrs(styles.error)}>{assignableUsersQuery.error.value.message}</span>
+                              <button {...stylex.attrs(styles.cancelButton)} onClick={() => assignableUsersQuery.refetch()}>
+                                Retry
+                              </button>
+                            </>
+                          )}
                           {assigneeError.value && <span {...stylex.attrs(styles.error)}>{assigneeError.value}</span>}
                         </div>
                       </div>

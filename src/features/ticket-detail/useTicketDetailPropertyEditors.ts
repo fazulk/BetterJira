@@ -58,7 +58,6 @@ function getAssigneeInitials(name: string | undefined) {
 
 export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditorsInput) {
   const queryClient = useQueryClient()
-  const assignableUsersQuery = useAssignableUsers(input.ticketKey, { queryEnabled: input.jiraDataEnabled })
   const prioritiesQuery = usePriorities(input.jiraDataEnabled)
   const updateAssigneeMutation = useUpdateTicketAssignee()
   const updatePriorityMutation = useUpdateTicketPriority()
@@ -71,6 +70,10 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
   const assigneeDraft = ref('')
   const assigneeError = ref<string | null>(null)
   const assigneeSearch = ref('')
+  const assignableUsersQuery = useAssignableUsers(input.ticketKey, {
+    queryEnabled: computed(() => input.jiraDataEnabled.value && isEditingAssignee.value && !input.isLocalTicket.value),
+    search: assigneeSearch,
+  })
   const assigneeHighlightIndex = ref(0)
   const assigneeInputRef = ref<HTMLInputElement | null>(null)
   const assigneeComboRef = ref<HTMLDivElement | null>(null)
@@ -129,7 +132,6 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
 
   function selectAssigneeOption(accountId: string) {
     assigneeDraft.value = accountId
-    assigneeSearch.value = ''
     addRecentAssignee(accountId)
     nextTick(() => saveAssignee())
   }
@@ -145,7 +147,7 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
     const options = flatComboOptions.value
     if (event.key === 'ArrowDown') {
       event.preventDefault()
-      assigneeHighlightIndex.value = Math.min(assigneeHighlightIndex.value + 1, options.length - 1)
+      assigneeHighlightIndex.value = Math.max(0, Math.min(assigneeHighlightIndex.value + 1, options.length - 1))
       scrollAssigneeHighlightIntoView()
     }
     else if (event.key === 'ArrowUp') {
@@ -203,15 +205,6 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
     nextTick(() => {
       assigneeInputRef.value?.focus()
     })
-
-    if (!assignableUsersQuery.data.value && !assignableUsersQuery.isFetching.value) {
-      try {
-        await assignableUsersQuery.refetch()
-      }
-      catch {
-        assigneeError.value = 'Failed to load assignees.'
-      }
-    }
   }
 
   function cancelEditingAssignee() {
@@ -430,6 +423,10 @@ export function useTicketDetailPropertyEditors(input: TicketDetailPropertyEditor
   }
 
   watch(assigneeSearch, () => {
+    assigneeHighlightIndex.value = 0
+  })
+
+  watch(flatComboOptions, () => {
     assigneeHighlightIndex.value = 0
   })
 

@@ -127,8 +127,8 @@ export function generateAiDescription(
   return apiFetch(path, 'Failed to generate AI description', { method: 'POST', json: input })
 }
 
-export function fetchAssignableUsers(key: string): Promise<JiraAssignableUser[]> {
-  return apiFetch(['tickets', key, 'assignees'], 'Failed to fetch assignees')
+export function fetchAssignableUsers(key: string, query = ''): Promise<JiraAssignableUser[]> {
+  return apiFetch(['tickets', key, 'assignees'], 'Failed to fetch assignees', { query: { query } })
 }
 
 export function updateTicketAssignee(key: string, accountId: string | null): Promise<JiraTicket> {

@@ -8,6 +8,7 @@ import {
   updateJiraConnection as persistJiraConnection,
 } from '@/api/settings'
 import { TICKETS_QUERY_KEY } from '@/composables/queryKeys'
+import { resetAssignableUsersCache } from '@/composables/useAssignableUsers'
 import { jiraSpaceDirectoryQueryKey, resetAvailableSpacesBootstrap } from '@/composables/useAvailableSpaces'
 import { jiraCurrentUserQueryKey } from '@/composables/useJiraCurrentUser'
 import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
@@ -277,6 +278,7 @@ export function useSpaceSettings() {
         queryClient.setQueryData(APP_SETTINGS_QUERY_KEY, persistedSettings)
       }
       resetAvailableSpacesBootstrap()
+      await resetAssignableUsersCache(queryClient)
       queryClient.removeQueries({
         queryKey: jiraSpaceDirectoryQueryKey,
       })

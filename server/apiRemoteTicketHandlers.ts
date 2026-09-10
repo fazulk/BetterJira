@@ -1,11 +1,12 @@
 import type { H3Event } from 'h3'
-import { readBody, readMultipartFormData } from 'h3'
+import { getQuery, readBody, readMultipartFormData } from 'h3'
 import { isRecord } from '../shared/typeGuards'
 import { generateAiDescriptionResponse } from './apiAiHandlers'
 import {
   API_HEADERS,
   badRequestResponse,
   decodePathSegment,
+  getStringQueryValue,
   isJiraRemoteTicketKey,
   jiraContentResponse,
   notFoundResponse,
@@ -17,11 +18,11 @@ import {
 import { JiraApiError } from './errors'
 import {
   addTicketMessage,
-  getAllAssignableUsers,
   getJiraAttachmentContentByFilename,
   getPriorities,
   getTicket,
   getTicketActivity,
+  getTicketAssignableUsers,
   getTicketMessages,
   getTransitions,
   updateTicketAssignee,
@@ -34,8 +35,8 @@ import {
   updateTicketWatching,
   uploadTicketAttachment,
 } from './jira'
-import { updateTicketSprint } from './jiraSprints'
 import { getTicketDevStatus } from './jiraDevStatus'
+import { updateTicketSprint } from './jiraSprints'
 
 const MAX_IMAGE_ATTACHMENT_BYTES = 25 * 1024 * 1024
 
@@ -97,7 +98,7 @@ export async function handleRemoteTicketApiRoute(
   }
 
   if (segments.length === 3 && segments[2] === 'assignees' && method === 'GET') {
-    const assignees = await getAllAssignableUsers()
+    const assignees = await getTicketAssignableUsers(ticketKey, getStringQueryValue(getQuery(event).query) ?? '')
     return Response.json(assignees, { headers: API_HEADERS })
   }
 
