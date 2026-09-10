@@ -1,4 +1,5 @@
 import type { ComponentPublicInstance } from 'vue'
+import type { AssistantViewState } from './assistantViewContext'
 import type {
   IssueRowDisplayProps,
   SearchResultTab,
@@ -918,6 +919,17 @@ export function useTicketListController() {
   }
   return {
     tickets,
+    assistantViewState: computed<AssistantViewState>(() => ({
+      kind: currentView.value === 'search' ? 'search' : isProjectDisplayView.value ? 'projects' : isInitiativeDisplayView.value ? 'initiatives' : isViewsDirectory.value ? 'views' : isCyclesDirectory.value ? 'cycles' : 'issues',
+      display: captureDisplay(),
+      filters: currentViewFilters.value,
+      currentUserName: currentUserName.value,
+      teamSection: currentTeamSection.value,
+      contextKey: contextKeyForCurrentView.value,
+      directoryTab: activeViewsDirectoryTab.value,
+      searchTab: searchResultTab.value,
+      spaceKeys: [...enabledSpaceKeys.value],
+    })),
     refreshing,
     isFavoriteView,
     sidebarCollapsed,

@@ -48,6 +48,24 @@ interface UseIssueGroupingDeps {
   captureDisplay: () => CustomViewDisplay
 }
 
+export function getIssueGroupingLabels(ticket: JiraTicket, fieldId: IssueGroupingFieldId): string[] {
+  if (fieldId === 'status')
+    return [ticket.status || 'No status']
+  if (fieldId === 'assignee')
+    return [ticket.assignee || 'Unassigned']
+  if (fieldId === 'agent')
+    return ['No agent']
+  if (fieldId === 'project')
+    return [ticket.parent?.summary ?? 'No project']
+  if (fieldId === 'priority')
+    return [ticket.priority || 'No priority']
+  if (fieldId === 'label') {
+    const labels = getTicketLabels(ticket)
+    return labels.length > 0 ? labels : ['No labels']
+  }
+  return ['All issues']
+}
+
 function isMyIssuesView(viewId: string): viewId is MyIssuesViewId {
   return viewId === 'my-issues' || viewId === 'my-created'
 }
@@ -166,23 +184,6 @@ export function useIssueGrouping(deps: UseIssueGroupingDeps) {
       { status: rightLabel, statusCategory: getStatusCategoryForGroupLabel(rightLabel) },
       deps.statusPreferences.value.order,
     )
-  }
-  function getIssueGroupingLabels(ticket: JiraTicket, fieldId: IssueGroupingFieldId): string[] {
-    if (fieldId === 'status')
-      return [ticket.status || 'No status']
-    if (fieldId === 'assignee')
-      return [ticket.assignee || 'Unassigned']
-    if (fieldId === 'agent')
-      return ['No agent']
-    if (fieldId === 'project')
-      return [ticket.parent?.summary ?? 'No project']
-    if (fieldId === 'priority')
-      return [ticket.priority || 'No priority']
-    if (fieldId === 'label') {
-      const labels = getTicketLabels(ticket)
-      return labels.length > 0 ? labels : ['No labels']
-    }
-    return ['All issues']
   }
   function getIssueGroupingRank(label: string, fieldId: IssueGroupingFieldId): number {
     if (fieldId === 'priority')

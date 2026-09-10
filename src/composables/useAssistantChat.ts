@@ -43,10 +43,11 @@ export function createAssistantChatState(): AssistantChatState {
 interface UseAssistantChatOptions {
   settings?: Ref<AssistantSettings>
   context?: AssistantContext
+  refreshContext?: (signal: AbortSignal) => Promise<AssistantContext>
   ticketKey: Ref<string | null | undefined>
   ticketSummary: Ref<string | null | undefined>
   /** Called after a response is fully and successfully received (not on stop/error). */
-  onComplete?: () => void
+  onComplete?: (context?: AssistantContext) => void
   /** External state so the transcript can outlive the component. Defaults to per-instance state. */
   state?: AssistantChatState
 }
@@ -111,16 +112,24 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
     const abortController = new AbortController()
     state.abortController = abortController
     let succeeded = false
+    let context = options.context
 
     try {
+      if (options.refreshContext) {
+        statusText.value = 'Refreshing context…'
+        context = await options.refreshContext(abortController.signal)
+        if (state.abortController !== abortController || abortController.signal.aborted)
+          return
+        statusText.value = ''
+      }
       await streamAssistantChat(
         {
           provider: settings.value.provider,
           model: settings.value.model,
           reasoning: settings.value.reasoning,
-          context: options.context,
-          ticketKey: options.ticketKey.value ?? undefined,
-          ticketSummary: options.ticketSummary.value ?? undefined,
+          context,
+          ticketKey: context ? (context.kind === 'ticket' ? context.key : undefined) : options.ticketKey.value ?? undefined,
+          ticketSummary: context ? (context.kind === 'ticket' ? context.summary : undefined) : options.ticketSummary.value ?? undefined,
           messages: requestMessages,
         },
         (chunk) => {
@@ -164,7 +173,7 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
         statusText.value = ''
         state.abortController = null
         if (succeeded && !errorText.value) {
-          options.onComplete?.()
+          options.onComplete?.(context)
         }
       }
     }

@@ -1,7 +1,9 @@
 import * as stylex from '@stylexjs/stylex'
 import { defineComponent, onUnmounted, reactive, watchEffect } from 'vue'
+import { useAssistantContextRefresh } from '@/composables/useAssistantContextRefresh'
 import { useAssistantSessions, workspaceContext } from '@/composables/useAssistantSessions'
 import { captureAssistantContext } from '@/features/ticket-list/assistantContext'
+import { createAssistantViewReader } from '@/features/ticket-list/assistantViewContext'
 import { useTicketListContext } from '@/features/ticket-list/ticketListContext'
 import { uiStyles } from '@/styles/shared'
 import { colors } from '@/styles/tokens.stylex'
@@ -46,11 +48,17 @@ export default defineComponent({
   setup() {
     const context = reactive(useTicketListContext())
     const sessions = useAssistantSessions()
+    const { capture } = useAssistantContextRefresh()
+    const captureContextRefresher = () => capture(createAssistantViewReader(captureAssistantContext(context), context.assistantViewState))
+    sessions.captureContextRefresher.value = captureContextRefresher
     watchEffect(() => {
       sessions.currentContext.value = captureAssistantContext(context)
     })
     onUnmounted(() => {
-      sessions.currentContext.value = workspaceContext
+      if (sessions.captureContextRefresher.value === captureContextRefresher) {
+        sessions.currentContext.value = workspaceContext
+        sessions.captureContextRefresher.value = undefined
+      }
     })
 
     return () => (

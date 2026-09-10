@@ -44,3 +44,20 @@ export function mergeCreatedTicketList(tickets: JiraTicket[], createdTicket: Jir
 export function detailTicketQueryKey(key: string): QueryKey {
   return isLocalTicketKey(key) ? localTicketQueryKey(key) : ticketQueryKey(key)
 }
+
+export function mergeJiraAndLocalTickets(jiraTickets: JiraTicket[], localTickets: JiraTicket[]): JiraTicket[] {
+  const byKey = new Map<string, JiraTicket>()
+  for (const ticket of jiraTickets) {
+    byKey.set(ticket.key, ticket)
+  }
+
+  for (const ticket of localTickets) {
+    byKey.set(ticket.key, ticket)
+  }
+
+  return [...byKey.values()].sort((left, right) => {
+    const leftTime = left.updatedAt ? Date.parse(left.updatedAt) : 0
+    const rightTime = right.updatedAt ? Date.parse(right.updatedAt) : 0
+    return rightTime - leftTime
+  })
+}

@@ -13,7 +13,7 @@ vi.mock('../server/ai/localProviders', () => ({
 }))
 
 describe('provider context prompts', () => {
-  it.each(['claude', 'codex'] as const)('includes captured context in the %s prompt', async (provider) => {
+  it.each(['claude', 'codex'] as const)('includes refreshed context in the %s prompt', async (provider) => {
     let input = ''
     let args: string[] = []
     spawned.mockImplementation((_path: string, commandArgs: string[]) => {
@@ -37,7 +37,8 @@ describe('provider context prompts', () => {
     }, vi.fn())
     const prompt = provider === 'codex' ? input : args[args.indexOf('--append-system-prompt') + 1]!
     expect(prompt).toContain('Test persona')
-    expect(prompt).toContain('Captured context')
+    expect(prompt).toContain('Current context')
+    expect(prompt).toContain('refreshed before each turn')
     expect(prompt).toContain('TEAM-1')
     expect(prompt).toContain('Status is open')
     expect(prompt).toContain('"truncated": true')

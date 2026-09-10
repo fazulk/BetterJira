@@ -14,10 +14,10 @@ import TicketDetailSidebar from '@/components/ticket-detail/TicketDetailSidebar'
 import ViewHeaderBreadcrumb from '@/components/ViewHeaderBreadcrumb'
 import { localTicketQueryKey, ticketQueryKey } from '@/composables/queryKeys'
 import { useJiraTicket } from '@/composables/useJiraTicket'
-import { getCachedTickets } from '@/composables/useJiraTickets'
 import { useLocalTicket } from '@/composables/useLocalTicket'
 import { usePinnedTickets } from '@/composables/usePinnedTickets'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
+import { useTicketsQuery } from '@/composables/useTicketsQuery'
 import { useToast } from '@/composables/useToast'
 import { getTeamViewId } from '@/features/ticket-list/helpers'
 import { uiStyles } from '@/styles/shared'
@@ -102,13 +102,14 @@ export default defineComponent({
     const ticketQuery = useJiraTicket(ticketKey, { queryEnabled: jiraDataEnabled })
     const localTicketQuery = useLocalTicket(ticketKey)
     const queryClient = useQueryClient()
+    const ticketsQuery = useTicketsQuery()
 
     const cachedTicket = computed<JiraTicket | null>(() => {
       const key = ticketKey.value
       if (!key)
         return null
 
-      const tickets = getCachedTickets(queryClient)
+      const tickets = ticketsQuery.data.value
       return tickets?.find(ticket => ticket.key === key) ?? null
     })
 
@@ -156,7 +157,7 @@ export default defineComponent({
       const key = ticketKey.value
       if (!key)
         return []
-      const allTickets = getCachedTickets(queryClient)
+      const allTickets = ticketsQuery.data.value
       if (!allTickets)
         return []
       return allTickets.filter(t => t.parent?.key === key)

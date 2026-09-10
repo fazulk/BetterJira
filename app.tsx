@@ -8,6 +8,7 @@ import JiraSetupModal from '@/components/JiraSetupModal'
 import LabelColorMenu from '@/components/LabelColorMenu'
 import { localTicketQueryKey, ticketQueryKey } from '@/composables/queryKeys'
 import { initAppUpdateListener } from '@/composables/useAppUpdate'
+import { useAssistantContextRefresh } from '@/composables/useAssistantContextRefresh'
 import { configureAssistantSessions } from '@/composables/useAssistantSessions'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 import { useJiraBackgroundSync } from '@/composables/useJiraBackgroundSync'
@@ -18,6 +19,7 @@ export default defineComponent({
   setup() {
     const { settings } = useAssistantSettings()
     const queryClient = useQueryClient()
+    const { refresh: refreshAssistantContext } = useAssistantContextRefresh()
     watchEffect(() => configureAssistantSessions(settings.value, (context) => {
       if (context.kind === 'ticket')
         void queryClient.invalidateQueries({ queryKey: context.local ? localTicketQueryKey(context.key) : ticketQueryKey(context.key) })
@@ -27,7 +29,7 @@ export default defineComponent({
         }
       }
       void queryClient.invalidateQueries({ queryKey: ['tickets'] })
-    }))
+    }, refreshAssistantContext))
     const { hasJiraCredentialsConfigured, isLoading } = useJiraBackgroundSync()
     const showJiraSetupModal = computed(() => !isLoading.value && !hasJiraCredentialsConfigured.value)
     onMounted(() => {

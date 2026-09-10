@@ -1,9 +1,6 @@
-import type { JiraTicket } from '@/types/jira'
 import * as stylex from '@stylexjs/stylex'
-import { useQueryClient } from '@tanstack/vue-query'
 import { defineComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Icon } from '#components'
-import { localTicketQueryKey, ticketQueryKey } from '@/composables/queryKeys'
 import { useAssistantNavigation } from '@/composables/useAssistantNavigation'
 import { useAssistantSessions, workspaceContext } from '@/composables/useAssistantSessions'
 import AssistantConversation from './AssistantConversation'
@@ -25,16 +22,8 @@ export default defineComponent({
   setup() {
     const sessions = useAssistantSessions()
     const { isHome, isWorkspace, expand } = useAssistantNavigation()
-    const queryClient = useQueryClient()
     function createConversation() {
-      const context = isWorkspace.value ? workspaceContext : sessions.currentContext.value
-      if (context.kind === 'ticket') {
-        const ticket = queryClient.getQueryData<JiraTicket>(context.local ? localTicketQueryKey(context.key) : ticketQueryKey(context.key))
-        sessions.create(ticket ? { ...context, summary: ticket.summary, snapshot: JSON.stringify(ticket) } : context)
-      }
-      else {
-        sessions.create(context)
-      }
+      sessions.create(isWorkspace.value ? workspaceContext : sessions.currentContext.value)
     }
     const tabs = ref<HTMLElement | null>(null)
     const left = ref(8)

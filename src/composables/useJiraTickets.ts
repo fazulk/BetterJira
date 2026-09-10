@@ -1,16 +1,15 @@
 import type { QueryClient, QueryKey } from '@tanstack/vue-query'
 import type { TicketsPayload } from '@/api/jira'
 import type { JiraTicket } from '@/types/jira'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { fetchTickets, refreshCache } from '@/api/jira'
-import { fetchLocalTickets } from '@/api/localTickets'
+import { refreshCache } from '@/api/jira'
 import { ticketQueryKey, TICKETS_QUERY_KEY, ticketsQueryKey } from '@/composables/queryKeys'
-import { mergeCreatedTicketList, mergeTicketList } from '@/composables/ticketCache'
+import { mergeCreatedTicketList, mergeJiraAndLocalTickets, mergeTicketList } from '@/composables/ticketCache'
 import { useSpaceSettings } from '@/composables/useSpaceSettings'
+import { getTicketsQueryOptions, useTicketsQuery } from '@/composables/useTicketsQuery'
 import { useToast } from '@/composables/useToast'
 import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
-import { buildEnabledSpaceSearchQuery } from '~/shared/settings'
 import { isRecord } from '~/shared/typeGuards'
 
 function isTicketsQueryKey(queryKey: QueryKey): boolean {
@@ -44,23 +43,6 @@ function isTicketsPayload(value: unknown): value is TicketsPayload {
 
 function isJiraTicketPayload(value: unknown): value is JiraTicket {
   return isRecord(value) && typeof value.key === 'string'
-}
-
-function mergeJiraAndLocalTickets(jiraTickets: JiraTicket[], localTickets: JiraTicket[]): JiraTicket[] {
-  const byKey = new Map<string, JiraTicket>()
-  for (const ticket of jiraTickets) {
-    byKey.set(ticket.key, ticket)
-  }
-
-  for (const ticket of localTickets) {
-    byKey.set(ticket.key, ticket)
-  }
-
-  return [...byKey.values()].sort((left, right) => {
-    const leftTime = left.updatedAt ? Date.parse(left.updatedAt) : 0
-    const rightTime = right.updatedAt ? Date.parse(right.updatedAt) : 0
-    return rightTime - leftTime
-  })
 }
 
 export function getLatestRemoteUpdatedAt(tickets: JiraTicket[]): string | undefined {
@@ -118,20 +100,7 @@ export function useJiraTickets() {
   const enabledSpaceKeys = computed(() => [...enabledSpaces.value.map(space => space.key)].sort())
   const activeTicketsQueryKey = computed(() => ticketsQueryKey(enabledSpaceKeys.value))
 
-  const ticketsQuery = useQuery({
-    queryKey: activeTicketsQueryKey,
-    refetchOnMount: false,
-    queryFn: async () => {
-      const localTickets = enabledSpaceKeys.value.includes(LOCAL_SPACE_KEY) ? await fetchLocalTickets() : []
-      if (!hasJiraCredentialsConfigured.value) {
-        return mergeJiraAndLocalTickets([], localTickets)
-      }
-
-      const jql = buildEnabledSpaceSearchQuery(enabledSpaces.value)
-      const jiraTickets = jql ? await fetchTickets({ jql }) : []
-      return mergeJiraAndLocalTickets(jiraTickets, localTickets)
-    },
-  })
+  const ticketsQuery = useTicketsQuery()
 
   watch(ticketsQuery.data, (data) => {
     if (!data)
@@ -184,19 +153,7 @@ export function useJiraTickets() {
 
       console.warn('Refresh timed out, falling back to direct fetch')
       try {
-        await queryClient.fetchQuery({
-          queryKey: activeTicketsQueryKey.value,
-          queryFn: async () => {
-            const localTickets = enabledSpaceKeys.value.includes(LOCAL_SPACE_KEY) ? await fetchLocalTickets() : []
-            if (!hasJiraCredentialsConfigured.value) {
-              return mergeJiraAndLocalTickets([], localTickets)
-            }
-
-            const jql = buildEnabledSpaceSearchQuery(enabledSpaces.value)
-            const jiraTickets = jql ? await fetchTickets({ jql }) : []
-            return mergeJiraAndLocalTickets(jiraTickets, localTickets)
-          },
-        })
+        await queryClient.fetchQuery(getTicketsQueryOptions(enabledSpaces.value, hasJiraCredentialsConfigured.value))
       }
       catch {
         error.value = 'Refresh timed out'
