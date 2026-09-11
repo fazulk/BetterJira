@@ -143,19 +143,36 @@ export function useIssueGrouping(deps: UseIssueGroupingDeps) {
         groups.set(label, [...(groups.get(label) ?? []), ticket])
       }
     }
-    return [...groups.entries()]
+    let entries = [...groups.entries()]
       .sort((left, right) => compareIssueGroupEntries(left, right, getRank))
-      .map(([label, sectionTickets]) => ({
-        id: label,
-        label,
-        tickets: sortTickets(sectionTickets),
-      }))
+
+    if (deps.listGrouping.value === 'status') {
+      const manualOrder = deps.issueGroupOrders.value.status ?? []
+      const manualRanks = new Map(manualOrder.map((id, index) => [id, index]))
+      const manualEntries = entries
+        .filter(([label]) => manualRanks.has(label))
+        .sort((left, right) => manualRanks.get(left[0])! - manualRanks.get(right[0])!)
+      let manualIndex = 0
+      // Reorder only the saved groups' slots. Statuses absent from an older
+      // view order retain their preferred positions instead of following Done.
+      entries = entries.map(entry => manualRanks.has(entry[0]) ? manualEntries[manualIndex++]! : entry)
+    }
+
+    return entries.map(([label, sectionTickets]) => ({
+      id: label,
+      label,
+      tickets: sortTickets(sectionTickets),
+    }))
   }
   function compareIssueGroupEntries(
     left: [string, JiraTicket[]],
     right: [string, JiraTicket[]],
     getRank: (label: string) => number,
   ): number {
+    if (deps.listGrouping.value === 'status') {
+      const statusComparison = compareStatusGroupLabels(left[0], right[0])
+      return deps.listGroupingDirection.value === 'desc' ? -statusComparison : statusComparison
+    }
     const manualOrder = deps.issueGroupOrders.value[deps.listGrouping.value] ?? []
     const leftManualIndex = manualOrder.indexOf(left[0])
     const rightManualIndex = manualOrder.indexOf(right[0])
@@ -166,11 +183,6 @@ export function useIssueGrouping(deps: UseIssueGroupingDeps) {
         return -1
       return leftManualIndex - rightManualIndex
     }
-    if (deps.listGrouping.value === 'status') {
-      const statusComparison = compareStatusGroupLabels(left[0], right[0])
-      return deps.listGroupingDirection.value === 'desc' ? -statusComparison : statusComparison
-    }
-
     return deps.listGroupingDirection.value === 'desc'
       ? getRank(right[0]) - getRank(left[0]) || right[0].localeCompare(left[0])
       : getRank(left[0]) - getRank(right[0]) || left[0].localeCompare(right[0])

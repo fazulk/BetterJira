@@ -213,6 +213,70 @@ describe('groupTickets and issue sections', () => {
     scope.stop()
   })
 
+  it('keeps statuses missing from an older view order in their preferred positions', () => {
+    const { grouping, listGrouping, issueGroupOrders, statusPreferences, scope } = setup([
+      makeTicket({ key: 'ENG-1', status: 'To Do', statusCategory: 'new' }),
+      makeTicket({ key: 'ENG-2', status: 'In Progress', statusCategory: 'indeterminate' }),
+      makeTicket({ key: 'ENG-3', status: 'Ready for QA', statusCategory: 'indeterminate' }),
+      makeTicket({ key: 'ENG-4', status: 'Done', statusCategory: 'done' }),
+      makeTicket({ key: 'ENG-5', status: 'Idea / Refining', statusCategory: 'new' }),
+      makeTicket({ key: 'ENG-6', status: 'Code Review', statusCategory: 'indeterminate' }),
+      makeTicket({ key: 'ENG-7', status: 'In QA', statusCategory: 'indeterminate' }),
+    ])
+    listGrouping.value = 'status'
+    statusPreferences.value.order = [
+      'new:to do',
+      'new:idea / refining',
+      'indeterminate:in progress',
+      'indeterminate:code review',
+      'indeterminate:ready for qa',
+      'indeterminate:in qa',
+      'done:done',
+    ]
+    const preferredOrder = [
+      'To Do',
+      'Idea / Refining',
+      'In Progress',
+      'Code Review',
+      'Ready for QA',
+      'In QA',
+      'Done',
+    ]
+    expect(grouping.issueSections.value.map(section => section.id)).toEqual(preferredOrder)
+
+    issueGroupOrders.value = { status: ['Idea', 'To Do', 'In Progress', 'Ready for QA', 'Done'] }
+    expect(grouping.issueSections.value.map(section => section.id)).toEqual(preferredOrder)
+    scope.stop()
+  })
+
+  it('preserves explicit status moves while filling gaps from the current preferences', () => {
+    const { grouping, listGrouping, listGroupingDirection, issueGroupOrders, statusPreferences, tickets, scope } = setup([
+      makeTicket({ key: 'ENG-1', status: 'To Do', statusCategory: 'new' }),
+      makeTicket({ key: 'ENG-2', status: 'In Progress', statusCategory: 'indeterminate' }),
+      makeTicket({ key: 'ENG-3', status: 'Done', statusCategory: 'done' }),
+    ])
+    listGrouping.value = 'status'
+    statusPreferences.value.order = ['new:to do', 'indeterminate:in progress', 'done:done']
+    issueGroupOrders.value = { status: ['Done', 'To Do'] }
+
+    expect(grouping.issueSections.value.map(section => section.id)).toEqual(['Done', 'In Progress', 'To Do'])
+    listGroupingDirection.value = 'desc'
+    expect(grouping.issueSections.value.map(section => section.id)).toEqual(['Done', 'In Progress', 'To Do'])
+
+    listGroupingDirection.value = 'asc'
+    statusPreferences.value.order = ['indeterminate:in progress', 'new:to do', 'done:done']
+    expect(grouping.issueSections.value.map(section => section.id)).toEqual(['In Progress', 'Done', 'To Do'])
+
+    tickets.value = tickets.value.filter(ticket => ticket.status !== 'In Progress')
+    expect(grouping.issueSections.value.map(section => section.id)).toEqual(['Done', 'To Do'])
+    tickets.value.push(makeTicket({ key: 'ENG-2', status: 'In Progress', statusCategory: 'indeterminate' }))
+    expect(grouping.issueSections.value.map(section => section.id)).toEqual(['In Progress', 'Done', 'To Do'])
+
+    grouping.resetCurrentIssueGroupOrdering()
+    expect(grouping.issueSections.value.map(section => section.id)).toEqual(['In Progress', 'To Do', 'Done'])
+    scope.stop()
+  })
+
   it('uses the view/grouping/section collapse-id grammar', () => {
     const { grouping, currentViewSource, listGrouping, collapsedIssueSectionIds, scope } = setup([
       makeTicket({ key: 'ENG-1', priority: 'High' }),
