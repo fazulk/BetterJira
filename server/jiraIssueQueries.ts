@@ -3,7 +3,7 @@ import { buildUpdatedSinceSearchQuery } from '../shared/settings'
 import { isRecord } from '../shared/typeGuards'
 import { broadcast } from './events'
 import { jiraFetch } from './jiraClient'
-import { isJiraApiIssue, mapIssue, resolveSprintFieldId, resolveStoryPointFieldIds, resolveTeamFieldId, resolveWorkflowPeopleFieldIds } from './jiraIssueMapping'
+import { isJiraApiIssue, mapIssue, resolveSprintFieldId, resolveStoryPointFieldIds, resolveTeamFieldId, resolveWorkflowPeopleFieldIds, writableStoryPointFieldId } from './jiraIssueMapping'
 import { buildDefaultSearchQuery } from './jiraProjects'
 import { getAppSettings } from './settings'
 
@@ -173,12 +173,17 @@ export async function getTicket(key: string): Promise<JiraTicket> {
     workflowPeopleFieldIds.approvedToProductionBy,
   ].filter((fieldId): fieldId is string => fieldId !== null))
 
-  const data = await jiraFetch(`/issue/${key}`, {
-    params: {
-      fields: fields.join(','),
-    },
-  })
-  return applyTeamSpaceBucketing(mapIssue(
+  const [data, editmeta] = await Promise.all([
+    jiraFetch(`/issue/${key}`, {
+      params: {
+        fields: fields.join(','),
+      },
+    }),
+    storyPointFieldIds.estimate || storyPointFieldIds.points
+      ? jiraFetch(`/issue/${key}/editmeta`).catch(() => null)
+      : Promise.resolve(null),
+  ])
+  const ticket = applyTeamSpaceBucketing(mapIssue(
     isJiraApiIssue(data) ? data : {},
     true,
     sprintFieldId,
@@ -186,6 +191,9 @@ export async function getTicket(key: string): Promise<JiraTicket> {
     storyPointFieldIds,
     workflowPeopleFieldIds,
   ))
+  if (editmeta !== null)
+    ticket.storyPointsEditable = writableStoryPointFieldId(editmeta, storyPointFieldIds) !== null
+  return ticket
 }
 
 export async function forceRefreshTickets(updatedSince?: Date): Promise<RefreshTicketsResult> {

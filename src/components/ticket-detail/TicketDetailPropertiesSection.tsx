@@ -2,11 +2,18 @@ import type { PropType } from 'vue'
 import type { DetailAvatarTone, DetailPriorityTone } from '@/features/ticket-detail/useTicketDetailPropertyEditors'
 import type { JiraTicket } from '@/types/jira'
 import * as stylex from '@stylexjs/stylex'
-import { computed, defineComponent, ref, vShow, withDirectives } from 'vue'
+import { computed, defineComponent, ref, vShow, watch, withDirectives } from 'vue'
 import { Icon } from '#components'
 import StatusIcon from '@/components/StatusIcon'
 import { useSpaceCycles } from '@/composables/useSpaceCycles'
 import { useUpdateTicketSprint } from '@/composables/useUpdateTicketSprint'
+import { useUpdateTicketStoryPoints } from '@/composables/useUpdateTicketStoryPoints'
+import {
+  canEditStoryPointsProperty,
+  formatStoryPointsLabel,
+  parseStoryPointsDraft,
+  shouldShowStoryPointsProperty,
+} from '@/features/ticket-detail/storyPoints'
 import {
 
   priorityConfig,
@@ -199,9 +206,15 @@ export default defineComponent({
     const cycleSpaceKey = computed(() => (props.isLocalTicket ? null : props.ticket.spaceKey))
     const spaceCycles = useSpaceCycles(cycleSpaceKey)
     const updateTicketSprintMutation = useUpdateTicketSprint()
+    const updateTicketStoryPointsMutation = useUpdateTicketStoryPoints()
     const isEditingCycle = ref(false)
     const cycleDraft = ref('')
     const cycleError = ref<string | null>(null)
+    const isEditingStoryPoints = ref(false)
+    const storyPointsDraft = ref('')
+    const storyPointsError = ref<string | null>(null)
+    const showStoryPoints = computed(() => shouldShowStoryPointsProperty(props.ticket, props.isLocalTicket))
+    const canEditStoryPoints = computed(() => canEditStoryPointsProperty(props.ticket, props.isLocalTicket))
 
     const cycleOptions = computed(() => {
       const options: Array<{ id: string, name: string }> = [{ id: '', name: 'No cycle' }]
@@ -260,6 +273,64 @@ export default defineComponent({
       catch (error) {
         cycleError.value = error instanceof Error ? error.message : 'Failed to update cycle.'
       }
+    }
+
+    function storyPointsDraftFromTicket(): string {
+      return props.ticket.storyPoints === undefined ? '' : String(props.ticket.storyPoints)
+    }
+
+    function startEditingStoryPoints(): void {
+      if (!canEditStoryPoints.value || updateTicketStoryPointsMutation.isPending.value)
+        return
+      storyPointsDraft.value = storyPointsDraftFromTicket()
+      storyPointsError.value = null
+      isEditingStoryPoints.value = true
+    }
+
+    function cancelEditingStoryPoints(): void {
+      isEditingStoryPoints.value = false
+      storyPointsError.value = null
+    }
+
+    async function saveStoryPoints(): Promise<void> {
+      const parsed = parseStoryPointsDraft(storyPointsDraft.value)
+      if (parsed === 'invalid') {
+        storyPointsError.value = 'Enter a non-negative number.'
+        return
+      }
+
+      if (parsed === (props.ticket.storyPoints ?? null)) {
+        isEditingStoryPoints.value = false
+        storyPointsError.value = null
+        return
+      }
+
+      try {
+        await updateTicketStoryPointsMutation.mutateAsync({
+          key: props.ticket.key,
+          storyPoints: parsed,
+        })
+        isEditingStoryPoints.value = false
+        storyPointsError.value = null
+      }
+      catch (error) {
+        storyPointsError.value = error instanceof Error ? error.message : 'Failed to update story points.'
+      }
+    }
+
+    watch(() => props.ticket.key, () => {
+      isEditingStoryPoints.value = false
+      storyPointsError.value = null
+      storyPointsDraft.value = storyPointsDraftFromTicket()
+    })
+
+    function StoryPointsIcon() {
+      return (
+        <svg {...stylex.attrs(styles.icon)} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 11.5l3-3 2 2 5-6" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 4.5h3v3" />
+        </svg>
+      )
     }
 
     expose({
@@ -522,17 +593,60 @@ export default defineComponent({
                   )}
             </div>
 
-            {props.ticket.storyPoints !== undefined && (
-              <div {...stylex.attrs(styles.row, styles.rowGap)}>
-                <svg {...stylex.attrs(styles.icon)} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 11.5l3-3 2 2 5-6" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 4.5h3v3" />
-                </svg>
-                <span {...stylex.attrs(styles.value)}>
-                  {props.ticket.storyPoints}
-                  {' '}
-                  {props.ticket.storyPoints === 1 ? 'story point' : 'story points'}
-                </span>
+            {showStoryPoints.value && (
+              <div {...stylex.attrs(styles.row, isEditingStoryPoints.value ? styles.rowStart : styles.rowGap)}>
+                {isEditingStoryPoints.value
+                  ? (
+                      <div {...stylex.attrs(styles.editStack)}>
+                        <input
+                          id="detail-story-points"
+                          v-model={storyPointsDraft.value}
+                          {...stylex.attrs(styles.selectInput)}
+                          inputmode="decimal"
+                          placeholder="Story points"
+                          onKeydown={(event: KeyboardEvent) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault()
+                              void saveStoryPoints()
+                            }
+                            else if (event.key === 'Escape') {
+                              event.preventDefault()
+                              cancelEditingStoryPoints()
+                            }
+                          }}
+                        />
+                        <div {...stylex.attrs(styles.actionRow)}>
+                          <button
+                            {...stylex.attrs(styles.saveButton)}
+                            disabled={updateTicketStoryPointsMutation.isPending.value}
+                            onClick={() => void saveStoryPoints()}
+                          >
+                            {updateTicketStoryPointsMutation.isPending.value ? '...' : 'Save'}
+                          </button>
+                          <button {...stylex.attrs(styles.cancelButton)} onClick={cancelEditingStoryPoints}>
+                            Cancel
+                          </button>
+                          {storyPointsError.value && <span {...stylex.attrs(styles.error)}>{storyPointsError.value}</span>}
+                        </div>
+                      </div>
+                    )
+                  : canEditStoryPoints.value
+                    ? (
+                        <button {...stylex.attrs(styles.inlineButton)} onClick={startEditingStoryPoints}>
+                          <StoryPointsIcon />
+                          <span {...stylex.attrs(styles.value, props.ticket.storyPoints === undefined ? styles.valueMuted : null)}>
+                            {props.ticket.storyPoints === undefined ? 'No story points' : formatStoryPointsLabel(props.ticket.storyPoints)}
+                          </span>
+                        </button>
+                      )
+                    : (
+                        <>
+                          <StoryPointsIcon />
+                          <span {...stylex.attrs(styles.value)}>
+                            {props.ticket.storyPoints === undefined ? 'No story points' : formatStoryPointsLabel(props.ticket.storyPoints)}
+                          </span>
+                        </>
+                      )}
               </div>
             )}
           </div>,

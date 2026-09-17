@@ -1,6 +1,6 @@
 import type { JiraApiIssueFields, JiraApiIssueLink } from '../server/jiraTypes'
 import { describe, expect, it } from 'vitest'
-import { mapIssue } from '../server/jiraIssueMapping'
+import { mapIssue, writableStoryPointFieldId } from '../server/jiraIssueMapping'
 
 describe('mapIssue linked issues', () => {
   const type = { name: 'Blocks', inward: 'is blocked by', outward: 'blocks' }
@@ -87,6 +87,33 @@ describe('mapIssue story points', () => {
     expect(mapStoryPoints('invalid', 1.5)).toBe(1.5)
     expect(mapStoryPoints(undefined, undefined)).toBeUndefined()
     expect(mapStoryPoints(Number.NaN, Number.POSITIVE_INFINITY)).toBeUndefined()
+  })
+})
+
+describe('writableStoryPointFieldId', () => {
+  const fieldIds = { estimate: 'customfield_estimate', points: 'customfield_points' }
+
+  it('prefers Story point estimate when both fields are editable', () => {
+    expect(writableStoryPointFieldId({
+      fields: {
+        customfield_estimate: { operations: ['set'] },
+        customfield_points: { operations: ['set'] },
+      },
+    }, fieldIds)).toBe('customfield_estimate')
+  })
+
+  it('falls back to Story Points and treats a missing operations list as writable', () => {
+    expect(writableStoryPointFieldId({
+      fields: { customfield_points: { name: 'Story Points' } },
+    }, fieldIds)).toBe('customfield_points')
+  })
+
+  it('returns null for epics and other issue types without a writable field', () => {
+    expect(writableStoryPointFieldId({ fields: { summary: { operations: ['set'] } } }, fieldIds)).toBeNull()
+    expect(writableStoryPointFieldId({
+      fields: { customfield_points: { operations: ['add'] } },
+    }, fieldIds)).toBeNull()
+    expect(writableStoryPointFieldId(null, fieldIds)).toBeNull()
   })
 })
 

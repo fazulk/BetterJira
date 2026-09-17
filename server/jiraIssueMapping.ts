@@ -198,6 +198,30 @@ export async function resolveStoryPointFieldIds(): Promise<StoryPointFieldIds> {
   }
 }
 
+/** Prefer Story point estimate, then Story Points — same order as mapStoryPoints. */
+export function writableStoryPointFieldId(
+  editmeta: unknown,
+  fieldIds: StoryPointFieldIds,
+): string | null {
+  if (!isRecord(editmeta) || !isRecord(editmeta.fields))
+    return null
+
+  const fields = editmeta.fields
+  for (const fieldId of [fieldIds.estimate, fieldIds.points]) {
+    if (!fieldId)
+      continue
+    const field = fields[fieldId]
+    if (!isRecord(field))
+      continue
+    const operations = field.operations
+    if (Array.isArray(operations) && !operations.includes('set'))
+      continue
+    return fieldId
+  }
+
+  return null
+}
+
 async function resolveCustomFieldIdByExactName(name: string): Promise<string | null> {
   const data = await jiraFetch('/field/search', {
     params: {

@@ -38,6 +38,8 @@ export interface JiraTicket {
   inCurrentSprint: boolean
   sprints?: JiraSprintRef[]
   storyPoints?: number
+  /** Present on detail fetches when editmeta was checked. */
+  storyPointsEditable?: boolean
   createdAt?: string
   updatedAt?: string
   dueDate?: string

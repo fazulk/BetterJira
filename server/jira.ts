@@ -7,6 +7,7 @@ export {
   updateTicketDescription,
   updateTicketLabels,
   updateTicketPriority,
+  updateTicketStoryPoints,
   updateTicketTeam,
   updateTicketTitle,
 } from './jiraFieldUpdates'

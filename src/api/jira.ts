@@ -152,6 +152,13 @@ export function updateTicketTeam(key: string, teamId: string | null): Promise<Ji
   })
 }
 
+export function updateTicketStoryPoints(key: string, storyPoints: number | null): Promise<JiraTicket> {
+  return apiFetch(['tickets', key, 'story-points'], 'Failed to update story points', {
+    method: 'PUT',
+    json: { storyPoints },
+  })
+}
+
 export function updateTicketLabels(key: string, labels: string[]): Promise<JiraTicket> {
   return apiFetch(['tickets', key, 'labels'], 'Failed to update labels', {
     method: 'PUT',

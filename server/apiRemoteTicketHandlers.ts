@@ -12,6 +12,7 @@ import {
   notFoundResponse,
   parseDescriptionBody,
   parseLabelsBody,
+  parseNullableNumberBodyField,
   parseNullableStringBodyField,
   parseStringBodyField,
 } from './apiRouteUtils'
@@ -30,6 +31,7 @@ import {
   updateTicketLabels,
   updateTicketPriority,
   updateTicketStatus,
+  updateTicketStoryPoints,
   updateTicketTeam,
   updateTicketTitle,
   updateTicketWatching,
@@ -154,6 +156,16 @@ export async function handleRemoteTicketApiRoute(
       ? body.sprintId.trim()
       : null
     const ticket = await updateTicketSprint(ticketKey, sprintId)
+    return Response.json(ticket, { headers: API_HEADERS })
+  }
+
+  if (segments.length === 3 && segments[2] === 'story-points' && method === 'PUT') {
+    const parsed = parseNullableNumberBodyField(await readBody<unknown>(event), 'storyPoints')
+    if (!parsed.ok) {
+      return badRequestResponse('storyPoints must be a non-negative number or null.')
+    }
+
+    const ticket = await updateTicketStoryPoints(ticketKey, parsed.value)
     return Response.json(ticket, { headers: API_HEADERS })
   }
 

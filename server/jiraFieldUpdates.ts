@@ -4,7 +4,7 @@ import { ValidationError } from './errors'
 import { broadcast } from './events'
 import { jiraFetch } from './jiraClient'
 import { prepareDescriptionForJira } from './jiraDescription'
-import { resolveTeamFieldId } from './jiraIssueMapping'
+import { resolveStoryPointFieldIds, resolveTeamFieldId, writableStoryPointFieldId } from './jiraIssueMapping'
 import { getTicket } from './jiraIssueQueries'
 
 export async function updateTicketTitle(key: string, summary: string): Promise<JiraTicket> {
@@ -113,6 +113,32 @@ function normalizeLabels(labels: string[]): string[] {
   }
 
   return normalizedLabels
+}
+
+export async function updateTicketStoryPoints(key: string, storyPoints: number | null): Promise<JiraTicket> {
+  if (storyPoints !== null && (!Number.isFinite(storyPoints) || storyPoints < 0)) {
+    throw new ValidationError('Story points must be a non-negative number')
+  }
+
+  const fieldIds = await resolveStoryPointFieldIds()
+  const editmeta = await jiraFetch(`/issue/${key}/editmeta`)
+  const fieldId = writableStoryPointFieldId(editmeta, fieldIds)
+  if (!fieldId) {
+    throw new ValidationError('Story points cannot be set on this work item')
+  }
+
+  await jiraFetch(`/issue/${key}`, {
+    method: 'PUT',
+    body: {
+      fields: {
+        [fieldId]: storyPoints,
+      },
+    },
+  })
+
+  const updatedTicket = await getTicket(key)
+  broadcast('ticket-updated', updatedTicket)
+  return updatedTicket
 }
 
 export async function updateTicketLabels(key: string, labels: string[]): Promise<JiraTicket> {

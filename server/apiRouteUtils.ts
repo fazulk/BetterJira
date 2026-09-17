@@ -126,6 +126,27 @@ export function parseNullableStringBodyField(body: unknown, key: string): string
   return typeof value === 'string' ? value : null
 }
 
+/** Reads a required number-or-null body field. `ok: false` when missing or invalid. */
+export function parseNullableNumberBodyField(
+  body: unknown,
+  key: string,
+): { ok: true, value: number | null } | { ok: false } {
+  if (!isRecord(body) || !(key in body)) {
+    return { ok: false }
+  }
+
+  const value = body[key]
+  if (value === null) {
+    return { ok: true, value: null }
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+    return { ok: true, value }
+  }
+
+  return { ok: false }
+}
+
 export function parseDescriptionBody(body: unknown): JiraAdfDocument | null {
   return isRecord(body) && isJiraAdfDocument(body.descriptionAdf)
     ? body.descriptionAdf
