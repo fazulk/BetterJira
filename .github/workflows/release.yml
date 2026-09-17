@@ -94,10 +94,9 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
-      # Creates the GitHub release with a changelog generated from
-      # conventional commits; action-gh-release then attaches the files.
-      - name: Generate release notes
-        run: bunx changelogithub
+      # Keep the release hidden from updaters until all assets are uploaded.
+      - name: Generate draft release notes
+        run: bunx changelogithub --draft
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -116,6 +115,14 @@ jobs:
           cp BetterJira-*-x86_64.AppImage BetterJira-linux-x86_64.AppImage
           cp BetterJira-*-x64.exe BetterJira-win-x64.exe
 
-      - uses: softprops/action-gh-release@v2
+      - name: Upload release assets to draft
+        uses: softprops/action-gh-release@v2
         with:
+          draft: true
+          fail_on_unmatched_files: true
           files: release/**
+
+      - name: Publish completed release
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
