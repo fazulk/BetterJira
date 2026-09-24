@@ -125,6 +125,10 @@ export function useSpaceSettings() {
     }, false)
   }
 
+  async function setOpenJiraLinksInApp(openJiraLinksInApp: boolean): Promise<void> {
+    await updateSettings({ openJiraLinksInApp }, false)
+  }
+
   async function setAssistantSkills(assistantSkills: AssistantSkillSetting[]): Promise<void> {
     await updateSettings({
       assistantSkills,
@@ -343,6 +347,7 @@ export function useSpaceSettings() {
     )),
     setFilterSpaceKeys,
     setSidebarSettings,
+    setOpenJiraLinksInApp,
     setAssistantSkills,
     setLabelColors,
     setProjectAppearances,

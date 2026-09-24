@@ -69,6 +69,21 @@ describe('settings credential storage', () => {
     expect(JSON.stringify(readJson('settings.json'))).not.toMatch(/old-jira-token|old-cerebras-key/)
   })
 
+  it('defaults issue links to the app and persists the reversed preference across reloads', async () => {
+    const { getAppSettings, updateAppSettings } = await import('../server/settings')
+    const { normalizeAppSettingsUpdate } = await import('../shared/settings')
+    expect(getAppSettings().openJiraLinksInApp).toBe(true)
+    updateAppSettings(normalizeAppSettingsUpdate({ openJiraLinksInApp: false }))
+    updateAppSettings({ labelColors: { bug: '#123456' } })
+    expect(readJson('settings.json').openJiraLinksInApp).toBe(false)
+
+    vi.resetModules()
+    const reloaded = await import('../server/settings')
+    expect(reloaded.getAppSettings().openJiraLinksInApp).toBe(false)
+    expect(normalizeAppSettingsUpdate({ openJiraLinksInApp: 'false' })).toEqual({})
+    expect(reloaded.updateAppSettings({ openJiraLinksInApp: true }).openJiraLinksInApp).toBe(true)
+  })
+
   it.each(['{invalid json', '{}'])('keeps legacy tokens in place if the new credentials file is invalid', async (content) => {
     writeFileSync(join(dataDir, 'settings.json'), JSON.stringify({ jira: { apiToken: 'old-jira-token' } }))
     writeFileSync(join(dataDir, 'credentials.json'), content)

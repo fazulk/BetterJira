@@ -180,6 +180,7 @@ export interface UpdateStatusPreferencesInput {
 }
 
 export interface AppSettings {
+  openJiraLinksInApp: boolean
   spaces: AppSpaceSetting[]
   filterSpaceKeys: string[]
   sidebar: SidebarSettings
@@ -193,6 +194,7 @@ export interface AppSettings {
 }
 
 export interface UpdateAppSettingsInput {
+  openJiraLinksInApp?: boolean
   spaces?: AppSpaceSetting[]
   filterSpaceKeys?: string[]
   sidebar?: UpdateSidebarSettingsInput

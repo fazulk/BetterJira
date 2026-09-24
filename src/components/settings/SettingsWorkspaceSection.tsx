@@ -1,5 +1,5 @@
 import * as stylex from '@stylexjs/stylex'
-import { computed, defineComponent } from 'vue'
+import { computed, defineComponent, ref } from 'vue'
 import { Icon } from '#components'
 import { useSettingsPageContext } from '@/features/settings/settingsPageContext'
 import { breakpoints, colors } from '@/styles/tokens.stylex'
@@ -41,6 +41,7 @@ const styles = stylex.create({
   body: { display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' },
   grid: { display: 'grid', gap: '0.75rem', gridTemplateColumns: { [breakpoints.md]: 'repeat(2, minmax(0, 1fr))' } },
   label: { display: 'block' },
+  checkboxLabel: { display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-200'] },
   labelText: { display: 'block', marginBottom: '0.375rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-slate-500'] },
   input: { 'width': '100%', 'borderRadius': '0.375rem', 'borderWidth': 1, 'borderStyle': 'solid', 'borderColor': { 'default': 'rgba(255, 255, 255, 0.06)', ':focus': 'rgba(255, 255, 255, 0.16)' }, 'backgroundColor': { 'default': 'rgba(255, 255, 255, 0.04)', ':focus': 'rgba(255, 255, 255, 0.06)' }, 'paddingInline': '0.75rem', 'paddingBlock': '0.5rem', 'fontSize': '0.875rem', 'lineHeight': '1.25rem', 'color': colors['--color-slate-200'], 'outlineStyle': 'none', 'transitionProperty': 'border-color, background-color', 'transitionDuration': '150ms', 'transitionTimingFunction': 'cubic-bezier(0.4, 0, 0.2, 1)', '::placeholder': { color: colors['--color-slate-500'] } },
   rightAligned: { display: 'flex', justifyContent: 'flex-end' },
@@ -80,7 +81,23 @@ export default defineComponent({
       recheckJiraConnection,
       saveJiraApiToken,
       saveJiraConnectionDetails,
+      openJiraLinksInApp,
+      setOpenJiraLinksInApp,
     } = useSettingsPageContext()
+
+    const linkPreferenceError = ref('')
+
+    async function saveLinkPreference(event: Event): Promise<void> {
+      if (!(event.target instanceof HTMLInputElement))
+        return
+      linkPreferenceError.value = ''
+      try {
+        await setOpenJiraLinksInApp(event.target.checked)
+      }
+      catch (error) {
+        linkPreferenceError.value = error instanceof Error ? error.message : 'Failed to save link preference.'
+      }
+    }
 
     const statusBadge = computed<StatusBadge>(() => {
       switch (jiraConnectionStatus.value) {
@@ -113,7 +130,7 @@ export default defineComponent({
       <section {...stylex.attrs(styles.section)}>
         <div>
           <h2 {...stylex.attrs(styles.title)}>Workspace</h2>
-          <p {...stylex.attrs(styles.copy)}>Manage your Jira connection details.</p>
+          <p {...stylex.attrs(styles.copy)}>Manage your Jira connection and link behavior.</p>
         </div>
 
         <div {...stylex.attrs(styles.card, styles.blockGap)}>
@@ -225,6 +242,31 @@ export default defineComponent({
               >
                 {jiraFeedback.value.message}
               </p>
+            )}
+          </div>
+        </div>
+        <div {...stylex.attrs(styles.card, styles.blockGap)}>
+          <div {...stylex.attrs(styles.cardHeader)}>
+            <p {...stylex.attrs(styles.cardTitle)}>Issue links</p>
+          </div>
+          <div {...stylex.attrs(styles.body)}>
+            <label {...stylex.attrs(styles.checkboxLabel)}>
+              <input
+                type="checkbox"
+                checked={openJiraLinksInApp.value}
+                disabled={isSavingSpaceSettings.value}
+                onChange={saveLinkPreference}
+                aria-describedby="jira-link-behavior"
+              />
+              Open Jira issue links in Better Jira by default
+            </label>
+            <p id="jira-link-behavior" {...stylex.attrs(styles.copy)}>
+              {openJiraLinksInApp.value
+                ? 'Click an issue link to open it in Better Jira. Hold Ctrl to open the original Jira URL.'
+                : 'Click an issue link to open the original Jira URL. Hold Ctrl to open it in Better Jira.'}
+            </p>
+            {linkPreferenceError.value && (
+              <p role="alert" {...stylex.attrs(styles.feedback, styles.feedbackError)}>{linkPreferenceError.value}</p>
             )}
           </div>
         </div>

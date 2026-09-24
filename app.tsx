@@ -12,11 +12,20 @@ import { useAssistantContextRefresh } from '@/composables/useAssistantContextRef
 import { configureAssistantSessions } from '@/composables/useAssistantSessions'
 import { useAssistantSettings } from '@/composables/useAssistantSettings'
 import { useJiraBackgroundSync } from '@/composables/useJiraBackgroundSync'
+import { useJiraIssueLinks } from '@/composables/useJiraIssueLinks'
+import { useSpaceSettings } from '@/composables/useSpaceSettings'
 import { isLocalTicketKey } from '~/shared/localTickets'
 
 export default defineComponent({
   name: 'App',
   setup() {
+    const route = useRoute()
+    const { jiraConnection, settings: appSettings } = useSpaceSettings()
+    useJiraIssueLinks({
+      baseUrl: () => jiraConnection.value.baseUrl,
+      openInApp: () => appSettings.value.openJiraLinksInApp,
+      openTicket: key => void navigateTo({ path: `/${key}`, query: { view: route.query.view } }),
+    })
     const { settings } = useAssistantSettings()
     const queryClient = useQueryClient()
     const { refresh: refreshAssistantContext } = useAssistantContextRefresh()

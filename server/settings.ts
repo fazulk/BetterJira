@@ -26,6 +26,7 @@ interface StoredAiSettings {
 }
 
 interface StoredAppSettings {
+  openJiraLinksInApp: boolean
   spaces: AppSettings['spaces']
   filterSpaceKeys: AppSettings['filterSpaceKeys']
   sidebar: AppSettings['sidebar']
@@ -111,6 +112,7 @@ function normalizeStoredSettings(value: unknown): StoredAppSettings {
   const recordValue = value
 
   return {
+    openJiraLinksInApp: normalizedAppSettings.openJiraLinksInApp,
     spaces: normalizedAppSettings.spaces,
     filterSpaceKeys: normalizedAppSettings.filterSpaceKeys,
     sidebar: normalizedAppSettings.sidebar,
@@ -126,6 +128,7 @@ function normalizeStoredSettings(value: unknown): StoredAppSettings {
 
 function toPublicAppSettings(settings: StoredAppSettings, credentials: StoredCredentials): AppSettings {
   return reconcileAppSettings({
+    openJiraLinksInApp: settings.openJiraLinksInApp,
     spaces: settings.spaces,
     filterSpaceKeys: settings.filterSpaceKeys,
     sidebar: settings.sidebar,
@@ -195,6 +198,7 @@ export function updateAppSettings(input: UpdateAppSettingsInput): AppSettings {
     cerebrasApiKey: input.ai?.cerebrasApiKey ?? currentCredentials.cerebrasApiKey,
   }
   const nextSettings = reconcileAppSettings({
+    openJiraLinksInApp: input.openJiraLinksInApp ?? currentSettings.openJiraLinksInApp,
     spaces: input.spaces ?? currentSettings.spaces,
     filterSpaceKeys: input.filterSpaceKeys ?? currentSettings.filterSpaceKeys,
     sidebar: {
@@ -226,6 +230,7 @@ export function updateAppSettings(input: UpdateAppSettingsInput): AppSettings {
     },
   })
   const storedSettings: StoredAppSettings = {
+    openJiraLinksInApp: nextSettings.openJiraLinksInApp,
     spaces: nextSettings.spaces,
     filterSpaceKeys: nextSettings.filterSpaceKeys,
     sidebar: nextSettings.sidebar,

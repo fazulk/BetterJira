@@ -1,7 +1,16 @@
 // @vitest-environment happy-dom
+import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import SettingsWorkspaceSection from '@/components/settings/SettingsWorkspaceSection'
+import { provideSettingsPageContext } from '@/features/settings/settingsPageContext'
 import { useSettingsPageState } from '@/features/settings/useSettingsPageState'
+import { getDefaultAppSettings } from '~/shared/settings'
+
+const appSettings = ref(getDefaultAppSettings())
+const setOpenJiraLinksInApp = vi.fn(async (value: boolean) => {
+  appSettings.value.openJiraLinksInApp = value
+})
 
 vi.mock('@/composables/useAiSettings', () => ({
   useAiSettings: () => ({
@@ -18,6 +27,8 @@ vi.mock('@/composables/useAiSettings', () => ({
 
 vi.mock('@/composables/useSpaceSettings', () => ({
   useSpaceSettings: () => ({
+    settings: appSettings,
+    setOpenJiraLinksInApp,
     aiConnection: ref({}),
     spaces: ref([]),
     jiraConnection: ref({ baseUrl: '', email: '', hasApiToken: false }),
@@ -57,6 +68,25 @@ vi.mock('@/features/settings/useSettingsDerivedRows', () => ({
 }))
 
 describe('settings page state', () => {
+  it('lets the user reverse link clicks and explains the selected behavior', async () => {
+    const Host = defineComponent({
+      setup() {
+        provideSettingsPageContext(useSettingsPageState())
+        return () => h(SettingsWorkspaceSection)
+      },
+    })
+    const wrapper = mount(Host)
+    const toggle = wrapper.get<HTMLInputElement>('input[type="checkbox"]')
+    expect(toggle.element.checked).toBe(true)
+    expect(wrapper.get('#jira-link-behavior').text()).toContain('Hold Ctrl to open the original Jira URL.')
+    await toggle.setValue(false)
+    await nextTick()
+    expect(setOpenJiraLinksInApp).toHaveBeenCalledExactlyOnceWith(false)
+    expect(wrapper.get('#jira-link-behavior').text()).toContain('Hold Ctrl to open it in Better Jira.')
+    wrapper.unmount()
+    appSettings.value = getDefaultAppSettings()
+  })
+
   it('filters navigation groups from settingsSearchQuery', () => {
     const state = useSettingsPageState()
 

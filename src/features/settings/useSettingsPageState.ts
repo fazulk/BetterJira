@@ -22,7 +22,7 @@ const settingsNavigationGroups: SettingsNavigationGroup[] = [
   {
     label: 'Workspace',
     items: [
-      { id: 'workspace', label: 'Jira connection', description: 'Credentials' },
+      { id: 'workspace', label: 'Jira connection', description: 'Credentials and link behavior' },
       { id: 'team-statuses', label: 'Statuses', description: 'Colors and order' },
       { id: 'team-cycles', label: 'Cycles', description: 'Team boards and current sprint' },
     ],
@@ -60,6 +60,8 @@ export function useSettingsPageState() {
     isSaving: isSavingSpaceSettings,
     updateJiraCredentials,
     updateAiCredentials,
+    settings: appSettings,
+    setOpenJiraLinksInApp,
   } = useSpaceSettings()
   const { tickets } = useJiraTickets()
 
@@ -309,6 +311,8 @@ export function useSettingsPageState() {
     saveCerebrasApiKey,
     saveJiraApiToken,
     saveJiraConnectionDetails,
+    openJiraLinksInApp: computed(() => appSettings.value.openJiraLinksInApp),
+    setOpenJiraLinksInApp,
     settingsSearchQuery,
     statusGroupLabels,
     teamMemberRows,

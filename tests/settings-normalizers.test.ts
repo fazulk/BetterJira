@@ -40,6 +40,7 @@ const DEFAULT_INITIATIVE_ROW_FIELDS = ['health', 'lead', 'projects', 'issues', '
 
 function expectedDefaults(): AppSettings {
   return {
+    openJiraLinksInApp: true,
     spaces: [],
     filterSpaceKeys: [],
     sidebar: {
@@ -165,6 +166,7 @@ describe('normalizeAppSettings garbage input', () => {
       'filterSpaceKeys',
       'jira',
       'labelColors',
+      'openJiraLinksInApp',
       'projectAppearances',
       'sidebar',
       'spaces',

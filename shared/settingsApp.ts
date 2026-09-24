@@ -58,6 +58,7 @@ function normalizeStatusPreferences(value: unknown): AppSettings['statusPreferen
 
 export function getDefaultAppSettings(): AppSettings {
   return {
+    openJiraLinksInApp: true,
     spaces: [],
     filterSpaceKeys: [],
     sidebar: getDefaultSidebarSettings(),
@@ -86,6 +87,7 @@ export function normalizeAppSettings(value: unknown): AppSettings {
   const recordValue = value
 
   return reconcileAppSettings({
+    openJiraLinksInApp: recordValue.openJiraLinksInApp !== false,
     spaces: normalizeSpacesFromRecord(recordValue),
     filterSpaceKeys: normalizeSpaceKeyList(recordValue.filterSpaceKeys),
     sidebar: normalizeSidebarSettings(recordValue.sidebar),
@@ -106,6 +108,9 @@ export function normalizeAppSettingsUpdate(value: unknown): UpdateAppSettingsInp
 
   const recordValue = value
   const nextSettings: UpdateAppSettingsInput = {}
+  if (typeof recordValue.openJiraLinksInApp === 'boolean') {
+    nextSettings.openJiraLinksInApp = recordValue.openJiraLinksInApp
+  }
   const nextSpaces = normalizeSpacesFromRecord(recordValue)
 
   if (nextSpaces.length > 0 || 'spaces' in recordValue || 'visibleSpaceKeys' in recordValue || 'hiddenSpaceKeys' in recordValue) {
@@ -171,6 +176,7 @@ export function reconcileAppSettings(settings: AppSettings): AppSettings {
   )
 
   return {
+    openJiraLinksInApp: settings.openJiraLinksInApp !== false,
     spaces,
     filterSpaceKeys: settings.filterSpaceKeys.filter(spaceKey => enabledSpaceKeys.has(spaceKey)),
     sidebar: reconcileSidebarSettings(settings.sidebar),
