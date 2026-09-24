@@ -13,6 +13,7 @@ dist-electron
 .env.local
 .data
 settings.json
+credentials.json
 # Intermediate iconset produced by electron/resources/generate-icon.swift.
 # The .icns next to it is what gets committed and used by electron-builder.
 electron/resources/BetterJira.iconset/

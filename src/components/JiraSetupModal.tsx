@@ -197,7 +197,7 @@ export default defineComponent({
                 )}
 
                 <div {...stylex.attrs(styles.footer)}>
-                  <p {...stylex.attrs(styles.storageNote)}>Credentials are stored locally in .data/settings.json.</p>
+                  <p {...stylex.attrs(styles.storageNote)}>The API token is stored separately in a local credentials.json file.</p>
                   <button type="submit" disabled={!canSubmit.value} {...stylex.attrs(styles.primaryButton)}>
                     {isSaving.value ? 'Saving...' : 'Connect Jira'}
                   </button>

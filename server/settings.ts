@@ -1,4 +1,5 @@
 import type { AppSettings, UpdateAppSettingsInput } from '../shared/settings'
+import type { StoredCredentials } from './credentials'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import {
@@ -9,6 +10,7 @@ import {
 
 } from '../shared/settings'
 import { isRecord } from '../shared/typeGuards'
+import { migrateLegacyCredentials, readStoredCredentials, writeStoredCredentials } from './credentials'
 import { getAppDataDir } from './runtimePaths'
 
 const settingsFilePath = resolve(getAppDataDir(), 'settings.json')
@@ -16,11 +18,9 @@ const settingsFilePath = resolve(getAppDataDir(), 'settings.json')
 interface StoredJiraSettings {
   baseUrl: string
   email: string
-  apiToken: string
 }
 
 interface StoredAiSettings {
-  cerebrasApiKey: string
   provider: AppSettings['ai']['provider']
   model: string
 }
@@ -48,10 +48,8 @@ function createDefaultStoredSettings(): StoredAppSettings {
     jira: {
       baseUrl: '',
       email: '',
-      apiToken: '',
     },
     ai: {
-      cerebrasApiKey: '',
       provider: getDefaultAppSettings().ai.provider,
       model: getDefaultAppSettings().ai.model,
     },
@@ -68,7 +66,6 @@ function normalizeStoredJiraSettings(value: unknown): StoredJiraSettings {
   return {
     baseUrl: typeof recordValue.baseUrl === 'string' ? recordValue.baseUrl.trim() : '',
     email: typeof recordValue.email === 'string' ? recordValue.email.trim() : '',
-    apiToken: typeof recordValue.apiToken === 'string' ? recordValue.apiToken.trim() : '',
   }
 }
 
@@ -81,9 +78,25 @@ function normalizeStoredAiSettings(value: unknown): StoredAiSettings {
   const normalizedAiSettings = normalizeAppSettings({ ai: recordValue }).ai
 
   return {
-    cerebrasApiKey: typeof recordValue.cerebrasApiKey === 'string' ? recordValue.cerebrasApiKey.trim() : '',
     provider: normalizedAiSettings.provider,
     model: normalizedAiSettings.model,
+  }
+}
+
+function getLegacyCredentials(value: unknown): StoredCredentials | null {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const jira = isRecord(value.jira) ? value.jira : {}
+  const ai = isRecord(value.ai) ? value.ai : {}
+  if (!('apiToken' in jira) && !('cerebrasApiKey' in ai)) {
+    return null
+  }
+
+  return {
+    jiraApiToken: typeof jira.apiToken === 'string' ? jira.apiToken.trim() : '',
+    cerebrasApiKey: typeof ai.cerebrasApiKey === 'string' ? ai.cerebrasApiKey.trim() : '',
   }
 }
 
@@ -111,7 +124,7 @@ function normalizeStoredSettings(value: unknown): StoredAppSettings {
   }
 }
 
-function toPublicAppSettings(settings: StoredAppSettings): AppSettings {
+function toPublicAppSettings(settings: StoredAppSettings, credentials: StoredCredentials): AppSettings {
   return reconcileAppSettings({
     spaces: settings.spaces,
     filterSpaceKeys: settings.filterSpaceKeys,
@@ -119,10 +132,10 @@ function toPublicAppSettings(settings: StoredAppSettings): AppSettings {
     jira: {
       baseUrl: settings.jira.baseUrl,
       email: settings.jira.email,
-      hasApiToken: settings.jira.apiToken.length > 0,
+      hasApiToken: credentials.jiraApiToken.length > 0,
     },
     ai: {
-      hasCerebrasApiKey: settings.ai.cerebrasApiKey.length > 0,
+      hasCerebrasApiKey: credentials.cerebrasApiKey.length > 0,
       provider: settings.ai.provider,
       model: settings.ai.model,
     },
@@ -144,30 +157,43 @@ function readStoredSettings(): StoredAppSettings {
     return createDefaultStoredSettings()
   }
 
+  let value: unknown
   try {
-    const rawSettings = readFileSync(settingsFilePath, 'utf8')
-    return normalizeStoredSettings(JSON.parse(rawSettings))
+    value = JSON.parse(readFileSync(settingsFilePath, 'utf8'))
   }
   catch (error) {
     console.error('Failed to read settings file:', error)
     return createDefaultStoredSettings()
   }
+
+  const settings = normalizeStoredSettings(value)
+  const legacyCredentials = getLegacyCredentials(value)
+  if (legacyCredentials) {
+    migrateLegacyCredentials(legacyCredentials)
+    writeSettingsFile(settings)
+  }
+  return settings
 }
 
-export function getStoredJiraSettings(): StoredJiraSettings {
-  return readStoredSettings().jira
+export function getStoredJiraSettings(): StoredJiraSettings & { apiToken: string } {
+  return { ...readStoredSettings().jira, apiToken: readStoredCredentials().jiraApiToken }
 }
 
-export function getStoredAiSettings(): StoredAiSettings {
-  return readStoredSettings().ai
+export function getStoredAiSettings(): StoredAiSettings & { cerebrasApiKey: string } {
+  return { ...readStoredSettings().ai, cerebrasApiKey: readStoredCredentials().cerebrasApiKey }
 }
 
 export function getAppSettings(): AppSettings {
-  return toPublicAppSettings(readStoredSettings())
+  return toPublicAppSettings(readStoredSettings(), readStoredCredentials())
 }
 
 export function updateAppSettings(input: UpdateAppSettingsInput): AppSettings {
   const currentSettings = readStoredSettings()
+  const currentCredentials = readStoredCredentials()
+  const credentials: StoredCredentials = {
+    jiraApiToken: input.jira?.apiToken ?? currentCredentials.jiraApiToken,
+    cerebrasApiKey: input.ai?.cerebrasApiKey ?? currentCredentials.cerebrasApiKey,
+  }
   const nextSettings = reconcileAppSettings({
     spaces: input.spaces ?? currentSettings.spaces,
     filterSpaceKeys: input.filterSpaceKeys ?? currentSettings.filterSpaceKeys,
@@ -178,10 +204,10 @@ export function updateAppSettings(input: UpdateAppSettingsInput): AppSettings {
     jira: {
       baseUrl: input.jira?.baseUrl ?? currentSettings.jira.baseUrl,
       email: input.jira?.email ?? currentSettings.jira.email,
-      hasApiToken: (input.jira?.apiToken ?? currentSettings.jira.apiToken).length > 0,
+      hasApiToken: credentials.jiraApiToken.length > 0,
     },
     ai: {
-      hasCerebrasApiKey: (input.ai?.cerebrasApiKey ?? currentSettings.ai.cerebrasApiKey).length > 0,
+      hasCerebrasApiKey: credentials.cerebrasApiKey.length > 0,
       provider: input.ai?.provider ?? currentSettings.ai.provider,
       model: input.ai?.model ?? currentSettings.ai.model,
     },
@@ -206,10 +232,8 @@ export function updateAppSettings(input: UpdateAppSettingsInput): AppSettings {
     jira: {
       baseUrl: input.jira?.baseUrl ?? currentSettings.jira.baseUrl,
       email: input.jira?.email ?? currentSettings.jira.email,
-      apiToken: input.jira?.apiToken ?? currentSettings.jira.apiToken,
     },
     ai: {
-      cerebrasApiKey: input.ai?.cerebrasApiKey ?? currentSettings.ai.cerebrasApiKey,
       provider: nextSettings.ai.provider,
       model: nextSettings.ai.model,
     },
@@ -220,6 +244,9 @@ export function updateAppSettings(input: UpdateAppSettingsInput): AppSettings {
     statusPreferences: nextSettings.statusPreferences,
   }
 
+  if (input.jira?.apiToken !== undefined || input.ai?.cerebrasApiKey !== undefined) {
+    writeStoredCredentials(credentials)
+  }
   writeSettingsFile(storedSettings)
   return nextSettings
 }

@@ -14,6 +14,10 @@ Latest release, straight to the installer for your system:
 
 All releases: [github.com/fazulk/better-jira/releases](https://github.com/fazulk/better-jira/releases)
 
+## Local data
+
+BetterJira stores preferences in `data/settings.json` and Jira/Cerebras tokens in `data/credentials.json` under the desktop app's user data directory. In a source checkout, the files are `.data/settings.json` and `.data/credentials.json`. Both files are ignored by Git. On first launch after upgrading, existing tokens are moved from `settings.json` to `credentials.json` automatically. Keep `credentials.json` private when copying settings to another computer.
+
 
 ## Development
 
