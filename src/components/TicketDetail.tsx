@@ -6,6 +6,7 @@ import { computed, defineComponent, onMounted, onUnmounted, ref } from 'vue'
 import { fetchTicket } from '@/api/jira'
 import { fetchLocalTicket } from '@/api/localTickets'
 import TicketDetailActivity from '@/components/ticket-detail/TicketDetailActivity'
+import TicketDetailAttachments from '@/components/ticket-detail/TicketDetailAttachments'
 import TicketDetailChildren from '@/components/ticket-detail/TicketDetailChildren'
 import TicketDetailDescription from '@/components/ticket-detail/TicketDetailDescription'
 import TicketDetailHeader from '@/components/ticket-detail/TicketDetailHeader'
@@ -414,6 +415,16 @@ export default defineComponent({
                             ticket={currentTicket}
                             onPreviewImage={openImagePreview}
                           />
+
+                          {detailLoaded.value && currentTicket.attachments?.length
+                            ? (
+                                <TicketDetailAttachments
+                                  attachments={currentTicket.attachments}
+                                  ticketKey={currentTicket.key}
+                                  onPreviewImage={openImagePreview}
+                                />
+                              )
+                            : null}
 
                           <TicketDetailChildren
                             actionLabel={detailChildActionLabel.value}

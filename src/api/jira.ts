@@ -109,6 +109,12 @@ export function uploadTicketAttachment(key: string, file: File): Promise<JiraAtt
   })
 }
 
+export function deleteTicketAttachment(key: string, attachmentId: string): Promise<{ id: string }> {
+  return apiFetch(['tickets', key, 'attachments', attachmentId], 'Failed to remove attachment', {
+    method: 'DELETE',
+  })
+}
+
 export function updateTicketDescription(key: string, descriptionAdf: JiraAdfDocument | null): Promise<JiraTicket> {
   return apiFetch(['tickets', key, 'description'], 'Failed to update description', {
     method: 'PUT',

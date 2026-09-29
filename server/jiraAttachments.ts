@@ -7,6 +7,7 @@ import {
   formatJiraRequestTarget,
   getJiraConfig,
   isJiraAuthenticationFailure,
+  jiraFetch,
   toJiraNetworkError,
 } from './jiraClient'
 import { mapAttachment } from './jiraIssueMapping'
@@ -123,4 +124,14 @@ export async function uploadTicketAttachment(
   }
 
   return uploadedAttachment
+}
+
+export async function deleteTicketAttachment(key: string, attachmentId: string): Promise<void> {
+  // Jira deletes by attachment id alone, so confirm it belongs to this ticket first.
+  const ticket = await getTicket(key)
+  if (!ticket.attachments?.some(attachment => attachment.id === attachmentId)) {
+    throw new JiraApiError(404, `No attachment ${attachmentId} found on ${key}.`)
+  }
+
+  await jiraFetch(`/attachment/${encodeURIComponent(attachmentId)}`, { method: 'DELETE' })
 }

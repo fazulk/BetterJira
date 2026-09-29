@@ -20,7 +20,7 @@ function isImageFilename(filename: string): boolean {
   return /\.(?:apng|avif|gif|jpe?g|png|svg|webp)$/i.test(filename)
 }
 
-function isImageAttachment(attachment: JiraAttachment): boolean {
+export function isImageAttachment(attachment: JiraAttachment): boolean {
   const mimeType = attachment.mimeType?.toLowerCase()
   return mimeType?.startsWith('image/') === true || isImageFilename(attachment.filename)
 }

@@ -6,6 +6,7 @@ export interface JiraAttachment {
   mimeType?: string
   content?: string
   thumbnail?: string
+  size?: number
 }
 
 export interface JiraTeamRef {
@@ -231,6 +232,7 @@ export interface JiraApiAttachment {
   mimeType?: string
   content?: string
   thumbnail?: string
+  size?: number
 }
 
 export interface JiraApiIssueFields {

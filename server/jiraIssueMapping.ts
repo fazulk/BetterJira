@@ -392,6 +392,10 @@ export function mapAttachment(attachment: JiraApiAttachment): JiraAttachment | n
     mapped.thumbnail = attachment.thumbnail
   }
 
+  if (typeof attachment.size === 'number' && Number.isFinite(attachment.size)) {
+    mapped.size = attachment.size
+  }
+
   return mapped
 }
 

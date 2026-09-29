@@ -74,6 +74,17 @@ describe('jira link clicks', () => {
     wrapper.unmount()
   })
 
+  it('never intercepts links marked data-open-in-jira', () => {
+    const { wrapper, openTicket, href } = setupLink()
+    wrapper.get('a').element.setAttribute('data-open-in-jira', '')
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    wrapper.get('a span').element.dispatchEvent(click)
+    expect(click.defaultPrevented).toBe(false)
+    expect(openTicket).not.toHaveBeenCalled()
+    expect(wrapper.get('a').attributes('href')).toBe(href)
+    wrapper.unmount()
+  })
+
   it('opens the exact original URL on Ctrl-click', () => {
     const { wrapper, openTicket, href } = setupLink()
     const open = vi.spyOn(window, 'open').mockReturnValue(null)

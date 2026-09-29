@@ -77,7 +77,7 @@ const styles = stylex.create({
   prNeutral: { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.04)', color: colors['--color-slate-400'] },
   jiraTypeRow: { display: 'flex', alignItems: 'center' },
   jiraTypePill: { display: 'inline-flex', maxWidth: '100%', justifySelf: 'flex-start', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.025)', paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-slate-400'] },
-  jiraLink: { display: 'inline-flex', height: '1.75rem', alignItems: 'center', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, paddingInline: '0.625rem', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-200'] }, textDecorationLine: 'none', transitionProperty: 'color, background-color', transitionDuration: '150ms' },
+  jiraLink: { alignSelf: 'flex-start', display: 'inline-flex', height: '1.75rem', alignItems: 'center', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: { 'default': 'transparent', ':hover': 'rgba(255, 255, 255, 0.04)' }, paddingInline: '0.625rem', fontSize: '0.75rem', lineHeight: '1rem', color: { 'default': colors['--color-slate-400'], ':hover': colors['--color-slate-200'] }, textDecorationLine: 'none', transitionProperty: 'color, background-color', transitionDuration: '150ms' },
   peopleRow: { display: 'flex', alignItems: 'flex-start', gap: '0.5rem', paddingInline: '0.125rem' },
   peopleLabel: { width: '9rem', flexShrink: 0, paddingTop: '0.125rem', fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-500'] },
   peopleValue: { minWidth: 0, fontSize: '0.75rem', lineHeight: '1rem', color: colors['--color-slate-300'] },
@@ -536,7 +536,7 @@ export default defineComponent({
                   </div>
                 )}
                 {!props.isLocalTicket && jiraUrl.value && (
-                  <a href={jiraUrl.value} target="_blank" rel="noopener noreferrer" {...stylex.attrs(styles.jiraLink)}>
+                  <a href={jiraUrl.value} target="_blank" rel="noopener noreferrer" data-open-in-jira {...stylex.attrs(styles.jiraLink)}>
                     Open in Jira
                   </a>
                 )}

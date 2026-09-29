@@ -19,6 +19,7 @@ import {
 import { JiraApiError } from './errors'
 import {
   addTicketMessage,
+  deleteTicketAttachment,
   getJiraAttachmentContentByFilename,
   getPriorities,
   getTicket,
@@ -66,6 +67,24 @@ export async function handleRemoteTicketApiRoute(
 
   if (segments.length === 3 && segments[2] === 'attachments' && method === 'POST') {
     return uploadAttachmentResponse(event, ticketKey)
+  }
+
+  if (segments.length === 4 && segments[2] === 'attachments' && method === 'DELETE') {
+    const attachmentId = segments[3] ? decodePathSegment(segments[3]) : null
+    if (!attachmentId) {
+      return badRequestResponse('Attachment id is invalid.')
+    }
+
+    try {
+      await deleteTicketAttachment(ticketKey, attachmentId)
+      return Response.json({ id: attachmentId }, { headers: API_HEADERS })
+    }
+    catch (error) {
+      if (error instanceof JiraApiError && error.status === 404) {
+        return notFoundResponse()
+      }
+      throw error
+    }
   }
 
   if (segments.length === 5 && segments[2] === 'attachments' && segments[4] === 'content' && method === 'GET') {

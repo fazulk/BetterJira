@@ -16,7 +16,7 @@ export function useJiraIssueLinks(options: JiraIssueLinksOptions): void {
       return
 
     const link = event.target instanceof Element ? event.target.closest('a[href]') : null
-    if (!link || link.hasAttribute('download'))
+    if (!link || link.hasAttribute('download') || link.hasAttribute('data-open-in-jira'))
       return
 
     const href = link.getAttribute('href')

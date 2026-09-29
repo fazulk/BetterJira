@@ -3,8 +3,8 @@ import type { CommandMenuItem, ProjectRow } from './types'
 import type { JiraTicket } from '@/types/jira'
 import type { AppSpaceSetting } from '~/shared/settings'
 import { computed, nextTick, ref, watch } from 'vue'
-import { getIssueTypeIcon, getTeamCycleViewId, getTeamViewId } from './helpers'
 import { LOCAL_SPACE_KEY } from '~/shared/localTickets'
+import { getIssueTypeIcon, getTeamCycleViewId, getTeamViewId } from './helpers'
 
 interface CommandMenuDeps {
   enabledSpaces: ComputedRef<AppSpaceSetting[]>
