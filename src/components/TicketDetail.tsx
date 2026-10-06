@@ -92,7 +92,7 @@ export default defineComponent({
   },
   setup(props, { emit }) {
     const { isPinned, togglePinnedTicket } = usePinnedTickets()
-    const { enabledSpaces, hasJiraCredentialsConfigured, jiraConnection } = useSpaceSettings()
+    const { enabledSpaces, hasJiraCredentialsConfigured, jiraConnection, settings } = useSpaceSettings()
     const { showError, showSuccess } = useToast()
     const ticketKey = computed(() => props.ticketKey)
     const isLocalTicket = computed(() => isLocalTicketKey(ticketKey.value))
@@ -427,6 +427,8 @@ export default defineComponent({
                             : null}
 
                           <TicketDetailChildren
+                            displayControls={isProjectDetail.value}
+                            statusOrder={settings.value.statusPreferences.order}
                             actionLabel={detailChildActionLabel.value}
                             childTickets={childTickets.value}
                             emptyLabel={detailEmptyChildLabel.value}
