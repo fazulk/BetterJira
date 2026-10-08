@@ -26,6 +26,8 @@ const styles = stylex.create({
   splitField: { display: 'block', padding: '1rem', borderBottomWidth: { default: 1, [breakpoints.md]: 0 }, borderBottomStyle: 'solid', borderBottomColor: 'rgba(255, 255, 255, 0.06)', borderRightWidth: { [breakpoints.md]: 1 }, borderRightStyle: { [breakpoints.md]: 'solid' }, borderRightColor: { [breakpoints.md]: 'rgba(255, 255, 255, 0.06)' } },
   splitFieldLast: { borderBottomWidth: 0, borderRightWidth: { [breakpoints.md]: 0 } },
   label: { display: 'block', marginBottom: '0.5rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: colors['--color-slate-500'] },
+  modelHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', minHeight: '1.875rem', marginBottom: '0.5rem' },
+  modelLabel: { marginBottom: 0 },
   select: { width: '100%', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: { 'default': 'rgba(255, 255, 255, 0.06)', ':focus': 'rgba(255, 255, 255, 0.16)' }, backgroundColor: { 'default': 'rgba(255, 255, 255, 0.04)', ':focus': 'rgba(255, 255, 255, 0.06)' }, paddingInline: '0.75rem', paddingBlock: '0.5rem', fontSize: '0.875rem', lineHeight: '1.25rem', color: colors['--color-slate-200'], outlineStyle: 'none', transitionProperty: 'border-color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
   segmented: { display: 'inline-flex', borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: '0.125rem' },
   segmentedButton: { borderRadius: '0.25rem', paddingInline: '0.75rem', paddingBlock: '0.375rem', fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 500, color: { 'default': colors['--color-slate-500'], ':hover': colors['--color-slate-300'] }, transitionProperty: 'color, background-color', transitionDuration: '150ms', transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' },
@@ -83,6 +85,9 @@ export default defineComponent({
       isProviderAvailable,
       isLoadingProviders,
       availableModels,
+      isRefreshingModels,
+      modelsError,
+      refreshModels,
       defaultSystemPrompt,
       setProvider,
       setModel,
@@ -228,7 +233,7 @@ export default defineComponent({
         <div {...stylex.attrs(styles.card, styles.blockGap)}>
           <div {...stylex.attrs(styles.splitGrid)}>
             <label {...stylex.attrs(styles.splitField)}>
-              <span {...stylex.attrs(styles.label)}>Provider</span>
+              <span {...stylex.attrs(styles.label, styles.modelHeader)}>Provider</span>
               <select value={settings.value.provider} name="assistant-provider" {...stylex.attrs(styles.select)} onChange={handleProviderChange}>
                 {providers.map(provider => (
                   <option key={provider} value={provider}>{`Ask ${getAssistantProviderLabel(provider)}`}</option>
@@ -236,14 +241,20 @@ export default defineComponent({
               </select>
             </label>
 
-            <label {...stylex.attrs(styles.splitField, styles.splitFieldLast)}>
-              <span {...stylex.attrs(styles.label)}>Model</span>
-              <select value={settings.value.model} name="assistant-model" {...stylex.attrs(styles.select)} onChange={handleModelChange}>
+            <div {...stylex.attrs(styles.splitField, styles.splitFieldLast)}>
+              <div {...stylex.attrs(styles.modelHeader)}>
+                <label for="assistant-model" {...stylex.attrs(styles.label, styles.modelLabel)}>Model</label>
+                <button type="button" {...stylex.attrs(styles.secondaryButton)} disabled={isRefreshingModels.value || !isProviderAvailable(settings.value.provider)} onClick={refreshModels}>
+                  {isRefreshingModels.value ? 'Refreshing…' : 'Refresh models'}
+                </button>
+              </div>
+              <select id="assistant-model" value={settings.value.model} name="assistant-model" {...stylex.attrs(styles.select)} onChange={handleModelChange}>
                 {availableModels.value.map(model => (
                   <option key={model.id} value={model.id}>{model.label}</option>
                 ))}
               </select>
-            </label>
+              {modelsError.value && <p role="alert" {...stylex.attrs(styles.hint, styles.feedbackError)}>{modelsError.value}</p>}
+            </div>
           </div>
         </div>
 

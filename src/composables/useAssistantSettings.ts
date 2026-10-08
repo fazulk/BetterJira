@@ -1,4 +1,4 @@
-import type { AiProviderAvailability, CliToolAvailability } from '~/shared/ai'
+import type { AiModelOption, AiProviderAvailability, CliToolAvailability } from '~/shared/ai'
 import type { AssistantProvider, AssistantReasoning, AssistantSettings } from '~/shared/assistant'
 import type { AppSettings, UpdateAssistantSettingsInput } from '~/shared/settings'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
@@ -6,6 +6,7 @@ import { computed } from 'vue'
 import {
   fetchAiProviderAvailability,
   fetchAppSettings,
+  fetchAssistantModels,
   updateAssistantConnection,
 } from '@/api/settings'
 import { AI_PROVIDER_AVAILABILITY_QUERY_KEY } from '@/composables/useAiSettings'
@@ -15,10 +16,13 @@ import {
   DEFAULT_ASSISTANT_SYSTEM_PROMPT,
   getAssistantModelsForProvider,
   getDefaultAssistantModel,
-  isSupportedAssistantModel,
   normalizeAssistantSettings,
 } from '~/shared/assistant'
 import { getDefaultAppSettings, reconcileAppSettings } from '~/shared/settings'
+
+function modelsQueryKey(provider: AssistantProvider) {
+  return ['assistant-models', provider] as const
+}
 
 function getCurrentAppSettings(currentSettings: AppSettings | undefined): AppSettings {
   return currentSettings ?? getDefaultAppSettings()
@@ -75,7 +79,24 @@ export function useAssistantSettings() {
     return providerAvailability.value.find(entry => entry.provider === provider)?.available ?? false
   }
 
-  const availableModels = computed(() => getAssistantModelsForProvider(settings.value.provider))
+  const modelsQuery = useQuery({
+    queryKey: computed(() => modelsQueryKey(settings.value.provider)),
+    queryFn: ({ queryKey }) => fetchAssistantModels(queryKey[1]),
+    enabled: computed(() => isProviderAvailable(settings.value.provider)),
+    staleTime: Infinity,
+    retry: false,
+  })
+  const availableModels = computed(() => {
+    const models = modelsQuery.data.value ?? getAssistantModelsForProvider(settings.value.provider)
+    // Keep an existing selection visible even if the CLI no longer advertises it.
+    return models.some(model => model.id === settings.value.model)
+      ? models
+      : [...models, { id: settings.value.model, label: settings.value.model, provider: settings.value.provider }]
+  })
+
+  async function refreshModels(): Promise<void> {
+    await modelsQuery.refetch({ cancelRefetch: false })
+  }
 
   async function persistAssistantSettings(input: UpdateAssistantSettingsInput): Promise<void> {
     const previousSettings = getCurrentAppSettings(queryClient.getQueryData<AppSettings>(APP_SETTINGS_QUERY_KEY))
@@ -98,7 +119,8 @@ export function useAssistantSettings() {
       return
     }
 
-    const nextModel = isSupportedAssistantModel(provider, settings.value.model)
+    const models = queryClient.getQueryData<AiModelOption[]>(modelsQueryKey(provider)) ?? getAssistantModelsForProvider(provider)
+    const nextModel = models.some(model => model.id === settings.value.model)
       ? settings.value.model
       : getDefaultAssistantModel(provider)
 
@@ -106,7 +128,7 @@ export function useAssistantSettings() {
   }
 
   async function setModel(model: string): Promise<void> {
-    const nextModel = isSupportedAssistantModel(settings.value.provider, model)
+    const nextModel = availableModels.value.some(option => option.id === model)
       ? model
       : getDefaultAssistantModel(settings.value.provider)
 
@@ -129,6 +151,9 @@ export function useAssistantSettings() {
     isProviderAvailable,
     isLoadingProviders: computed(() => providerAvailabilityQuery.isLoading.value),
     availableModels,
+    isRefreshingModels: computed(() => modelsQuery.isFetching.value),
+    modelsError: computed(() => modelsQuery.error.value?.message ?? null),
+    refreshModels,
     defaultSystemPrompt: DEFAULT_ASSISTANT_SYSTEM_PROMPT,
     setProvider,
     setModel,

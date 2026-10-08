@@ -147,8 +147,9 @@ export function getDefaultAssistantModel(provider: AssistantProvider): string {
   return provider === 'codex' ? DEFAULT_CODEX_MODEL : DEFAULT_CLAUDE_MODEL
 }
 
-export function isSupportedAssistantModel(provider: AssistantProvider, model: string): boolean {
-  return getAssistantModelsForProvider(provider).some(option => option.id === model)
+/** Model availability belongs to the CLI; accept new IDs without a catalog update. */
+export function isAssistantModelId(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-z0-9][\w.:/[\]-]{0,199}$/i.test(value)
 }
 
 export function getAssistantReasoningLabel(reasoning: AssistantReasoning): string {
@@ -177,7 +178,7 @@ export function normalizeAssistantSettings(
   systemPrompt?: unknown,
 ): AssistantSettings {
   const normalizedProvider = isAssistantProvider(provider) ? provider : DEFAULT_ASSISTANT_PROVIDER
-  const normalizedModel = typeof model === 'string' && isSupportedAssistantModel(normalizedProvider, model)
+  const normalizedModel = isAssistantModelId(model)
     ? model
     : getDefaultAssistantModel(normalizedProvider)
   const normalizedReasoning = isAssistantReasoning(reasoning) ? reasoning : DEFAULT_ASSISTANT_REASONING

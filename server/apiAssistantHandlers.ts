@@ -1,9 +1,10 @@
 import type { H3Event } from 'h3'
 import type { AssistantChatRequest, AssistantStreamChunk } from '../shared/assistant'
-import { readBody } from 'h3'
-import { normalizeAssistantChatRequest } from '../shared/assistant'
+import { getQuery, readBody } from 'h3'
+import { isAssistantProvider, normalizeAssistantChatRequest } from '../shared/assistant'
 import { streamAssistantChat } from './ai/assistant'
-import { badRequestResponse } from './apiRouteUtils'
+import { getAssistantModels } from './ai/assistantModels'
+import { API_HEADERS, badRequestResponse } from './apiRouteUtils'
 
 function encodeChunk(chunk: AssistantStreamChunk): Uint8Array {
   return new TextEncoder().encode(`event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`)
@@ -75,6 +76,14 @@ export async function handleAssistantApiRoute(
   segments: string[],
   method: string,
 ): Promise<Response | null> {
+  if (segments.length === 2 && segments[0] === 'assistant' && segments[1] === 'models' && method === 'GET') {
+    const provider = getQuery(event).provider
+    if (!isAssistantProvider(provider))
+      return badRequestResponse('A valid assistant provider is required.')
+    const models = await getAssistantModels(provider)
+    return Response.json(models, { headers: { ...API_HEADERS, 'Cache-Control': 'no-store' } })
+  }
+
   if (segments.length === 2 && segments[0] === 'assistant' && segments[1] === 'chat' && method === 'POST') {
     const body = await readBody<unknown>(event)
     const request = normalizeAssistantChatRequest(body)

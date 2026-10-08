@@ -1,5 +1,6 @@
 import type { JiraTeamRef } from '@/types/jira'
-import type { AiProviderAvailabilityResponse } from '~/shared/ai'
+import type { AiModelOption, AiProviderAvailabilityResponse } from '~/shared/ai'
+import type { AssistantProvider } from '~/shared/assistant'
 import type {
   AppSettings,
   JiraSpaceDirectoryEntry,
@@ -46,4 +47,8 @@ export function fetchAvailableTeams(query?: string): Promise<JiraTeamRef[]> {
 
 export function fetchAiProviderAvailability(): Promise<AiProviderAvailabilityResponse> {
   return apiFetch('/ai/providers', 'Failed to fetch AI providers')
+}
+
+export function fetchAssistantModels(provider: AssistantProvider): Promise<AiModelOption[]> {
+  return apiFetch('/assistant/models', 'Failed to refresh models', { query: { provider } })
 }
