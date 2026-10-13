@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, reactive, ref } from 'vue'
 import AssistantDock from '@/components/AskAssistantPanel'
 import AssistantHome from '@/components/ticket-list/TicketListAssistantHome'
-import { useAssistantSessions } from '@/composables/useAssistantSessions'
+import { useAssistantSessions, workspaceContext } from '@/composables/useAssistantSessions'
+import { ASSISTANT_HISTORY_KEY } from '@/utils/assistantHistory'
 import { getDefaultAssistantSettings } from '~/shared/assistant'
 
 vi.mock('@tanstack/vue-query', () => ({ useQueryClient: () => ({ getQueryData: () => undefined }) }))
@@ -37,6 +38,9 @@ beforeEach(() => {
   vi.stubGlobal('useRouter', () => ({ push }))
   vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
   sessions.conversations.value.forEach(chat => sessions.close(chat.id))
+  sessions.closedConversations.value = []
+  sessions.historyError.value = ''
+  localStorage.removeItem(ASSISTANT_HISTORY_KEY)
   sessions.previousScreen.value = null
   sessions.minimized.value = true
   sessions.currentContext.value = { kind: 'ticket', label: 'APP-1', key: 'APP-1', summary: 'App issue', local: false }
@@ -124,6 +128,46 @@ describe('agent dock and Home', () => {
     const dock = render(AssistantDock)
     await dock.findAll('button').find(button => button.text() === 'Agent')!.trigger('click')
     expect(sessions.selected.value?.context.kind).toBe('workspace')
+  })
+
+  it('finds closed chats on Home and reopens the transcript and draft alongside existing tabs', async () => {
+    const dock = render(AssistantDock)
+    const first = sessions.create()
+    await first.chat.send('Investigate the login issue')
+    first.draft.value = 'Follow up on the fix'
+    first.selectedSkillIds.value = ['triage']
+    const finishedAt = first.chat.messages.value.at(-1)!.finishedAt
+    await nextTick()
+    await dock.get('[aria-label="Close conversation"]').trigger('click')
+    const second = sessions.create(workspaceContext)
+    await second.chat.send('Plan the next release')
+    sessions.close(second.id)
+    const active = sessions.create()
+    route.path = '/'
+    route.query = { view: 'assistant' }
+    route.fullPath = '/?view=assistant'
+    const home = render(AssistantHome)
+    expect(home.findAll('[aria-label^="Reopen chat:"]').map(button => button.text())).toEqual([
+      expect.stringContaining('Plan the next release'),
+      expect.stringContaining('Investigate the login issue'),
+    ])
+    await home.get('[aria-label="Search closed chats"]').setValue('missing')
+    expect(home.text()).toContain('No closed chats match your search.')
+    await home.get('[aria-label="Search closed chats"]').setValue('LOGIN')
+    expect(home.findAll('[aria-label^="Reopen chat:"]')).toHaveLength(1)
+    await home.get('[aria-label="Reopen chat: Investigate the login issue"]').trigger('click')
+    expect(sessions.selected.value).toBe(first)
+    expect(sessions.conversations.value).toEqual([active, first])
+    expect(sessions.closedConversations.value.map(entry => entry.conversation.id)).toEqual([second.id])
+    expect(home.text()).toContain('Answer')
+    expect((home.get('textarea').element as HTMLTextAreaElement).value).toBe('Follow up on the fix')
+    expect(first.selectedSkillIds.value).toEqual(['triage'])
+    expect(first.chat.messages.value.at(-1)!.finishedAt).toBe(finishedAt)
+    expect(stream).toHaveBeenCalledTimes(2)
+    expect(dock.findAll('[role="tab"]')).toHaveLength(2)
+    await home.get('[aria-label="Search closed chats"]').setValue('')
+    await home.get('[aria-label="Reopen chat: Plan the next release"]').trigger('click')
+    expect(home.text()).toContain('Chats you close will appear here.')
   })
 
   it('unmounting a presentation keeps its conversation alive', async () => {
