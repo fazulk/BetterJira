@@ -10,6 +10,7 @@ import process from 'node:process'
 import { app, BrowserWindow, shell } from 'electron'
 
 import { captureError, initAnalytics, shutdownAnalytics } from './analytics'
+import { issueKeyFromDeepLink } from './deepLink'
 import { findFreePort } from './freePort'
 import { initUpdates } from './updater'
 import { waitForHttpReady } from './waitForHttpReady'
@@ -73,6 +74,27 @@ const SHUTDOWN_GRACE_MS = 5_000
 let backendProcess: ChildProcess | null = null
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
+let appOrigin: string | null = null
+let pendingIssueKey = process.argv.map(issueKeyFromDeepLink).find(key => key !== null) ?? null
+
+function openIssueLink(rawUrl: string) {
+  const key = issueKeyFromDeepLink(rawUrl)
+  if (key === null)
+    return
+  if (!mainWindow || appOrigin === null) {
+    pendingIssueKey = key
+    return
+  }
+  void mainWindow.loadURL(new URL(`/${key}`, appOrigin).href).catch((error) => {
+    logLine(`Could not open issue: ${String(error)}`)
+  })
+  focusMainWindow()
+}
+
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  openIssueLink(url)
+})
 
 function resolveAppRoot(): string {
   return resolve(__dirname, '..')
@@ -99,6 +121,7 @@ function focusMainWindow(): void {
     mainWindow.restore()
   }
 
+  mainWindow.show()
   mainWindow.focus()
 }
 
@@ -218,7 +241,7 @@ function createWindow(url: string): BrowserWindow {
 
   // Open external links (http/https that aren't our own origin) in the default browser.
   window.webContents.setWindowOpenHandler(({ url: targetUrl }) => {
-    if (targetUrl.startsWith(url)) {
+    if (new URL(targetUrl).origin === new URL(url).origin) {
       return { action: 'allow' }
     }
     void shell.openExternal(targetUrl)
@@ -249,7 +272,9 @@ async function bootstrap(): Promise<void> {
   initAnalytics(logLine)
   const devUrl = process.env.NUXT_DEV_URL?.trim()
   const url = devUrl || await startBackend()
-  mainWindow = createWindow(url)
+  appOrigin = new URL(url).origin
+  mainWindow = createWindow(pendingIssueKey ? new URL(`/${pendingIssueKey}`, appOrigin).href : url)
+  pendingIssueKey = null
   initUpdates(() => mainWindow, logLine)
 }
 
@@ -343,7 +368,9 @@ function shutdownBackend(): void {
 try {
   const gotLock = app.requestSingleInstanceLock()
   if (gotLock) {
-    app.on('second-instance', () => {
+    app.on('second-instance', (_event, argv) => {
+      for (const argument of argv)
+        openIssueLink(argument)
       focusMainWindow()
     })
   }
@@ -354,6 +381,8 @@ catch {
 
 app.whenReady().then(() => {
   logLine('app.whenReady fired')
+  if (app.isPackaged)
+    app.setAsDefaultProtocolClient('betterjira')
   bootstrap().catch((err) => {
     logLine(`Failed to start BetterJira: ${String(err)}`)
     app.quit()
