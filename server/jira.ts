@@ -3,6 +3,7 @@ export { getAllAssignableUsers, getTicketAssignableUsers } from './jiraAssignabl
 export { deleteTicketAttachment, getJiraAttachmentContent, getJiraAttachmentContentByFilename, uploadTicketAttachment } from './jiraAttachments'
 export { createIssue, getCreateIssueTypes } from './jiraCreateIssue'
 export {
+  updateTicketAdditionalBugDetails,
   updateTicketAssignee,
   updateTicketDescription,
   updateTicketLabels,

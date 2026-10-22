@@ -27,6 +27,7 @@ import {
   getTicketAssignableUsers,
   getTicketMessages,
   getTransitions,
+  updateTicketAdditionalBugDetails,
   updateTicketAssignee,
   updateTicketDescription,
   updateTicketLabels,
@@ -134,6 +135,12 @@ export async function handleRemoteTicketApiRoute(
     const body = await readBody<unknown>(event)
     const descriptionAdf = parseDescriptionBody(body)
     const ticket = await updateTicketDescription(ticketKey, descriptionAdf)
+    return Response.json(ticket, { headers: API_HEADERS })
+  }
+
+  if (segments.length === 3 && segments[2] === 'additional-bug-details' && method === 'PUT') {
+    const descriptionAdf = parseDescriptionBody(await readBody<unknown>(event))
+    const ticket = await updateTicketAdditionalBugDetails(ticketKey, descriptionAdf)
     return Response.json(ticket, { headers: API_HEADERS })
   }
 

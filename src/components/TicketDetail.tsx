@@ -416,6 +416,17 @@ export default defineComponent({
                             onPreviewImage={openImagePreview}
                           />
 
+                          {!isLocalTicket.value && issueType.value.includes('bug') && detailLoaded.value && currentTicket.additionalBugDetailsFieldId && (
+                            <TicketDetailDescription
+                              key={`additional-bug-details-${currentTicket.key}`}
+                              field="additionalBugDetails"
+                              detailLoaded={detailLoaded.value}
+                              isLocalTicket={false}
+                              ticket={currentTicket}
+                              onPreviewImage={openImagePreview}
+                            />
+                          )}
+
                           {detailLoaded.value && currentTicket.attachments?.length
                             ? (
                                 <TicketDetailAttachments

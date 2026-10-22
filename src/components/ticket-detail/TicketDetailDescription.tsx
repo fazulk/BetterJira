@@ -22,6 +22,7 @@ const pulse = stylex.keyframes({ '0%, 100%': { opacity: 1 }, '50%': { opacity: 0
 
 const styles = stylex.create({
   section: { marginBottom: '2rem', paddingTop: '0.5rem' },
+  heading: { fontSize: '0.875rem', fontWeight: 600, color: colors['--color-slate-300'] },
   stack: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
   shell: { position: 'relative' },
   saveMessage: { pointerEvents: 'none', position: 'absolute', right: '0.75rem', top: '3.75rem', zIndex: 10, borderRadius: '0.375rem', borderWidth: 1, borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(13, 14, 16, 0.9)', paddingInline: '0.5rem', paddingBlock: '0.25rem', fontSize: 11, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)' },
@@ -63,6 +64,10 @@ function descriptionHasUploadState(doc: JiraAdfDocument | null, state: 'pending'
 export default defineComponent({
   name: 'TicketDetailDescription',
   props: {
+    field: {
+      type: String as PropType<'description' | 'additionalBugDetails'>,
+      default: 'description',
+    },
     detailLoaded: {
       type: Boolean,
       required: true,
@@ -94,11 +99,14 @@ export default defineComponent({
     const descriptionSaveInFlight = ref(false)
     const isSyncingDescriptionDraft = ref(false)
 
-    const updateDescriptionMutation = useUpdateTicketDescription()
+    const updateDescriptionMutation = useUpdateTicketDescription(props.field)
     const uploadTicketAttachmentMutation = useUploadTicketAttachment()
 
+    const fieldLabel = computed(() => props.field === 'additionalBugDetails' ? 'Additional Bug Details' : 'description')
+    const editable = computed(() => props.detailLoaded && (props.field === 'description' || props.ticket.additionalBugDetailsEditable === true))
+
     const descriptionHasUnsupportedContent = computed(() => {
-      const descriptionAdf = props.ticket.descriptionAdf
+      const descriptionAdf = props.field === 'additionalBugDetails' ? props.ticket.additionalBugDetailsAdf : props.ticket.descriptionAdf
       return !!descriptionAdf && !isSupportedEditorAdf(descriptionAdf)
     })
 
@@ -106,7 +114,9 @@ export default defineComponent({
       if (!nextTicket)
         return null
 
-      return coerceDescriptionToAdf(nextTicket.description, nextTicket.descriptionAdf)
+      return props.field === 'additionalBugDetails'
+        ? coerceDescriptionToAdf(nextTicket.additionalBugDetails, nextTicket.additionalBugDetailsAdf)
+        : coerceDescriptionToAdf(nextTicket.description, nextTicket.descriptionAdf)
     }
 
     function isPlaceholderEditorNoise(doc: JiraAdfDocument | null | undefined): boolean {
@@ -169,7 +179,7 @@ export default defineComponent({
     }
 
     function focusDescriptionEditor(): void {
-      if (!props.detailLoaded)
+      if (!editable.value)
         return
       descriptionEditorActive.value = true
       nextTick(() => {
@@ -184,7 +194,7 @@ export default defineComponent({
     }
 
     function handleDescriptionFocusIn(): void {
-      if (!props.detailLoaded)
+      if (!editable.value)
         return
       descriptionEditorActive.value = true
     }
@@ -222,7 +232,7 @@ export default defineComponent({
       if (!key || descriptionSaveInFlight.value)
         return
 
-      if (!props.detailLoaded) {
+      if (!editable.value) {
         clearDescriptionSaveTimer()
         return
       }
@@ -274,7 +284,7 @@ export default defineComponent({
         if (descriptionDraftTicketKey.value !== key)
           return
         descriptionSaveStatus.value = 'error'
-        descriptionSaveError.value = err instanceof Error ? err.message : 'Failed to update description.'
+        descriptionSaveError.value = err instanceof Error ? err.message : `Failed to update ${fieldLabel.value}.`
       }
       finally {
         descriptionSaveInFlight.value = false
@@ -312,7 +322,7 @@ export default defineComponent({
         return
       }
 
-      if (!props.detailLoaded) {
+      if (!editable.value) {
         clearDescriptionSaveTimer()
         return
       }
@@ -355,7 +365,7 @@ export default defineComponent({
       if (descriptionSaveStatus.value === 'saved')
         return 'Saved'
       if (descriptionSaveStatus.value === 'error')
-        return descriptionSaveError.value ?? 'Failed to update description.'
+        return descriptionSaveError.value ?? `Failed to update ${fieldLabel.value}.`
       return ''
     })
 
@@ -374,8 +384,9 @@ export default defineComponent({
     })
 
     return () => (
-      <section {...stylex.attrs(styles.section)}>
+      <section aria-label={props.field === 'additionalBugDetails' ? 'Additional Bug Details' : undefined} {...stylex.attrs(styles.section)}>
         <div {...stylex.attrs(styles.stack)}>
+          {props.field === 'additionalBugDetails' && <h2 {...stylex.attrs(styles.heading)}>Additional Bug Details</h2>}
           <div
             ref={descriptionEditorShellRef}
             data-description-editor-shell
@@ -396,11 +407,11 @@ export default defineComponent({
                 ref={descriptionEditorRef}
                 modelValue={descriptionDraft.value}
                 attachments={props.ticket.attachments}
-                disabled={!props.detailLoaded}
+                disabled={!editable.value}
                 ticketKey={props.ticket.key}
                 uploadImage={props.isLocalTicket ? undefined : uploadDescriptionImage}
-                showToolbar={descriptionEditorActive.value}
-                placeholder="Add a description..."
+                showToolbar={editable.value && descriptionEditorActive.value}
+                placeholder={props.field === 'additionalBugDetails' ? 'Add additional bug details...' : 'Add a description...'}
                 onPreviewImage={payload => emit('previewImage', payload)}
                 {...{ 'onUpdate:modelValue': (value: JiraAdfDocument | null) => (descriptionDraft.value = value) }}
               />
@@ -410,7 +421,7 @@ export default defineComponent({
                 {...stylex.attrs(styles.loadingOverlay)}
                 role="status"
                 aria-live="polite"
-                aria-label="Loading description"
+                aria-label={`Loading ${fieldLabel.value}`}
               >
                 <div {...stylex.attrs(styles.toolbarSkeletonSpace)} aria-hidden="true" />
                 <div {...stylex.attrs(styles.skeleton)} aria-hidden="true">
@@ -431,7 +442,11 @@ export default defineComponent({
           </div>
           {descriptionHasUnsupportedContent.value && descriptionEditorActive.value && (
             <div {...stylex.attrs(styles.unsupportedNotice)}>
-              This description uses Jira formatting the editor cannot edit yet. Unsupported items are preserved unless you delete their placeholder.
+              This
+              {' '}
+              {fieldLabel.value}
+              {' '}
+              uses Jira formatting the editor cannot edit yet. Unsupported items are preserved unless you delete their placeholder.
             </div>
           )}
         </div>

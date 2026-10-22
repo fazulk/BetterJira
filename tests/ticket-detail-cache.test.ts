@@ -5,16 +5,19 @@ import { flushPromises, shallowMount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import TicketDetailChildren from '@/components/ticket-detail/TicketDetailChildren'
+import TicketDetailDescription from '@/components/ticket-detail/TicketDetailDescription'
 import TicketDetail from '@/components/TicketDetail'
 import { ticketsQueryKey } from '@/composables/queryKeys'
 import { applyTicketsPayloadToQueryCache } from '@/composables/useJiraTickets'
+
+const detail = vi.hoisted(() => ({ ticket: undefined as JiraTicket | undefined }))
 
 vi.mock('@/composables/useSpaceSettings', () => ({
   useSpaceSettings: () => ({ enabledSpaces: ref([{ key: 'APP', name: 'App' }]), hasJiraCredentialsConfigured: ref(true), jiraConnection: ref({ baseUrl: 'https://jira.example.com' }), settings: ref({ statusPreferences: { order: ['new:open'], colors: {} } }) }),
 }))
 vi.mock('@/composables/usePinnedTickets', () => ({ usePinnedTickets: () => ({ isPinned: () => false, togglePinnedTicket: vi.fn() }) }))
 vi.mock('@/composables/useToast', () => ({ useToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }) }))
-vi.mock('@/composables/useJiraTicket', () => ({ useJiraTicket: () => ({ data: ref(undefined), isPlaceholderData: ref(false), isError: ref(false) }) }))
+vi.mock('@/composables/useJiraTicket', () => ({ useJiraTicket: () => ({ data: ref(detail.ticket), isPlaceholderData: ref(false), isError: ref(false) }) }))
 vi.mock('@/composables/useLocalTicket', () => ({ useLocalTicket: () => ({ data: ref(undefined), isError: ref(false) }) }))
 
 const parent: JiraTicket = { key: 'APP-1', summary: 'Parent', status: 'Open', statusCategory: 'new', inCurrentSprint: false, priority: 'Medium', issueType: 'Task', labels: [], spaceKey: 'APP', spaceName: 'App', assignee: '', self: '' }
@@ -41,6 +44,24 @@ describe('ticket detail cache updates', () => {
     finally {
       wrapper.unmount()
       queryClient.clear()
+    }
+  })
+})
+
+describe('additional bug details visibility', () => {
+  it.each(['Bug', 'Story', 'Task', 'Epic'])('shows the section only on bugs: %s', (issueType) => {
+    detail.ticket = { ...parent, issueType, additionalBugDetailsFieldId: 'customfield_12345' }
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(ticketsQueryKey(['APP']), [detail.ticket])
+    const wrapper = shallowMount(TicketDetail, { props: { ticketKey: parent.key }, global: { plugins: [[VueQueryPlugin, { queryClient }]] } })
+    try {
+      const editors = wrapper.findAllComponents(TicketDetailDescription)
+      expect(editors.some(editor => editor.props('field') === 'additionalBugDetails')).toBe(issueType === 'Bug')
+    }
+    finally {
+      wrapper.unmount()
+      queryClient.clear()
+      detail.ticket = undefined
     }
   })
 })

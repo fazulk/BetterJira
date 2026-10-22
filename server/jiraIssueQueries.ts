@@ -2,7 +2,9 @@ import type { JiraTicket, RefreshTicketsResult } from './jiraTypes'
 import { buildUpdatedSinceSearchQuery } from '../shared/settings'
 import { isRecord } from '../shared/typeGuards'
 import { broadcast } from './events'
+import { canEditAdditionalBugDetails, resolveAdditionalBugDetailsFieldId } from './jiraAdditionalBugDetails'
 import { jiraFetch } from './jiraClient'
+import { extractDescription, extractDescriptionAdf } from './jiraDescription'
 import { isJiraApiIssue, mapIssue, resolveSprintFieldId, resolveStoryPointFieldIds, resolveTeamFieldId, resolveWorkflowPeopleFieldIds, writableStoryPointFieldId } from './jiraIssueMapping'
 import { buildDefaultSearchQuery } from './jiraProjects'
 import { getAppSettings } from './settings'
@@ -152,13 +154,19 @@ function getIncrementalRefreshQuery(updatedSince?: Date): string | null {
 }
 
 export async function getTicket(key: string): Promise<JiraTicket> {
-  const [sprintFieldId, teamFieldId, storyPointFieldIds, workflowPeopleFieldIds] = await Promise.all([
+  const [sprintFieldId, teamFieldId, storyPointFieldIds, workflowPeopleFieldIds, additionalBugDetailsFieldId] = await Promise.all([
     resolveSprintFieldId(),
     resolveTeamFieldId(),
     resolveStoryPointFieldIds(),
     resolveWorkflowPeopleFieldIds(),
+    resolveAdditionalBugDetailsFieldId().catch((error: unknown) => {
+      console.warn('Unable to resolve Jira Additional Bug Details field:', error instanceof Error ? error.message : 'unknown error')
+      return null
+    }),
   ])
   const fields = [...detailIssueFields]
+  if (additionalBugDetailsFieldId)
+    fields.push(additionalBugDetailsFieldId)
 
   if (sprintFieldId) {
     fields.push(sprintFieldId)
@@ -179,7 +187,7 @@ export async function getTicket(key: string): Promise<JiraTicket> {
         fields: fields.join(','),
       },
     }),
-    storyPointFieldIds.estimate || storyPointFieldIds.points
+    storyPointFieldIds.estimate || storyPointFieldIds.points || additionalBugDetailsFieldId
       ? jiraFetch(`/issue/${key}/editmeta`).catch(() => null)
       : Promise.resolve(null),
   ])
@@ -193,6 +201,13 @@ export async function getTicket(key: string): Promise<JiraTicket> {
   ))
   if (editmeta !== null)
     ticket.storyPointsEditable = writableStoryPointFieldId(editmeta, storyPointFieldIds) !== null
+  if (additionalBugDetailsFieldId && isJiraApiIssue(data) && isRecord(data.fields) && additionalBugDetailsFieldId in data.fields) {
+    const value = data.fields[additionalBugDetailsFieldId]
+    ticket.additionalBugDetailsFieldId = additionalBugDetailsFieldId
+    ticket.additionalBugDetailsAdf = extractDescriptionAdf(value)
+    ticket.additionalBugDetails = extractDescription(value, ticket.additionalBugDetailsAdf)
+    ticket.additionalBugDetailsEditable = canEditAdditionalBugDetails(editmeta, additionalBugDetailsFieldId)
+  }
   return ticket
 }
 

@@ -62,6 +62,10 @@ export interface JiraTicket {
   watchCount?: number
   description?: string
   descriptionAdf?: JiraAdfDocument
+  additionalBugDetails?: string
+  additionalBugDetailsAdf?: JiraAdfDocument
+  additionalBugDetailsFieldId?: string
+  additionalBugDetailsEditable?: boolean
   attachments?: JiraAttachment[]
   linkedIssues?: JiraIssueLink[]
   self: string

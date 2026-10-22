@@ -122,6 +122,13 @@ export function updateTicketDescription(key: string, descriptionAdf: JiraAdfDocu
   })
 }
 
+export function updateTicketAdditionalBugDetails(key: string, descriptionAdf: JiraAdfDocument | null) {
+  return apiFetch<JiraTicket>(['tickets', key, 'additional-bug-details'], 'Failed to update Additional Bug Details', {
+    method: 'PUT',
+    json: { descriptionAdf },
+  })
+}
+
 export function generateAiDescription(
   key: string,
   input: GenerateAiDescriptionRequest,

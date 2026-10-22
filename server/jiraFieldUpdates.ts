@@ -2,6 +2,7 @@ import type { JiraAdfDocument } from '../shared/jiraAdf'
 import type { JiraTicket } from './jiraTypes'
 import { ValidationError } from './errors'
 import { broadcast } from './events'
+import { canEditAdditionalBugDetails, resolveAdditionalBugDetailsFieldId } from './jiraAdditionalBugDetails'
 import { jiraFetch } from './jiraClient'
 import { prepareDescriptionForJira } from './jiraDescription'
 import { resolveStoryPointFieldIds, resolveTeamFieldId, writableStoryPointFieldId } from './jiraIssueMapping'
@@ -40,6 +41,20 @@ export async function updateTicketDescription(key: string, descriptionAdf: JiraA
   const updatedTicket = await getTicket(key)
   broadcast('ticket-updated', updatedTicket)
   return updatedTicket
+}
+
+export async function updateTicketAdditionalBugDetails(key: string, additionalBugDetailsAdf: JiraAdfDocument | null) {
+  const fieldId = await resolveAdditionalBugDetailsFieldId()
+  if (!fieldId || !canEditAdditionalBugDetails(await jiraFetch(`/issue/${key}/editmeta`), fieldId))
+    throw new ValidationError('Additional Bug Details cannot be set on this work item')
+
+  await jiraFetch(`/issue/${key}`, {
+    method: 'PUT',
+    body: { fields: { [fieldId]: prepareDescriptionForJira(additionalBugDetailsAdf) } },
+  })
+  const ticket = await getTicket(key)
+  broadcast('ticket-updated', ticket)
+  return ticket
 }
 
 export async function updateTicketAssignee(key: string, accountId: string | null): Promise<JiraTicket> {
